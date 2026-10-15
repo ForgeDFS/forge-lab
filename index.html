@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="3a1c8f0ba4e6"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="59979898fff1"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-192.png">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -73,6 +73,13 @@ th.sort { cursor: pointer; } th.sort:hover { color: var(--fg); }
 td { padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 tr:last-child td { border-bottom: 0; }
 td.n, th.n { text-align: right; }
+/* 2026-10-15: player column stays put while the rest of the table scrolls sideways (phones) */
+.tbl-wrap th:first-child, .tbl-wrap td:first-child { position: sticky; left: 0; z-index: 1; background: var(--plate); box-shadow: 1px 0 0 var(--line); }
+@media (max-width: 640px) {
+  .tbl-wrap td:first-child { white-space: normal; min-width: 118px; max-width: 42vw; line-height: 1.25; }
+  .tbl-wrap td:first-child small { display: block; margin-left: 0; }
+  th, td { padding-left: 8px; padding-right: 8px; }
+}
 .pos { display: inline-block; min-width: 34px; text-align: center; font-family: var(--f-display); font-weight: 800; font-size: 13px; letter-spacing: .04em; padding: 1px 5px; border-radius: 3px; background: var(--plate-2); color: var(--muted); }
 .who b { font-weight: 600; } .who small { color: var(--muted); margin-left: 6px; font-family: var(--f-data); font-size: 11px; }
 .heat { position: relative; }
