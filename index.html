@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="44f0c8723b73"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="6ee7718c9f18"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-192.png">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -551,7 +551,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
       ? `<h3>Overlay alert · ${L.length} guaranteed contest${L.length > 1 ? 's' : ''} under the prize pool <small>checked ${ago <= 1 ? 'just now' : ago + ' min ago'}</small></h3>
          <p class="note" style="margin:0 0 4px">Entries so far × entry fee is less than what DraftKings guarantees to pay. "1.20x" = an average entry is worth $1.20 per $1 if you add one now. Counts change fast near lock; check the contest before entering.</p>
          ${L.slice(0, 5).map(row).join('')}${L.length > 5 ? `<details><summary>${L.length - 5} more</summary>${L.slice(5).map(row).join('')}</details>` : ''}`
-      : ''; if (!L.length) el.innerHTML = `<h3>No overlays on real NFL games right now <small>checked ${ago <= 1 ? 'just now' : ago + ' min ago'} · ${O.watched || 0} guaranteed contests locking in the next ${Math.round((O.lookahead_min || 180) / 60)} h are filling normally</small></h3>`;
+      : ''; if (!L.length) el.innerHTML = `<h3>No overlays on real NFL games right now <small>checked ${ago <= 1 ? 'just now' : ago + ' min ago'} · guaranteed real-NFL contests locking in the next ${Math.round((O.lookahead_min || 180) / 60)} h are filling normally</small></h3>`;
     if (M.length) el.innerHTML += `<details style="margin-top:6px"><summary>${M.length} overlay${M.length > 1 ? 's' : ''} in Madden Stream contests (simulated video-game NFL; FORGE has no projections for these)</summary>${M.slice(0, 15).map(row).join('')}</details>`;
   }
   function gate(enc) {
