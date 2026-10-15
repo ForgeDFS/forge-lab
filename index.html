@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="0fdbc6ada2a2"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="ead2a709d124"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -252,6 +252,15 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 .ownernote { border: 1px dashed var(--gold); border-radius: 6px; padding: 6px 10px; color: var(--gold); }
 .linkbtn { background: none; border: 0; padding: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font-size: 12px; }
 .check.mine { margin-top: 2px; }
+.privhead { display: flex; gap: 14px; align-items: flex-start; background: var(--plate); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.privhead > .ico { width: 38px; height: 38px; color: var(--ember); } .privhead p { margin: 4px 0 0; color: var(--muted); }
+.glance { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.gcard { background: var(--plate); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+.gcard h4 { font-family: var(--f-display); font-size: 16px; letter-spacing: .06em; text-transform: uppercase; margin: 0 0 8px; }
+table.mini { font-size: 13.5px; } table.mini td, table.mini th { padding: 5px 4px; } table.mini th { font-size: 12px; }
+.sbar { display: grid; grid-template-columns: 120px 1fr 44px; gap: 8px; align-items: center; font-size: 13.5px; margin: 5px 0; }
+.sbar i { display: block; height: 10px; border-radius: 99px; background: linear-gradient(90deg, var(--ember), var(--gold)); } .sbar b { font-family: var(--f-data); font-weight: 500; text-align: right; }
+.lrow { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; padding: 3px 0; } .lrow .lev { color: var(--steel); font-family: var(--f-data); font-weight: 500; }
 .bdown { margin: 0 0 12px; } .bdown summary { cursor: pointer; font-family: var(--f-display); font-weight: 700; letter-spacing: .05em; text-transform: uppercase; font-size: 15px; padding: 4px 0; }
 td.lev { color: var(--steel); }
 .slate-chip b { font-family: var(--f-display); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
@@ -1040,7 +1049,7 @@ td.lev { color: var(--steel); }
       <div class="tbl-wrap"><table class="sumt"><thead><tr><th>Player</th><th class="n">Captain</th><th class="n">Flex</th><th class="n">Total</th><th class="n">Field</th><th class="n">Opt rate</th></tr></thead><tbody>${names.map(r => `<tr><td><b>${r.nm}</b> <small class="dim">${r.p.pos || ''} ${r.p.team || ''}</small></td><td class="n">${pc(r.c)}</td><td class="n">${pc(r.f)}</td><td class="n"><b>${pc(r.c + r.f)}</b></td><td class="n">${r.p.own_flex == null ? '—' : fmt(r.p.own_flex + (r.p.own_cpt || 0), 0) + '%'}</td><td class="n">${r.p.opt_cpt == null ? '—' : fmt(r.p.opt_cpt + r.p.opt_flex, 0) + '%'}</td></tr>`).join('')}</tbody></table></div>
       <p class="note">Field = projected ownership (captain + flex). Opt rate = how often the player is in the best lineup of a simulated game (captain + flex).</p>`;
   }
-  function renderMine() { fltBar($('#fltMine'), 'mine', builder.result, renderMine); const L = mineShown(); exposure(L, $('#bExpo')); $('#bBreakBody').innerHTML = breakdown(L); $('#bGrid').innerHTML = L.length ? L.map((l, i) => luCard(l, i)).join('') : '<p class="note">No lineup matches the filter.</p>'; }
+  function renderMine() { fltBar($('#fltMine'), 'mine', builder.result, renderMine); const L = mineShown(); exposure(L, $('#bExpo')); $('#bBreakBody').innerHTML = breakdown(L); renderPrivate(); $('#bGrid').innerHTML = L.length ? L.map((l, i) => luCard(l, i)).join('') : '<p class="note">No lineup matches the filter.</p>'; }
 
 
   // ---------------------------------------------------------------- Classic (2026-10-15): projections, QB environment, in-browser optimizer (GLPK, WebAssembly)
@@ -1443,9 +1452,28 @@ td.lev { color: var(--steel); }
   function renderPrivate() {
     const el = $('#privBox'); if (!el || !D) return; const S = D.entered_summary;
     if (D.owner) { el.innerHTML = `<p class="note ownernote">Owner view · these sets are visible only on devices signed in as owner. Friends see the summary below after lock.</p>${S ? '<h3 class="subh">What friends see after lock</h3>' + sumHTML(S) : ''}`; return; }
+    const meta = IDX.find(x => x.id === CUR) || {}, ko = meta.kickoff_utc ? new Date(meta.kickoff_utc) : null, mins = ko ? Math.round((ko - Date.now()) / 60e3) : null;
+    const when = ko ? `${ko.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}${mins > 0 ? ` · in ${mins >= 60 ? Math.floor(mins / 60) + ' h ' : ''}${mins % 60} min` : ''}` : 'kickoff';
+    const mine = D.slate.kind === 'classic' ? [] : mineShown(), yours = `<h3 class="subh" style="margin-top:22px">Your lineups</h3>` + (mine.length
+      ? `<p class="note">${mine.length} lineups from your Builder on this phone.</p>${breakdown(mine)}<div class="toolbar" style="margin-top:10px"><button type="button" class="btn" data-goto="builder">Back to the Builder</button><button type="button" class="btn primary" data-send2="mine">Send to DraftKings →</button></div>`
+      : `<div class="privcard"><div><p style="margin-top:0">You haven't built lineups for this game on this phone yet. The Builder uses FORGE's projections and methods, with a twist unique to your phone so friends don't duplicate each other.</p><div class="toolbar"><button type="button" class="btn primary" data-goto="builder">Build my lineups</button></div></div></div>`);
+    const ST = D.simpack && D.simpack.stats, P = D.players;
+    let glance = '';
+    if (ST) {
+      const capt = [...P].filter(p => p.opt_cpt != null).sort((a, b) => b.opt_cpt - a.opt_cpt).slice(0, 6);
+      const sp = Object.entries(ST.opt_splits || {}).slice(0, 6), spMax = sp.length ? sp[0][1] : 1;
+      const lv = [...P].filter(p => p.lev != null && p.proj >= 5).sort((a, b) => b.lev - a.lev), up = lv.filter(p => p.lev > 0).slice(0, 5), dn = lv.filter(p => p.lev < 0).slice(-3).reverse();
+      glance = `<h3 class="subh" style="margin-top:20px">FORGE's read on the slate</h3><p class="note" style="margin-top:0">From 2,000 simulated games: which lineups come out on top most often. This is the model's view, not our entries.</p>
+      <div class="glance">
+        <div class="gcard"><h4>Captains of the best lineups</h4><table class="mini"><thead><tr><th></th><th class="n">Best CPT</th><th class="n">Field CPT</th></tr></thead><tbody>${capt.map(p => `<tr><td><b>${p.name}</b> <small class="dim">${p.pos}</small></td><td class="n">${fmt(p.opt_cpt, 0)}%</td><td class="n dim">${p.own_cpt == null ? '—' : fmt(p.own_cpt, 0) + '%'}</td></tr>`).join('')}</tbody></table><p class="note">Best CPT = share of simulated games where he captains the single best lineup.</p></div>
+        <div class="gcard"><h4>How the best lineups are built</h4>${sp.map(([k, v]) => `<div class="sbar"><span>${k}</span><i style="width:${(100 * v / spMax).toFixed(0)}%"></i><b>${fmt(100 * v, 0)}%</b></div>`).join('')}<p class="note">Team split of the best lineup in each simulated game (captain's team first on ties).</p></div>
+        <div class="gcard"><h4>Leverage <span class="tag steel">untested</span></h4>${up.map(p => `<div class="lrow"><span><b>${p.name}</b> <small class="dim">${p.pos}</small></span><b class="lev">+${fmt(p.lev, 0)}</b></div>`).join('')}${dn.length ? '<h4 style="margin-top:10px">Most crowded</h4>' : ''}${dn.map(p => `<div class="lrow"><span><b>${p.name}</b> <small class="dim">${p.pos}</small></span><b class="dim">${fmt(p.lev, 0)}</b></div>`).join('')}<p class="note">Best-lineup rate minus projected ownership (captain + flex). A description, not a tested signal.</p></div>
+      </div>`;
+    }
     el.innerHTML = S
-      ? `<h3 class="subh">How we played it</h3><p class="lede">The slate is locked. This is how our entered lineups were spread: who we captained, who filled the flex, and who we left out. The lineups themselves stay private.</p>${sumHTML(S)}<div class="toolbar" style="margin-top:14px"><button type="button" class="btn" data-goto="builder">Open the Builder</button></div>`
-      : `<div class="privcard"><svg class="ico" aria-hidden="true"><use href="#i-anvil"/></svg><div><h3 class="subh" style="margin-top:0">Our lineups stay private</h3><p>So nobody ends up with the same lineups and splits the prize, FORGE's own entries aren't shared. ${D.builds_private ? 'After the slate locks you\'ll see how we played it: captain and flex percentages and who we faded.' : ''}</p><p>Build your own in the Builder. It uses FORGE's projections and methods, with a twist unique to your phone so friends don't duplicate each other.</p><div class="toolbar"><button type="button" class="btn primary" data-goto="builder">Build my lineups</button></div></div></div>`;
+      ? `<h3 class="subh">How we played it</h3><p class="lede">The slate is locked. This is how our entered lineups were spread: who we captained, who filled the flex, and who we left out. The lineups themselves stay private.</p>${sumHTML(S)}${yours}`
+      : `<div class="privhead"><svg class="ico" aria-hidden="true"><use href="#i-anvil"/></svg><div><h3 class="subh" style="margin:0">Our lineups stay private</h3><p>So nobody ends up with the same lineups and splits a prize, FORGE's entries aren't shared. ${D.builds_private ? `How we played it (captain and flex percentages, who we faded) unlocks when the slate locks: <b>${when}</b>.` : ''}</p></div></div>${glance}${yours}`;
+    $$('[data-send2]', el).forEach(b => b.onclick = () => { const x = document.querySelector('[data-send="mine"]'); if (x) x.click(); });
     $$('[data-goto]', el).forEach(b => b.onclick = () => { show(b.dataset.goto); window.scrollTo({ top: 0, behavior: 'smooth' }); });
     const rs = $('#entSum'); if (rs) rs.innerHTML = S ? '<h3 style="font-size:22px;margin:22px 0 10px">How we played this slate</h3>' + sumHTML(S) : '';
   }
