@@ -162,6 +162,14 @@ footer .ico { color: var(--ember); }
   .barrow { grid-template-columns: 120px minmax(0, 1fr) 60px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+.slates { display: flex; gap: 8px; overflow-x: auto; margin-top: 14px; padding-bottom: 4px; scrollbar-width: thin; }
+.slates[hidden] { display: none; }
+.slate-chip { flex: 0 0 auto; display: grid; gap: 1px; text-align: left; border: 1px solid var(--line); background: var(--plate); color: var(--fg); border-radius: 6px; padding: 7px 12px; cursor: pointer; min-width: 128px; }
+.slate-chip b { font-family: var(--f-display); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+.slate-chip span { font-family: var(--f-display); font-weight: 800; font-size: 19px; letter-spacing: .02em; }
+.slate-chip small { color: var(--muted); font-size: 11.5px; }
+.slate-chip[aria-pressed="true"] { border-color: var(--ember); box-shadow: inset 0 -3px 0 var(--ember); }
+.slate-chip.live, .slate-chip.complete { opacity: .7; }
 .recipes { display: grid; gap: 8px; }
 .recipe { text-align: left; border: 1px solid var(--line); background: var(--plate-2); border-radius: 6px; padding: 10px 12px; cursor: pointer; color: var(--fg); display: grid; gap: 2px; }
 .recipe b { font-family: var(--f-display); font-size: 17px; letter-spacing: .06em; text-transform: uppercase; }
@@ -204,6 +212,7 @@ footer .ico { color: var(--ember); }
     <div class="row"><span id="statusPill" class="pill"><span class="dot"></span><span id="statusText">Loading</span></span></div>
   </div>
 
+  <nav class="slates" id="slatePicker" aria-label="Games" hidden></nav>
   <section class="plate" aria-label="Game"><div class="glow" aria-hidden="true"></div>
     <div>
       <div class="matchup"><div class="team" id="tAway">—</div><div class="at">@</div><div class="team" id="tHome">—</div></div>
@@ -327,38 +336,63 @@ footer .ico { color: var(--ember); }
   function show(p) { $$('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.p === p))); $$('.panel').forEach(x => x.hidden = x.id !== 'p-' + p); LS.set('forge_tab', p); }
   $$('.tab').forEach(t => t.addEventListener('click', () => show(t.dataset.p)));
 
-  const fail = e => { $('#statusText').textContent = 'No slate data'; $('#ptable tbody').innerHTML = '<tr><td colspan="8">The slate data file could not be loaded (' + e.message + ').</td></tr>'; };
-  // public site: data is AES-GCM encrypted with a key derived from the friends' password (PBKDF2-SHA256); artifact copy: plain slate.json
+  const fail = e => { $('#statusText').textContent = 'No slate data'; $('#ptable tbody').innerHTML = '<tr><td colspan="8">The slate data could not be loaded (' + e.message + ').</td></tr>'; };
+  // Data: public site = AES-GCM files encrypted with a key derived from the friends' password (PBKDF2-SHA256, one salt per publish);
+  // claude.ai artifact copy = plain files. data/index(.enc).json lists the slates; data/<id>(.enc).json holds one slate.
   const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
-  async function unlock(enc, pw) {
-    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
-    const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64(enc.salt), iterations: enc.iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
-    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(enc.iv) }, key, b64(enc.ct));
-    return JSON.parse(new TextDecoder().decode(pt));
+  const keys = {}; let PW = null, ENC = false, IDX = [], CUR = null;
+  async function keyFor(enc) {
+    if (!keys[enc.salt]) { const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(PW), 'PBKDF2', false, ['deriveKey']);
+      keys[enc.salt] = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64(enc.salt), iterations: enc.iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']); }
+    return keys[enc.salt];
+  }
+  async function dec(enc) { const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(enc.iv) }, await keyFor(enc), b64(enc.ct)); return JSON.parse(new TextDecoder().decode(pt)); }
+  async function getJSON(name) {
+    const r = await fetch('data/' + name + (ENC ? '.enc.json' : '.json'), { cache: 'no-cache' }); if (!r.ok) throw new Error(r.status);
+    return ENC ? dec(await r.json()) : r.json();
+  }
+  const kickLocal = s => new Date(s.kickoff_utc).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' });
+  function renderPicker() {
+    const el = $('#slatePicker'); const L = IDX.filter(x => x.kind === 'showdown' || x.kind === 'classic');
+    el.hidden = L.length < 2;
+    el.innerHTML = L.map(x => `<button type="button" class="slate-chip ${x.status}" data-id="${x.id}" aria-pressed="${x.id === CUR}"><b>${x.label}</b><span>${x.kind === 'classic' ? x.game : x.game.replace('@', ' @ ')}</span><small>${kickLocal(x)}${x.status === 'live' ? ' · locked' : x.status === 'complete' ? ' · final' : ''}</small></button>`).join('');
+    $$('.slate-chip', el).forEach(b => b.onclick = () => loadSlate(b.dataset.id));
+  }
+  function defaultSlate() { const now = Date.now(); const up = IDX.filter(x => new Date(x.kickoff_utc).getTime() > now - 4 * 3600e3); return (up[0] || IDX[IDX.length - 1]); }
+  async function loadSlate(id) {
+    CUR = id; renderPicker(); $('#statusText').textContent = 'Loading';
+    try { const d = await getJSON(id); init(d, IDX.find(x => x.id === id)); LS.set('forge_slate', id); } catch (e) { fail(e); }
+  }
+  async function start() {
+    IDX = (await getJSON('index')).slates || []; if (!IDX.length) throw new Error('no slates published');
+    const want = LS.get('forge_slate'), w = IDX.find(x => x.id === want), dflt = defaultSlate();
+    await loadSlate((w && (w.status === 'preliminary' || w.status === 'final' || w.status === 'scheduled')) ? w.id : dflt.id);
   }
   function gate(enc) {
     const g = $('#gate'), f = $('#gateForm'), i = $('#gatePw'), m = $('#gateMsg');
-    const tryPw = (pw, silent) => unlock(enc, pw).then(d => { LS.set('forge_pw', pw); g.hidden = true; $('#dlMine').hidden = false; init(d); })
-      .catch(() => { g.hidden = false; if (!silent) { m.textContent = 'That password is not right. Check with Drew.'; i.select(); } });
+    const tryPw = (pw, silent) => { PW = pw; for (const k in keys) delete keys[k];
+      return dec(enc).then(() => { LS.set('forge_pw', pw); g.hidden = true; $('#dlMine').hidden = false; return start().catch(fail); })
+        .catch(() => { g.hidden = false; if (!silent) { m.textContent = 'That password is not right. Check with Drew.'; i.select(); } }); };
     const saved = LS.get('forge_pw'); if (saved) tryPw(saved, true); else { g.hidden = false; setTimeout(() => i.focus(), 50); }
     f.addEventListener('submit', ev => { ev.preventDefault(); m.textContent = 'Heating the forge…'; tryPw(i.value.trim(), false); });
   }
-  fetch('data/slate.enc.json').then(r => { if (!r.ok) throw new Error('plain'); return r.json(); }).then(gate)
-    .catch(() => fetch('data/slate.json').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(init).catch(fail));
+  $('#startX').addEventListener('click', () => { $('#startCard').hidden = true; LS.set('forge_start_seen', '1'); });
+  fetch('data/index.enc.json', { cache: 'no-cache' }).then(r => { if (!r.ok) throw new Error('plain'); return r.json(); }).then(enc => { ENC = true; gate(enc); })
+    .catch(() => { ENC = false; start().catch(fail); });
 
-  function init(data) {
-    D = data; const s = D.slate;
+  function init(data, meta) {
+    D = data; const s = D.slate; meta = meta || {};
+    builder.proj = {}; builder.lock.clear(); builder.out.clear(); builder.cpt.clear(); builder.result = []; $('#bOut').hidden = true; $('#bStatus').textContent = '';
     $('#tAway').textContent = s.away; $('#tHome').textContent = s.home;
     $('#kick').textContent = 'Kickoff ' + s.kickoff + ' · data built ' + s.built_utc;
     const sp = s.spread_home; $('#mSpread').textContent = sp === 0 ? 'PK' : (sp > 0 ? s.away + ' −' + sp : s.home + ' −' + (-sp));
     $('#mTotal').textContent = fmt(s.total, 1); $('#mWeek').textContent = s.week;
-    const pill = $('#statusPill'); pill.className = 'pill ' + (s.status === 'final' ? 'ok' : 'hot');
-    $('#statusText').textContent = s.status === 'final' ? 'Tempered · final build' : 'Heating · preliminary data';
+    const st = (meta.status === 'live' || meta.status === 'complete') ? meta.status : s.status; const pill = $('#statusPill'); pill.className = 'pill ' + (st === 'final' || st === 'complete' ? 'ok' : st === 'live' ? '' : 'hot');
+    $('#statusText').textContent = { final: 'Tempered · final build', live: 'Locked · game on', complete: 'Cooled · final results' }[st] || 'Heating · preliminary build';
     D.players.forEach(p => { p.value = p.proj / (p.sal / 1000); builder.proj[p.name] = p.proj; });
     const loc = u => { if (!u) return null; const d = new Date(String(u).replace(' UTC', 'Z').replace(' ', 'T')); return isNaN(d) ? null : d.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); };
     const fr = loc(s.odds_as_of); $('#fresh').textContent = fr ? 'Odds as of ' + fr + (s.refreshed_utc ? ' · projections refreshed ' + loc(s.refreshed_utc) : '') : '';
     if (!LS.get('forge_start_seen')) $('#startCard').hidden = false;
-    $('#startX').addEventListener('click', () => { $('#startCard').hidden = true; LS.set('forge_start_seen', '1'); });
     const g = (D.record && D.record.backtest || []).find(b => b.name === 'B1ax');
     $('#evGpp').textContent = g ? `Backtest, ${g.games} real contests: ${g.roi > 0 ? '+' : ''}${g.roi}% capped ROI (median ${g.median > 0 ? '+' : ''}${g.median}%)` : '';
     renderPlayers(); initLineups(); renderBuilderTable(); renderRecord(); applyRecipe(LS.get('forge_recipe') || 'gpp', true);
@@ -393,7 +427,7 @@ footer .ico { color: var(--ember); }
   // FORGE lineups
   function initLineups() {
     const bs = Object.keys(D.builds).filter(k => D.builds[k].length); $('#buildSel').innerHTML = bs.map(b => `<option>${b}</option>`).join('');
-    $('#buildSel').addEventListener('change', fillContests); $('#contestSel').addEventListener('change', renderForge); fillContests();
+    $('#buildSel').onchange = fillContests; $('#contestSel').onchange = renderForge; fillContests();
   }
   function fillContests() {
     const L = D.builds[$('#buildSel').value]; const cs = [...new Set(L.map(l => l.contest))];
@@ -419,7 +453,7 @@ footer .ico { color: var(--ember); }
     const cc = {}; L.forEach(l => cc[l.cpt] = (cc[l.cpt] || 0) + 1);
     el.innerHTML = Object.entries(cnt).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span class="chip">${k} <b>${Math.round(100 * v / n)}%</b>${cc[k] ? ' · CPT ' + cc[k] : ''}</span>`).join('');
   }
-  function renderForge() { const L = currentForge().map(l => ({ ...l, forged: /^Entered/.test($('#buildSel').value) })); $('#expoHead').textContent = `Exposure across ${L.length} lineups`; exposure(L, $('#expo')); $('#luGrid').innerHTML = L.map(luCard).join(''); }
+  function renderForge() { const L = currentForge().map(l => ({ ...l, forged: /^(Entered|FORGE build)/.test($('#buildSel').value) })); $('#expoHead').textContent = `Exposure across ${L.length} lineups`; exposure(L, $('#expo')); $('#luGrid').innerHTML = L.map(luCard).join(''); }
 
   // copy
   function dkCSV(L) {
