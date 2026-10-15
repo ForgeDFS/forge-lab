@@ -880,7 +880,6 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
   $('#tab-dk').addEventListener('click', () => { renderManual(); if (DKFILE) fillDK(DKFILE); });
 
   // Android: open DraftKings in Chrome itself, not the DraftKings app (draftkings.com links are claimed by the app)
-  if (/Android/i.test(navigator.userAgent)) $('#dkOpen').href = 'intent://www.draftkings.com/lineups#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=https%3A%2F%2Fwww.draftkings.com%2Flineups;end';
   // installable app + Android share target (site/pwa/manifest.webmanifest + sw.js; public site only)
   let installEvt = null;
   window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; $('#installBtn').hidden = false; $('#installHint').textContent = 'One tap, then FORGE shows up in your Share menu.'; });
