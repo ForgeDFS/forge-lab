@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="forge-version" content="3a1c8f0ba4e6"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-192.png">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -165,6 +166,9 @@ footer .ico { color: var(--ember); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 .slates { display: flex; gap: 8px; overflow-x: auto; margin-top: 14px; padding-bottom: 4px; scrollbar-width: thin; }
 .slates[hidden] { display: none; }
+.newver { margin-top: 12px; background: var(--plate); border: 1px solid var(--ember); border-radius: 6px; padding: 8px 12px; display: flex; gap: 10px; align-items: center; justify-content: space-between; font-size: 14px; }
+.newver[hidden] { display: none; }
+#refreshBtn { margin-right: 8px; }
 body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 .qbenv { background: var(--plate); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; margin: 0 0 14px; }
 .qbenv h3 { font-size: 17px; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px; }
@@ -250,9 +254,10 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 <div class="wrap">
   <div class="bar">
     <div class="mark"><svg class="ico anvil" aria-hidden="true"><use href="#i-anvil"/></svg><h1>FORG<span>E</span></h1><small>DFS Lab</small></div>
-    <div class="row"><span id="statusPill" class="pill"><span class="dot"></span><span id="statusText">Loading</span></span></div>
+    <div class="row"><button type="button" class="btn small" id="refreshBtn" title="Load the newest FORGE site and data">↻ Refresh</button><span id="statusPill" class="pill"><span class="dot"></span><span id="statusText">Loading</span></span></div>
   </div>
 
+  <div class="newver" id="newVer" hidden>A newer FORGE is ready. <button type="button" class="btn small primary" id="newVerBtn">Refresh now</button></div>
   <nav class="slates" id="slatePicker" aria-label="Games" hidden></nav>
   <section class="plate" aria-label="Game"><div class="glow" aria-hidden="true"></div>
     <div>
@@ -953,6 +958,20 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
   async function emWakeOn() { try { if ('wakeLock' in navigator) { EM.wake = await navigator.wakeLock.request('screen'); $('#emWake').textContent = '☀ Stays on'; } else $('#emWake').hidden = true; } catch (e) { $('#emWake').textContent = '☀ On'; } }
   $('#emWake').addEventListener('click', emWakeOn);
   document.addEventListener('visibilitychange', () => { if (!$('#emode').hidden && document.visibilityState === 'visible') emWakeOn(); });
+
+  // ---------------------------------------------------------------- refresh (2026-10-15): one click loads the newest page + data, bypassing any saved copy
+  const VER = (document.querySelector('meta[name="forge-version"]') || {}).content || '';
+  async function hardRefresh() {
+    try { const rg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration(); if (rg) await rg.update(); } catch (e) {}
+    try { if ('caches' in window) { for (const k of await caches.keys()) if (k !== 'forge-share') await caches.delete(k); } } catch (e) {}
+    location.replace(location.pathname + '?r=' + Date.now() + location.hash);      // a new address is never served from a saved copy
+  }
+  $('#refreshBtn').addEventListener('click', hardRefresh); $('#newVerBtn').addEventListener('click', hardRefresh);
+  async function checkVersion() {       // site_publish writes version.json; show the bar when the published version is newer than this page
+    if (!VER) return; try { const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return; const v = (await r.json()).v; if (v && v !== VER) $('#newVer').hidden = false; } catch (e) {}
+  }
+  checkVersion(); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkVersion(); }); setInterval(checkVersion, 5 * 60 * 1000);
+  if (/[?&]r=\d+/.test(location.search)) history.replaceState(null, '', location.pathname + location.hash);
 
   // installable app + Android share target (site/pwa/manifest.webmanifest + sw.js; public site only)
   let installEvt = null;
