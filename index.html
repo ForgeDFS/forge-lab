@@ -378,12 +378,13 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     </div>
     <ol class="steps">
       <li><b>Join your contests.</b> In DraftKings, enter every contest you want with any lineup (or reserve your entries). You'll replace those lineups in a minute.</li>
-      <li><b>Download your entries file.</b> Open DraftKings in Safari or Chrome, go to <b>Lineups → Edit Entries</b> and download the file (DKEntries.csv). <a class="btn small" href="https://www.draftkings.com/entry/upload" target="_blank" rel="noopener">Open DraftKings Edit Entries</a></li>
+      <li><b>Download your entries file.</b> Open <b>draftkings.com/lineups</b> in Chrome (not the DraftKings app), tap <b>Edit Entries</b>, then download your entries (DKEntries.csv). <a class="btn small" id="dkOpen" href="https://www.draftkings.com/lineups" target="_blank" rel="noopener">Open DraftKings lineups in Chrome</a>
+        <span class="note" style="display:block;margin-top:4px">If the DraftKings app opens instead, type <b>draftkings.com/lineups</b> into Chrome's address bar yourself.</span></li>
       <li><b>Fill it here.</b> <label class="btn primary filebtn"><input type="file" id="dkFile">Choose your DKEntries file</label>
         <div class="field" style="margin-top:10px"><label>Use these lineups</label><div class="seg" id="dkSrc"><button type="button" data-v="forge" aria-pressed="true">FORGE's lineups</button><button type="button" data-v="mine" aria-pressed="false">My Builder lineups</button></div></div>
         <p class="note">Can't see the file? iPhone: tap <b>Choose File</b>, then <b>Browse</b> → <b>Downloads</b>. Android: if photos open, tap <b>Browse</b> or the ☰ menu → <b>Downloads</b>. The file is usually named <b>DKEntries.csv</b>.</p>
         <div id="dkResult" class="dkres" role="status"></div></li>
-      <li><b>Upload it back.</b> On DraftKings' Edit Entries page tap <b>Upload</b> and pick the filled file (it's in your Downloads / Files). DraftKings shows how many entries were updated.</li>
+      <li><b>Upload it back.</b> On DraftKings (draftkings.com/lineups → Edit Entries) tap <b>Upload</b> and pick the filled file (it's in your Downloads / Files). DraftKings shows how many entries were updated.</li>
     </ol>
     <details class="manual"><summary>Only entering one or two? Do it by hand</summary>
       <p class="note">Your current lineups in DraftKings' slot order. Tick each one off as you enter it in the app; this phone remembers the ticks.</p>
@@ -858,7 +859,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
       say(`<div class="ok">✓ ${out.length} entries filled and checked against DraftKings' player list.</div>
         <div class="tbl-wrap"><table><thead><tr><th>Contest</th><th class="n">Entries</th><th>Lineups used</th></tr></thead><tbody>${Object.entries(plan).map(([c, v]) => `<tr><td>${shortContest(c)}</td><td class="n">${v.n}</td><td>${v.why}</td></tr>`).join('')}</tbody></table></div>
         <div class="toolbar"><button class="btn primary" type="button" id="dkDl">Download filled file</button><button class="btn small" type="button" id="dkCopy">Copy instead</button></div>
-        <p class="note">Then go back to DraftKings → Lineups → Edit Entries → Upload, and pick ${fname}.</p>`);
+        <p class="note">Then go back to draftkings.com/lineups in Chrome → Edit Entries → Upload, and pick ${fname}.</p>`);
       $('#dkDl').onclick = () => { try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = fname; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); } catch (e) { copy(csv, $('#dkDl')); } };
       $('#dkCopy').onclick = e => copy(csv, e.currentTarget);
     } catch (e) { say('<div class="err">Could not read that file (' + e.message + ').</div>'); }
@@ -878,6 +879,8 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
   $$('[data-send]').forEach(b => b.addEventListener('click', () => { DKSRC = b.dataset.send; $$('#dkSrc button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === DKSRC))); show('dk'); renderManual(); if (DKFILE) fillDK(DKFILE); window.scrollTo({ top: $('#p-dk').offsetTop - 60, behavior: 'smooth' }); }));
   $('#tab-dk').addEventListener('click', () => { renderManual(); if (DKFILE) fillDK(DKFILE); });
 
+  // Android: open DraftKings in Chrome itself, not the DraftKings app (draftkings.com links are claimed by the app)
+  if (/Android/i.test(navigator.userAgent)) $('#dkOpen').href = 'intent://www.draftkings.com/lineups#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=https%3A%2F%2Fwww.draftkings.com%2Flineups;end';
   // installable app + Android share target (site/pwa/manifest.webmanifest + sw.js; public site only)
   let installEvt = null;
   window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; $('#installBtn').hidden = false; $('#installHint').textContent = 'One tap, then FORGE shows up in your Share menu.'; });
