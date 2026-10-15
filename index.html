@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="16f85a3d59dd"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="a379bc7f6d31"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-192.png">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -12,7 +12,7 @@
 :root {
   --bg: #151210; --plate: #1e1a17; --plate-2: #27221e; --line: #3a322c; --fg: #f1e9df; --muted: #a8998b;
   --ember: #ff6b1f; --ember-ink: #1a0d05; --gold: #f1b64a; --good: #6fcf8e; --warn: #f1b64a; --bad: #ef6a5a;
-  --heat-lo: rgba(255,107,31,.10); --heat-hi: rgba(255,107,31,.55);
+  --heat-lo: rgba(255,107,31,.10); --heat-hi: rgba(255,107,31,.55); --steel: #6aa9ff;
   --f-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
   --f-body: "Saira", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --f-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -21,11 +21,11 @@
 @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
   --bg: #eceae7; --plate: #f8f7f5; --plate-2: #e4e1dd; --line: #cfc9c2; --fg: #1d1a17; --muted: #6b625a;
   --ember: #d1530f; --ember-ink: #fff6ee; --gold: #a86f08; --good: #23864a; --warn: #a86f08; --bad: #c0392b;
-  --heat-lo: rgba(209,83,15,.08); --heat-hi: rgba(209,83,15,.40); color-scheme: light; } }
+  --heat-lo: rgba(209,83,15,.08); --heat-hi: rgba(209,83,15,.40); --steel: #2c66c4; color-scheme: light; } }
 :root[data-theme="light"] {
   --bg: #eceae7; --plate: #f8f7f5; --plate-2: #e4e1dd; --line: #cfc9c2; --fg: #1d1a17; --muted: #6b625a;
   --ember: #d1530f; --ember-ink: #fff6ee; --gold: #a86f08; --good: #23864a; --warn: #a86f08; --bad: #c0392b;
-  --heat-lo: rgba(209,83,15,.08); --heat-hi: rgba(209,83,15,.40); color-scheme: light; }
+  --heat-lo: rgba(209,83,15,.08); --heat-hi: rgba(209,83,15,.40); --steel: #2c66c4; color-scheme: light; }
 
 * { box-sizing: border-box; }
 body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
@@ -205,11 +205,53 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 .slate-chip { flex: 0 0 auto; display: grid; gap: 1px; text-align: left; border: 1px solid var(--line); background: var(--plate); color: var(--fg); border-radius: 6px; padding: 7px 12px; cursor: pointer; min-width: 128px; }
 /* 2026-10-15: on phones nothing hides off the right edge -- tabs and game chips wrap onto rows instead of scrolling sideways */
 @media (max-width: 640px) {
-  .tabs { flex-wrap: wrap; overflow-x: visible; gap: 0; }
-  .tab { flex: 0 0 33.333%; padding: 8px 4px; font-size: 15px; text-align: center; white-space: normal; }
   .slates { flex-wrap: wrap; overflow-x: visible; }
-  .slate-chip { flex: 1 1 calc(50% - 8px); min-width: 0; }
+  .slate-chip { flex: 1 1 calc(33% - 8px); min-width: 0; padding: 6px 8px; }
+  .slate-chip b, .slate-chip span, .slate-chip small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .slate-chip span { font-size: 15px; } .slate-chip b { font-size: 10px; letter-spacing: .08em; } .slate-chip small { font-size: 10.5px; }
+  .bar { flex-wrap: nowrap; } .bar .row { flex-wrap: nowrap; gap: 6px; } .rtxt { display: none; } #kick { display: none; }
+  .pill { font-size: 11px; letter-spacing: .04em; white-space: nowrap; } #refreshBtn { margin-right: 0; padding: 4px 9px; }
 }
+/* 2026-10-15 redesign: phones get a bottom tab bar (icons + short labels) and a compact game plate */
+.tab .tico, .tab .tshort { display: none; }
+@media (max-width: 640px) {
+  body { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+  .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; margin: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; overflow: visible;
+    background: var(--plate); border-top: 1px solid var(--line); border-bottom: 0; padding: 4px 2px calc(4px + env(safe-area-inset-bottom, 0px)); }
+  .tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 54px; padding: 4px 1px; border-bottom: 0;
+    font-family: var(--f-body); font-weight: 500; font-size: 10.5px; letter-spacing: 0; text-transform: none; white-space: nowrap; }
+  .tab .kicker, .tab .tlong { display: none; } .tab .tshort { display: block; } .tab .tico { display: block; width: 23px; height: 23px; }
+  .tab[aria-selected="true"] { color: var(--ember); }
+  .plate { margin-top: 10px; padding: 12px 14px; gap: 8px; }
+  .plate .glow { display: none; }
+  .team { font-size: 40px; } .at { font-size: 20px; } .matchup { gap: 10px; }
+  .meta { grid-template-columns: repeat(3, auto); justify-content: start; gap: 14px; }
+  .stat b { font-size: 16px; } .stat span { font-size: 11px; }
+  .sub { font-size: 12px; margin-top: 4px; }
+  .mark h1 { font-size: 26px; } .mark .anvil { width: 28px; height: 28px; } .mark small { display: none; }
+  .pill { font-size: 12px; padding: 2px 8px; }
+  .panel { padding-top: 12px; }
+  .ovl.quiet h3 small { display: none; }
+}
+.ovl.quiet { padding: 6px 12px; }
+.ovl.quiet h3 { font-family: var(--f-body); font-weight: 500; font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.ovl.quiet h3::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--good); align-self: center; flex: none; }
+.ovl.quiet details summary { font-size: 12px; }
+.tag.steel { color: var(--steel); border: 1px solid var(--steel); border-radius: 99px; padding: 0 6px; font-size: 9.5px; vertical-align: 1px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 0 0 18px; }
+.tile { background: var(--plate); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 2px; }
+.tile small { font-family: var(--f-display); font-weight: 700; font-size: 12.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.tile b { font-family: var(--f-data); font-weight: 500; font-size: 28px; line-height: 1.15; } .tile b.gain { color: var(--good); } .tile b.loss { color: var(--bad); }
+.tile span { font-size: 12px; color: var(--muted); }
+.privcard { display: flex; gap: 14px; align-items: flex-start; background: var(--plate); border: 1px solid var(--line); border-radius: 10px; padding: 16px; max-width: 760px; margin-bottom: 16px; }
+.privcard > .ico { width: 40px; height: 40px; color: var(--ember); } .privcard p { margin: 6px 0; color: var(--muted); }
+.subh { font-size: 22px; margin: 4px 0 8px; } h4.subh { font-size: 17px; margin: 16px 0 6px; letter-spacing: .04em; }
+.dim { color: var(--muted); }
+.sumt td small { font-family: var(--f-data); font-size: 11px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; } .chips .chip small { color: var(--muted); }
+.ownernote { border: 1px dashed var(--gold); border-radius: 6px; padding: 6px 10px; color: var(--gold); }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font-size: 12px; }
+.check.mine { margin-top: 2px; }
 .slate-chip b { font-family: var(--f-display); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
 .slate-chip span { font-family: var(--f-display); font-weight: 800; font-size: 19px; letter-spacing: .02em; }
 .slate-chip small { color: var(--muted); font-size: 11.5px; }
@@ -280,7 +322,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="i-anvil" viewBox="0 0 32 32"><path fill="currentColor" d="M3 9h17c0 3.2 2.6 5.8 5.8 5.8H29v2.4h-4.2c-2.4 0-4.4 1.6-5 3.8H21l1.6 4H9.4l1.6-4h1.2c-.6-2.2-2.6-3.8-5-3.8H3z"/><path fill="currentColor" opacity=".55" d="M7 26h18v2H7z"/></symbol>
+  <symbol id="i-anvil" viewBox="0 0 32 32"><path fill="currentColor" d="M3 9h17c0 3.2 2.6 5.8 5.8 5.8H29v2.4h-4.2c-2.4 0-4.4 1.6-5 3.8H21l1.6 4H9.4l1.6-4h1.2c-.6-2.2-2.6-3.8-5-3.8H3z"/><path fill="currentColor" opacity=".55" d="M7 26h18v2H7z"/><path d="M12.5 6.6l-1-3.8M16.5 6.6l.5-4.4M20.6 7.2l2.6-3" fill="none" stroke-width="1.6" stroke-linecap="round" style="stroke: var(--gold, #f1b64a)"/></symbol>
   <symbol id="i-flame" viewBox="0 0 24 24"><path fill="currentColor" d="M12.6 2.5c.5 3-1.3 4.6-2.9 6.3-1.5 1.6-2.9 3.2-2.9 5.8a5.2 5.2 0 0 0 10.4 0c0-1.8-.7-3.2-1.6-4.4-.2 1.4-1 2.4-2.1 2.7.9-3.4-.3-7.4-.9-10.4z"/></symbol>
   <symbol id="i-ingot" viewBox="0 0 24 24"><path fill="currentColor" d="M6.5 8h11l3.5 9H3z"/><path fill="currentColor" opacity=".5" d="M8 10.5h8l.6 1.6H7.4z"/></symbol>
   <symbol id="i-hammer" viewBox="0 0 24 24"><path fill="currentColor" d="M13.4 3.2 20.8 10.6l-2.6 2.6-2.1-2.1-9.3 9.3a1.6 1.6 0 0 1-2.3-2.3l9.3-9.3-2.1-2.1z"/></symbol>
@@ -288,7 +330,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 <div class="wrap">
   <div class="bar">
     <div class="mark"><svg class="ico anvil" aria-hidden="true"><use href="#i-anvil"/></svg><h1>FORG<span>E</span></h1><small>DFS Lab</small></div>
-    <div class="row"><button type="button" class="btn small" id="refreshBtn" title="Load the newest FORGE site and data">↻ Refresh</button><span id="statusPill" class="pill"><span class="dot"></span><span id="statusText">Loading</span></span></div>
+    <div class="row"><button type="button" class="btn small" id="refreshBtn" title="Load the newest FORGE site and data" aria-label="Refresh">↻<span class="rtxt"> Refresh</span></button><span id="statusPill" class="pill"><span class="dot"></span><span id="statusText">Loading</span></span></div>
   </div>
 
   <div class="newver" id="newVer" hidden>A newer FORGE is ready. <button type="button" class="btn small primary" id="newVerBtn">Refresh now</button></div>
@@ -306,19 +348,19 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     </div>
   </section>
 
-  <nav class="tabs" role="tablist">
-    <button class="tab" role="tab" id="tab-players" aria-selected="true" data-p="players"><span class="kicker">The ore</span>Players</button>
-    <button class="tab" role="tab" id="tab-lineups" aria-selected="false" data-p="lineups"><span class="kicker">Forged</span>FORGE Lineups</button>
-    <button class="tab" role="tab" id="tab-builder" aria-selected="false" data-p="builder"><span class="kicker">The anvil</span>Builder</button>
-    <button class="tab" role="tab" id="tab-dk" aria-selected="false" data-p="dk"><span class="kicker">Out of the fire</span>To DraftKings</button>
-    <button class="tab" role="tab" id="tab-record" aria-selected="false" data-p="record"><span class="kicker">Proof of steel</span>Record</button>
-    <button class="tab" role="tab" id="tab-how" aria-selected="false" data-p="how"><span class="kicker">The process</span>How it works</button>
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" id="tab-players" aria-selected="true" data-p="players"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-4 3.5-6 7-6s6.2 2 7 6"/></svg><span class="kicker">The ore</span><span class="tlong">Players</span><span class="tshort">Players</span></button>
+    <button class="tab" role="tab" id="tab-lineups" aria-selected="false" data-p="lineups"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><span class="kicker">Forged</span><span class="tlong">Lineups</span><span class="tshort">Lineups</span></button>
+    <button class="tab" role="tab" id="tab-builder" aria-selected="false" data-p="builder"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4l6 6-3 3-6-6zM11 7l-7 7 3 3 7-7M4 20h8"/></svg><span class="kicker">The anvil</span><span class="tlong">Builder</span><span class="tshort">Build</span></button>
+    <button class="tab" role="tab" id="tab-dk" aria-selected="false" data-p="dk"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7 9l5-5 5 5M5 15v4h14v-4"/></svg><span class="kicker">Out of the fire</span><span class="tlong">To DraftKings</span><span class="tshort">DraftKings</span></button>
+    <button class="tab" role="tab" id="tab-record" aria-selected="false" data-p="record"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span class="kicker">Proof of steel</span><span class="tlong">Record</span><span class="tshort">Record</span></button>
+    <button class="tab" role="tab" id="tab-how" aria-selected="false" data-p="how"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/></svg><span class="kicker">The process</span><span class="tlong">How it works</span><span class="tshort">How</span></button>
   </nav>
 
   <section class="panel" id="p-players">
     <div class="start" id="startCard" hidden><h3>Start here <button class="btn small" id="startX" type="button">Got it</button></h3><ol>
       <li><b>Players</b> shows each player's projection, prop lines, projected ownership and chance to be the top scorer. Numbers refresh through the day.</li>
-      <li><b>FORGE Lineups</b> shows the exact sets FORGE entered, by contest. Copy them if you want the same thing.</li>
+      <li><b>Lineups</b> keeps FORGE's own entries private, so nobody duplicates them. After lock it shows how we played the slate: captain and flex percentages and who we faded.</li>
       <li><b>Builder</b> starts on FORGE's best-tested settings. Pick your contest type, tweak anything, press Forge, then copy or download for DraftKings.</li></ol></div>
     <div class="cl-only">
       <p class="lede">Classic main slate: 9 players, $50,000. Projections come from DraftKings and FanDuel player props converted to DraftKings points. Players without enough prop lines get a salary-based number and are tagged. Games with no lines yet have no projections.</p>
@@ -338,7 +380,8 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 
   <section class="panel" id="p-lineups" hidden>
     <div class="cl-only" id="cForge"></div>
-    <div class="sd-only">
+    <div id="privBox"></div>
+    <div class="sd-only" id="forgeSets">
     <p class="lede">The lineups FORGE builds for this game. The entered build is what goes into our contests; the others run alongside it so every approach is graded on real results.</p>
     <div class="toolbar">
       <label for="buildSel" class="note">Set</label><select id="buildSel"></select>
@@ -379,6 +422,8 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
         <label class="check"><input type="checkbox" id="cOwnDst" checked> No QB with his own DST</label>
         <label class="check"><input type="checkbox" id="cValue" checked> At least one player at $4,000 or less</label>
         <label class="check"><input type="checkbox" id="cNoQ" checked> Skip questionable (Q) players</label>
+        <label class="check mine"><input type="checkbox" id="cMine" checked> Make my lineups mine <span class="tag steel">untested</span></label>
+        <p class="note">Nudges every projection (typically within ±8%) in a pattern unique to this phone, so friends using FORGE don't build the same lineups and split a prize. It can cost a little projected score; turn it off to get FORGE's exact numbers.</p>
         <button type="submit" class="btn primary" id="cForgeBtn"><svg class="ico" aria-hidden="true"><use href="#i-hammer"/></svg>Forge lineups</button>
         <div class="status" id="cStatus" role="status"></div>
       </form>
@@ -414,10 +459,12 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
         <div class="field"><label for="bUniq">Min players different between lineups</label><input type="number" id="bUniq" min="1" max="4" value="1"></div>
         <div class="field"><label for="bMinSal">Min salary used</label><input type="number" id="bMinSal" min="40000" max="50000" step="100" value="47000"></div>
         <div class="field"><label for="bPunt">Max FLEX at $1,000 or less</label><input type="number" id="bPunt" min="0" max="5" value="1"></div>
-        <div class="field"><label for="bOwn">Ownership lean <small id="bOwnV" style="text-transform:none;letter-spacing:0">off</small></label><input type="range" id="bOwn" min="-100" max="100" step="10" value="0" aria-describedby="bOwnNote">
+        <div class="field"><label for="bOwn">Ownership lean <small id="bOwnV" style="text-transform:none;letter-spacing:0">off</small> <span class="tag steel">untested</span></label><input type="range" id="bOwn" min="-100" max="100" step="10" value="0" aria-describedby="bOwnNote">
           <p class="note" id="bOwnNote">Left = fade popular players, right = play them more. Moves the projections every method uses (up to ±30% at the extremes, by how far a player's projected ownership is from the slate average). Untested lever: FORGE's tested settings keep it at 0, and a contrarian penalty did not beat the default on 14 backtested games.</p></div>
         <label class="check"><input type="checkbox" id="bNoCpt" checked> No TE, K or DST captain</label>
         <label class="check"><input type="checkbox" id="bDst" checked> No DST against your captain</label>
+        <label class="check mine"><input type="checkbox" id="bMine" checked> Make my lineups mine <span class="tag steel">untested</span></label>
+        <p class="note">Nudges every projection (typically within ±8%) in a pattern unique to this phone, so friends using FORGE don't build the same lineups and split a prize. It can cost a little projected score; turn it off to get FORGE's exact numbers.</p>
         <button type="submit" class="btn primary" id="forgeBtn"><svg class="ico" aria-hidden="true"><use href="#i-hammer"/></svg>Forge lineups<span class="sparks" id="sparks"></span></button>
         <div class="status" id="bStatus" role="status"></div>
         <p class="note">The simulation methods run FORGE's own game simulation in your browser (2,000 simulated games against a simulated field of 3,000 lineups; the server build uses 8,000), using your projections. Backtests replay real 2026 contests; they aren't a promise.</p>
@@ -445,10 +492,10 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
   </section>
 
   <section class="panel" id="p-dk" hidden>
-    <p class="lede">Get FORGE's lineups (or your own from the Builder) into DraftKings from your phone. Use your phone's web browser for DraftKings here, not the DraftKings app: the app can't take a file, the website can.</p>
+    <p class="lede">Get your Builder lineups into DraftKings from your phone. Use your phone's web browser for DraftKings here, not the DraftKings app: the app can't take a file, the website can.</p>
     <div class="appbox" id="appBox">
       <b>Android: skip the file hunt.</b> Install FORGE as an app once. After that, when your entries file downloads, open it from the download message or your Downloads, tap <b>Share</b>, pick <b>FORGE</b>, and it lands here already filled.
-      <div class="toolbar" style="margin-top:8px"><button class="btn primary" type="button" id="installBtn" hidden>Install FORGE app</button><span class="note" id="installHint">In Chrome: tap the ⋮ menu, then <b>Install app</b> or <b>Add to Home screen</b>.</span></div>
+      <div class="toolbar" style="margin-top:8px"><button class="btn" type="button" id="installBtn" hidden>Install FORGE app</button><span class="note" id="installHint">In Chrome: tap the ⋮ menu, then <b>Install app</b> or <b>Add to Home screen</b>.</span></div>
     </div>
     <ol class="steps">
       <li><b>Join your contests.</b> In DraftKings, enter every contest you want with any lineup (or reserve your entries). You'll replace those lineups in a minute.</li>
@@ -461,20 +508,22 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
       <li><b>Upload it back.</b> On DraftKings (Lineups → Edit Entries) tap <b>Upload</b> and pick the filled file (it's in your Downloads / Files). DraftKings shows how many entries were updated.</li>
     </ol>
     <div class="appbox cl-only" id="lsBox"><b>Sunday late swap (Classic).</b> After the early games start, download your entries file again from DraftKings (Lineups → Edit Entries), choose it in step 3, then press the button. FORGE keeps every player whose game has started and re-picks the rest from players in games that haven't, using the latest projections and FORGE's Classic rules (QB stacked with his own WR/TE, no QB with his own RB or DST, nobody facing your DST). Only entries that gain at least 0.5 projected points are changed.
-      <div class="toolbar" style="margin-top:8px"><button class="btn primary" type="button" id="lsRun">Late swap my entries</button><span class="status" id="lsStatus" role="status"></span></div><div id="lsOut"></div></div>
+      <div class="toolbar" style="margin-top:8px"><button class="btn" type="button" id="lsRun">Late swap my entries</button><span class="status" id="lsStatus" role="status"></span></div><div id="lsOut"></div></div>
     <div class="appbox emode-cta"><b>Using the DraftKings app?</b> Entry mode shows one lineup at a time, big and in the app's slot order, so you can tap the same players in DraftKings. It remembers where you left off.
-      <div class="toolbar" style="margin-top:8px"><label for="emContest" class="note">Lineups</label><select id="emContest"></select><button class="btn primary" type="button" id="emStart">Start entry mode</button></div></div>
+      <div class="toolbar" style="margin-top:8px"><label for="emContest" class="note">Lineups</label><select id="emContest"></select><button class="btn" type="button" id="emStart">Start entry mode</button></div></div>
     <details class="manual"><summary>Checklist view</summary>
       <p class="note">Your current lineups in DraftKings' slot order. Tick each one off as you enter it in the app; this phone remembers the ticks.</p>
       <div class="grid" id="dkManual"></div></details>
   </section>
 
   <section class="panel" id="p-record" hidden>
-    <p class="lede">How FORGE's builders have done. Backtests replay 14 real 2026 Showdowns: each builder makes 20 lineups from pre-game data only, then gets graded against the real contest field. Capped ROI limits any one lineup to 10× its entry, so a single huge hit can't hide a bad method.</p>
+    <div class="tiles" id="recTiles"></div>
+    <p class="lede">Every slate we enter gets graded, losses included. Backtests replay 14 real 2026 Showdowns: each builder makes 20 lineups from pre-game data only, then gets graded against the real contest field. Capped ROI limits any one lineup to 10× its entry, so a single huge hit can't hide a bad method.</p>
     <h3 style="font-size:22px;margin-bottom:10px">Backtest, capped ROI</h3>
     <div class="bars" id="bars"></div>
     <h3 style="font-size:22px;margin:22px 0 10px">Live slates</h3>
     <div id="live"></div>
+    <div id="entSum"></div>
     <div class="facts">
       <div class="fact"><b>The edge is construction</b>FORGE's lineups beat the field by about 11 points per lineup on average, but its sims don't pick the right captain more often than the crowd does.</div>
       <div class="fact"><b>Cheap players are overrated</b>The prop market projects $1,500-and-under players at about twice what they score. FORGE corrects for it.</div>
@@ -503,7 +552,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     <div class="em-nav"><button type="button" class="btn" id="emPrev">‹ Back</button><button type="button" class="btn primary" id="emNext">Entered · Next ›</button></div>
     <p class="em-tip">Tap a player when you've picked him in DraftKings. Long-press a name to copy it for DraftKings' search.</p>
   </div>
-  <footer id="foot"><svg class="ico" aria-hidden="true"><use href="#i-anvil"/></svg> Hammered out in the FORGE · private test site for friends · not affiliated with DraftKings · play within your means</footer>
+  <footer id="foot"><svg class="ico" aria-hidden="true"><use href="#i-anvil"/></svg> Hammered out in the FORGE · private test site for friends · not affiliated with DraftKings · play within your means · <button type="button" class="linkbtn" id="ownerLink">Owner sign-in</button></footer>
 </div>
 
 <script>
@@ -516,7 +565,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 
   // tabs
   function show(p) { $$('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.p === p))); $$('.panel').forEach(x => x.hidden = x.id !== 'p-' + p); LS.set('forge_tab', p); }
-  $$('.tab').forEach(t => t.addEventListener('click', () => show(t.dataset.p)));
+  $$('.tab').forEach(t => t.addEventListener('click', () => { show(t.dataset.p); if (matchMedia('(max-width: 640px)').matches) window.scrollTo({ top: 0, behavior: 'smooth' }); }));
 
   const fail = e => { $('#statusText').textContent = 'No slate data'; $('#ptable tbody').innerHTML = '<tr><td colspan="8">The slate data could not be loaded (' + e.message + ').</td></tr>'; };
   // Data: public site = AES-GCM files encrypted with a key derived from the friends' password (PBKDF2-SHA256, one salt per publish);
@@ -529,6 +578,13 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     return keys[enc.salt];
   }
   async function dec(enc) { const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(enc.iv) }, await keyFor(enc), b64(enc.ct)); return JSON.parse(new TextDecoder().decode(pt)); }
+  // owner sign-in (2026-10-15): FORGE's lineup sets are published only in data/<id>.owner.enc.json, encrypted with the owner password
+  let OPW = LS.get('forge_owner'); const okeys = {};
+  async function odec(enc, pw) { const k = (pw || OPW) + '|' + enc.salt; if (!okeys[k]) { const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw || OPW), 'PBKDF2', false, ['deriveKey']);
+      okeys[k] = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64(enc.salt), iterations: enc.iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']); }
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(enc.iv) }, okeys[k], b64(enc.ct)); return JSON.parse(new TextDecoder().decode(pt)); }
+  async function ownerTry(pw) { const r = await fetch('data/owner.enc.json', { cache: 'no-cache' }); if (!r.ok) throw new Error('no owner file'); return odec(await r.json(), pw); }   // -> {pw: friends' password}
+  async function ownerBuilds(id) { if (!OPW || !ENC) return null; try { const r = await fetch('data/' + id + '.owner.enc.json', { cache: 'no-cache' }); if (!r.ok) return null; return (await odec(await r.json())).builds || null; } catch (e) { return null; } }
   async function getJSON(name) {
     const r = await fetch('data/' + name + (ENC ? '.enc.json' : '.json'), { cache: 'no-cache' }); if (!r.ok) throw new Error(r.status);
     return ENC ? dec(await r.json()) : r.json();
@@ -543,7 +599,8 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
   function defaultSlate() { const now = Date.now(); const up = IDX.filter(x => new Date(x.kickoff_utc).getTime() > now - 4 * 3600e3); return (up[0] || IDX[IDX.length - 1]); }
   async function loadSlate(id) {
     CUR = id; renderPicker(); $('#statusText').textContent = 'Loading';
-    try { const d = await getJSON(id); init(d, IDX.find(x => x.id === id)); LS.set('forge_slate', id); } catch (e) { fail(e); }
+    try { const d = await getJSON(id); const ob = await ownerBuilds(id); if (ob) { d.builds = ob; d.owner = true; } else d.builds = d.builds || {};
+      document.body.classList.toggle('owner', !!ob); init(d, IDX.find(x => x.id === id)); LS.set('forge_slate', id); renderOwnerLink(); } catch (e) { fail(e); }
   }
   async function start() {
     IDX = (await getJSON('index')).slates || []; if (!IDX.length) throw new Error('no slates published');
@@ -557,7 +614,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     const el = $('#ovl'), ago = Math.round((Date.now() - new Date(O.checked_utc).getTime()) / 60e3), ALL = (O.overlays || []).map(o => ({ ...o, mins: Math.round((new Date(o.locks_utc).getTime() - Date.now()) / 60e3) })).filter(o => o.mins > 0);
     const isMad = o => o.madden || /madden/i.test(o.name), L = ALL.filter(o => !isMad(o)), M = ALL.filter(isMad);   // Madden Stream = DK contests on simulated video-game NFL games (FORGE has no projections for them)
     if (ago > 240 && !ALL.length) { el.hidden = true; return; }
-    el.hidden = false; el.classList.toggle('hot', L.length > 0); const usd = v => '$' + (v >= 100 ? Math.round(v).toLocaleString('en-US') : v.toFixed(2));
+    el.hidden = false; el.classList.toggle('hot', L.length > 0); el.classList.toggle('quiet', !L.length); const usd = v => '$' + (v >= 100 ? Math.round(v).toLocaleString('en-US') : v.toFixed(2));
     const lock = m => m < 60 ? `locks in ${m} min` : `locks in ${Math.floor(m / 60)} h ${m % 60} min`;
     const row = o => `<div class="row"><span class="nm">${o.name}</span><span class="val">${o.value_per_dollar.toFixed(2)}x</span>
       <span class="ometa">${o.kind} · ${usd(o.fee)} entry · ${o.entries.toLocaleString('en-US')} of ${o.max_entries.toLocaleString('en-US')} entered · prize pool ${usd(o.prize_pool)} · DraftKings adds ${usd(o.overlay)} if it stays this way · ${lock(o.mins)}</span>
@@ -573,10 +630,17 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     const g = $('#gate'), f = $('#gateForm'), i = $('#gatePw'), m = $('#gateMsg');
     const tryPw = (pw, silent) => { PW = pw; for (const k in keys) delete keys[k];
       return dec(enc).then(() => { LS.set('forge_pw', pw); g.hidden = true; $('#dlMine').hidden = false; return start().catch(fail); })
-        .catch(() => { g.hidden = false; if (!silent) { m.textContent = 'That password is not right. Check with Drew.'; i.select(); } }); };
+        .catch(() => (silent ? Promise.reject() : ownerTry(pw).then(o => { OPW = pw; LS.set('forge_owner', pw); return tryPw(o.pw, false); }))
+        .catch(() => { g.hidden = false; if (!silent) { m.textContent = 'That password is not right. Check with Drew.'; i.select(); } })); };
     const saved = LS.get('forge_pw'); if (saved) tryPw(saved, true); else { g.hidden = false; setTimeout(() => i.focus(), 50); }
     f.addEventListener('submit', ev => { ev.preventDefault(); m.textContent = 'Heating the forge…'; tryPw(i.value.trim(), false); });
   }
+  function renderOwnerLink() { const b = $('#ownerLink'); if (b) b.textContent = OPW ? 'Owner: signed in · sign out' : 'Owner sign-in'; }
+  $('#ownerLink').addEventListener('click', async () => {
+    if (OPW) { OPW = null; try { localStorage.removeItem('forge_owner'); } catch (e) {} if (CUR) loadSlate(CUR); return; }
+    const pw = (prompt('Owner password') || '').trim(); if (!pw) return;
+    try { await ownerTry(pw); OPW = pw; LS.set('forge_owner', pw); if (CUR) loadSlate(CUR); } catch (e) { alert('That owner password is not right.'); }
+  });
   $('#startX').addEventListener('click', () => { $('#startCard').hidden = true; LS.set('forge_start_seen', '1'); });
   fetch('data/index.enc.json', { cache: 'no-cache' }).then(r => { if (!r.ok) throw new Error('plain'); return r.json(); }).then(enc => { ENC = true; gate(enc); })
     .catch(() => { ENC = false; start().catch(fail); });
@@ -736,6 +800,15 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
   }
 
   // ownership lean (2026-10-15, Drew): user lever, OFF by default (Hard Rule 7: untested; PREREG_ROUND18 uniqueness penalty did not beat the default on 14 games)
+  // per-phone uniqueness (2026-10-15): a fixed, seeded nudge per player for this device + slate (owner devices are never nudged)
+  function devSeed() { let v = LS.get('forge_seed'); if (!v) { v = String(Math.floor(Math.random() * 2147483647)); LS.set('forge_seed', v); } return v; }
+  function hash32(str) { let h = 2166136261; for (let k = 0; k < str.length; k++) { h ^= str.charCodeAt(k); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function personal(P, proj, on) {
+    if (!on || (D && D.owner)) return proj; const sd = devSeed() + '|' + (D.slate.id || D.slate.game);
+    P.forEach((p, j) => { const u1 = (hash32(sd + '|a|' + p.name) + 1) / 4294967297, u2 = (hash32(sd + '|b|' + p.name) + 1) / 4294967297;
+      const z = Math.max(-2.5, Math.min(2.5, Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2))); proj[j] = proj[j] * Math.exp(0.08 * z); });
+    return proj;
+  }
   function ownLean(P, proj) {
     const L = (parseInt(($('#bOwn') || {}).value) || 0) / 100; if (!L) return proj;
     const o = P.map(p => p.own_flex); const v = o.filter(x => x != null); if (v.length < 4) return proj;
@@ -746,7 +819,8 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 
   // FORGE lineups
   function initLineups() {
-    const bs = Object.keys(D.builds).filter(k => D.builds[k].length); $('#buildSel').innerHTML = bs.map(b => `<option value="${b}">${setLabel(b)}</option>`).join(''); resetFlt();
+    const bs = Object.keys(D.builds || {}).filter(k => D.builds[k].length); renderPrivate();
+    $('#forgeSets').hidden = !bs.length; if (!bs.length) { $('#buildSel').innerHTML = ''; $('#luGrid').innerHTML = ''; return; } $('#buildSel').innerHTML = bs.map(b => `<option value="${b}">${setLabel(b)}</option>`).join(''); resetFlt();
     $('#buildSel').onchange = fillContests; $('#contestSel').onchange = renderForge; fillContests();
   }
   function fillContests() {
@@ -842,7 +916,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     const pkb = sim && D.simpack ? Object.fromEntries(D.simpack.names.map((nm, k) => [nm, D.simpack.base[k]])) : {};
     const proj = P.map(p => { const v = builder.proj[p.name] ?? p.proj; if (method === 'hyb0' && p.shrunk && v === p.proj && p.market != null) return p.market;
       return (sim && v === p.proj && pkb[p.name] != null && Math.abs(pkb[p.name] - v) < 0.006) ? pkb[p.name] : v; });   // unedited -> FORGE's unrounded value (page shows 2 decimals)
-    ownLean(P, proj);
+    ownLean(P, proj); personal(P, proj, $('#bMine').checked);
     const teams = [...new Set(P.map(p => p.team))], tm = P.map(p => teams.indexOf(p.team));
     const N = Math.max(1, Math.min(150, parseInt($('#bN').value) || 20)), cap = Math.max(1, parseInt($('#bCap').value) || 6);
     const maxExp = Math.max(1, Math.ceil(N * Math.min(100, Math.max(10, parseFloat($('#bExp').value) || 100)) / 100));
@@ -972,7 +1046,8 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     const B = data.builds || {}; Object.values(B).forEach(L => (L || []).forEach(l => { if (!l.players && l.lineup) { const ps = l.lineup.map(nm => P.find(z => z.name === nm)).filter(Boolean); if (ps.length === 9) l.players = slotOrder(ps); } }));
     const keys = Object.keys(B).filter(k => (B[k] || []).length);
     $('#cForge').innerHTML = keys.length ? keys.map(k => `<h3 style="font-size:20px;margin:6px 0 4px">${setInfo(k).name}</h3><p class="note setdesc">${setInfo(k).desc}</p><div class="grid">${B[k].map((l, i) => cCard(l, i)).join('')}</div>`).join('')
-      : `<p class="lede">FORGE's own Classic lineups appear here once the Classic engine runs for this slate. Until then, the Builder uses the same projections with FORGE's Classic rules.</p>`;
+      : (data.builds_private || data.entered_summary ? '' : `<p class="lede">FORGE's own Classic lineups appear here once the Classic engine runs for this slate. Until then, the Builder uses the same projections with FORGE's Classic rules.</p>`);
+    renderPrivate();
     renderCPlayers(); renderCBuilder(); applyCRecipe(LS.get('forge_crecipe') || 'gpp');
     const t = LS.get('forge_tab'); if (t && $('#p-' + t)) show(t);
   }
@@ -1023,6 +1098,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
       uniq: Math.max(1, Math.min(6, parseInt($('#cUniq').value) || 1)), exp: Math.max(5, Math.min(100, parseFloat($('#cExp').value) || 100)), dstCap: parseInt($('#cDstCap').value) || 50,
       stack: $('#cStack').checked, bring: $('#cBring').checked, ownRb: $('#cOwnRb').checked, dstOpp: $('#cDstOpp').checked, ownDst: $('#cOwnDst').checked, value: $('#cValue').checked, noQ: $('#cNoQ').checked };
     const P = D.players.map((p, i) => ({ ...p, i, q: CL.proj[p.name] })).filter(p => p.q != null && !CL.out.has(p.name) && !/^(OUT|IR|D)$/.test(p.status) && !(opt.noQ && p.status === 'Q' && !CL.lock.has(p.name)));
+    if ($('#cMine').checked && !D.owner) { const qq = P.map(p => p.q); personal(P, qq, true); P.forEach((p, k) => p.q = qq[k]); }
     const x = p => 'x' + p.i, teams = [...new Set(P.map(p => p.team))], gamesL = [...new Set(P.map(p => p.game))];
     const capP = Math.max(1, Math.ceil(opt.n * opt.exp / 100)), cnt = {}, chosen = [];
     const B = (lo, hi) => lo === hi ? { type: g.GLP_FX, lb: lo, ub: hi } : hi == null ? { type: g.GLP_LO, lb: lo, ub: 0 } : lo == null ? { type: g.GLP_UP, lb: 0, ub: hi } : { type: g.GLP_DB, lb: lo, ub: hi };
@@ -1232,7 +1308,9 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
       $('#dkCopy').onclick = e => copy(csv, e.currentTarget);
     } catch (e) { say('<div class="err">Could not read that file (' + e.message + ').</div>'); }
   }
-  function renderManual() {
+  function syncDkSrc() { const has = Object.values(D && D.builds || {}).some(L => L && L.length); const fb = $('#dkSrc button[data-v="forge"]'); if (fb) fb.hidden = !has;
+    if (!has && DKSRC === 'forge') { DKSRC = 'mine'; $$('#dkSrc button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === 'mine'))); } }
+  function renderManual() { syncDkSrc();
     const el = $('#dkManual'); if (!el || !D) return; const kind = D.slate.kind === 'classic' ? 'classic' : 'showdown';
     let L = [];
     if (DKSRC === 'mine') L = (kind === 'classic' ? cShown() : mineShown());
@@ -1329,6 +1407,26 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     } catch (e) {}
   }
 
+  // our entries, privately (2026-10-15): friends never get FORGE's lineups; after lock they see how the entered build was spread
+  function sumHTML(S) {
+    if (!S) return '';
+    const pc = v => v ? fmt(v, 0) + '%' : '<span class="dim">0%</span>', fld = (a, b) => a == null ? '' : `<small class="dim">field ${fmt(a, 0)}%${b != null ? ' · ' + fmt(b, 0) + '% CPT' : ''}</small>`;
+    const head = `<p class="note">${S.lineups} lineups · ${Object.entries(S.contests).map(([c, n]) => `${n} ${shortContest(c)}`).join(' · ')}</p>`;
+    const tbl = S.kind === 'showdown'
+      ? `<div class="tbl-wrap"><table class="sumt"><thead><tr><th>Player</th><th class="n">Captain</th><th class="n">Flex</th><th class="n">Total</th></tr></thead><tbody>${S.players.map(r => `<tr><td><b>${r.name}</b> <small class="dim">${r.pos || ''} ${r.team || ''}</small><br>${fld(r.field_flex, r.field_cpt)}</td><td class="n">${pc(r.cpt)}</td><td class="n">${pc(r.flex)}</td><td class="n"><b>${pc(r.total)}</b></td></tr>`).join('')}</tbody></table></div>`
+      : `<div class="tbl-wrap"><table class="sumt"><thead><tr><th>Player</th><th class="n">In our lineups</th></tr></thead><tbody>${S.players.map(r => `<tr><td><b>${r.name}</b> <small class="dim">${r.pos || ''} ${r.team || ''}</small></td><td class="n"><b>${pc(r.total)}</b></td></tr>`).join('')}</tbody></table></div>`;
+    const fades = S.fades && S.fades.length ? `<h4 class="subh">Faded <small class="dim">· in none of our lineups${S.kind === 'showdown' ? ', most popular with the field first' : ', highest projections first'}</small></h4><div class="chips">${S.fades.map(f => `<span class="chip">${f.name} <small>${f.pos || ''}${f.field_flex != null ? ' · field ' + fmt(f.field_flex, 0) + '%' : ''}</small></span>`).join('')}</div>` : '';
+    return head + tbl + fades;
+  }
+  function renderPrivate() {
+    const el = $('#privBox'); if (!el || !D) return; const S = D.entered_summary;
+    if (D.owner) { el.innerHTML = `<p class="note ownernote">Owner view · these sets are visible only on devices signed in as owner. Friends see the summary below after lock.</p>${S ? '<h3 class="subh">What friends see after lock</h3>' + sumHTML(S) : ''}`; return; }
+    el.innerHTML = S
+      ? `<h3 class="subh">How we played it</h3><p class="lede">The slate is locked. This is how our entered lineups were spread: who we captained, who filled the flex, and who we left out. The lineups themselves stay private.</p>${sumHTML(S)}<div class="toolbar" style="margin-top:14px"><button type="button" class="btn" data-goto="builder">Open the Builder</button></div>`
+      : `<div class="privcard"><svg class="ico" aria-hidden="true"><use href="#i-anvil"/></svg><div><h3 class="subh" style="margin-top:0">Our lineups stay private</h3><p>So nobody ends up with the same lineups and splits the prize, FORGE's own entries aren't shared. ${D.builds_private ? 'After the slate locks you\'ll see how we played it: captain and flex percentages and who we faded.' : ''}</p><p>Build your own in the Builder. It uses FORGE's projections and methods, with a twist unique to your phone so friends don't duplicate each other.</p><div class="toolbar"><button type="button" class="btn primary" data-goto="builder">Build my lineups</button></div></div></div>`;
+    $$('[data-goto]', el).forEach(b => b.onclick = () => { show(b.dataset.goto); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    const rs = $('#entSum'); if (rs) rs.innerHTML = S ? '<h3 style="font-size:22px;margin:22px 0 10px">How we played this slate</h3>' + sumHTML(S) : '';
+  }
   // record
   function renderRecord() {
     const B = (D.record && D.record.backtest) || []; if (!B.length) { $('#bars').innerHTML = '<p class="note">No backtest record in this data file.</p>'; return; }
@@ -1336,7 +1434,12 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     $('#bars').innerHTML = B.map(b => `<div class="barrow"><div class="lbl">${b.label === 'Entered build' ? 'FORGE Pick (entered)' : setInfo(b.label.replace(/ \(old default\)/, '')).name}<small>median ${b.median > 0 ? '+' : ''}${b.median}% · ${b.games} games</small></div>
       <div class="track"><div class="zero" style="left:${x(0)}%"></div><div class="fill ${b.label === 'Entered build' ? 'lead' : ''}" style="left:${Math.min(x(0), x(b.roi))}%;width:${Math.abs(x(b.roi) - x(0))}%"></div></div>
       <div class="n mono">${b.roi > 0 ? '+' : ''}${b.roi}%</div></div>`).join('');
-    const Lv = (D.record && D.record.live) || [];
+    const Lv = (D.record && D.record.live) || [], ent = B.find(b => b.label === 'Entered build'), LE = Lv.filter(r => r.entered), nS = new Set(LE.map(r => r.slate)).size;
+    const lroi = LE.length ? LE.reduce((a, r) => a + (+r.roi_cap || 0), 0) / LE.length : null, sg = v => (v > 0 ? '+' : '') + v;
+    $('#recTiles').innerHTML = `<div class="tile"><small>Live capped ROI</small><b class="${lroi == null ? '' : lroi >= 0 ? 'gain' : 'loss'}">${lroi == null ? '—' : sg(fmt(100 * lroi, 1)) + '%'}</b><span>${lroi == null ? 'First result after tonight' : 'entered build, average per contest'}</span></div>
+      <div class="tile"><small>Live slates graded</small><b>${nS}</b><span>Review point: 6 slates</span></div>
+      ${ent ? `<div class="tile"><small>Backtest capped ROI</small><b class="${ent.roi >= 0 ? 'gain' : 'loss'}">${sg(ent.roi)}%</b><span>${ent.games} real 2026 Showdowns · median ${sg(ent.median)}%</span></div>` : ''}
+      <div class="tile"><small>Kill switch</small><b class="gain">Armed</b><span>Rules fixed before any result</span></div>`;
     $('#live').innerHTML = Lv.length ? `<div class="tbl-wrap"><table><thead><tr><th>Slate</th><th>Set</th><th>Contest</th><th class="n">Lineups</th><th class="n">Capped ROI</th><th class="n">Cashed</th></tr></thead><tbody>${Lv.map(r => `<tr><td>${r.slate}</td><td>${setInfo(r.selector).name}${r.entered ? ' <span class="tag">entered</span>' : ''}</td><td>${shortContest(r.contest)}</td><td class="n">${r.graded}</td><td class="n">${fmt(100 * r.roi_cap, 0)}%</td><td class="n">${fmt(100 * r.cash, 0)}%</td></tr>`).join('')}</tbody></table></div>`
       : '<p class="note">No live slates graded yet. This game is live slate 1; results land here after the contest settles.</p>';
   }
