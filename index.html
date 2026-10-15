@@ -162,6 +162,24 @@ footer .ico { color: var(--ember); }
   .barrow { grid-template-columns: 120px minmax(0, 1fr) 60px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+.recipes { display: grid; gap: 8px; }
+.recipe { text-align: left; border: 1px solid var(--line); background: var(--plate-2); border-radius: 6px; padding: 10px 12px; cursor: pointer; color: var(--fg); display: grid; gap: 2px; }
+.recipe b { font-family: var(--f-display); font-size: 17px; letter-spacing: .06em; text-transform: uppercase; }
+.recipe small { color: var(--muted); font-size: 12px; line-height: 1.35; }
+.recipe[aria-pressed="true"] { border-color: var(--ember); box-shadow: inset 3px 0 0 var(--ember); }
+.recipe .ev { font-family: var(--f-data); color: var(--gold); font-size: 11.5px; }
+.custom-note { font-size: 12px; color: var(--gold); min-height: 16px; }
+.start { background: var(--plate); border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: 6px; padding: 12px 14px; margin: 0 0 14px; display: grid; gap: 6px; }
+.start h3 { font-size: 18px; letter-spacing: .08em; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+.start ol { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap: 3px; font-size: 14px; }
+.start ol b { color: var(--fg); }
+.lines { display: block; font-family: var(--f-data); font-size: 11px; color: var(--muted); margin-top: 2px; }
+.mv { font-family: var(--f-data); font-size: 11px; margin-left: 4px; }
+.mv.up { color: var(--good); } .mv.dn { color: var(--bad); }
+.badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.badge { font-family: var(--f-data); font-size: 10.5px; padding: 1px 6px; border-radius: 3px; background: var(--plate-2); color: var(--muted); }
+.badge.top { color: var(--gold); }
+.fresh { font-size: 12px; color: var(--muted); }
 #gate{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;background:radial-gradient(ellipse 60% 50% at 50% 110%,rgba(255,107,31,.35),transparent 70%),#141110}
 #gate[hidden]{display:none}
 .gatebox{width:100%;max-width:380px;text-align:center;display:flex;flex-direction:column;gap:12px;background:#1d1816;border:1px solid #3a2c24;border-radius:12px;padding:28px 24px;color:#f4ece4}
@@ -189,7 +207,7 @@ footer .ico { color: var(--ember); }
   <section class="plate" aria-label="Game"><div class="glow" aria-hidden="true"></div>
     <div>
       <div class="matchup"><div class="team" id="tAway">—</div><div class="at">@</div><div class="team" id="tHome">—</div></div>
-      <div class="sub" id="kick">—</div>
+      <div class="sub" id="kick">—</div><div class="sub fresh" id="fresh"></div>
     </div>
     <div class="meta">
       <div class="stat"><b id="mSpread">—</b><span>Spread</span></div>
@@ -207,6 +225,10 @@ footer .ico { color: var(--ember); }
   </nav>
 
   <section class="panel" id="p-players">
+    <div class="start" id="startCard" hidden><h3>Start here <button class="btn small" id="startX" type="button">Got it</button></h3><ol>
+      <li><b>Players</b> shows each player's projection, prop lines, projected ownership and chance to be the top scorer. Numbers refresh through the day.</li>
+      <li><b>FORGE Lineups</b> shows the exact sets FORGE entered, by contest. Copy them if you want the same thing.</li>
+      <li><b>Builder</b> starts on FORGE's best-tested settings. Pick your contest type, tweak anything, press Forge, then copy or download for DraftKings.</li></ol></div>
     <p class="lede">Projections come from the betting markets: DraftKings and FanDuel player props, converted to DraftKings Showdown points. Very cheap players get pulled toward what players at their price actually score. <b>Top scorer</b> is the chance, across 100,000 simulated games, that the player is the game's highest scorer, which makes him the ideal captain.</p>
     <div class="legend"><span><svg class="ico flame" aria-hidden="true"><use href="#i-flame"/></svg> Hottest captains: top 3 top-scorer chances</span><span><svg class="ico ingot" aria-hidden="true"><use href="#i-ingot"/></svg> Gold value: top 3 points per $1K (5+ point projections)</span></div>
     <div class="tbl-wrap"><table id="ptable"><thead><tr>
@@ -231,9 +253,16 @@ footer .ico { color: var(--ember); }
     <p class="lede">Build your own set. Edit any projection, lock or exclude players, set the rules, then press Forge. Your browser checks all 1.4 million possible combinations, keeps the legal ones under your rules, and picks the best under your caps.</p>
     <div class="builder">
       <form class="controls" id="bform">
+        <h3>Start from</h3>
+        <div class="recipes" id="recipes">
+          <button type="button" class="recipe" data-r="gpp" aria-pressed="true"><b>Tournament · FORGE default</b><small>Best 5-1 stacks by projection, no TE/K/DST captain, cheap players adjusted. For 20-max and big GPPs.</small><span class="ev" id="evGpp"></span></button>
+          <button type="button" class="recipe" data-r="se" aria-pressed="false"><b>Single entry</b><small>The single best lineup under the same rules.</small><span class="ev">Best of 4 rules tested on 10 single-entry contests</span></button>
+          <button type="button" class="recipe" data-r="cash" aria-pressed="false"><b>Cash · Double Up, 50/50</b><small>The highest projected lineup of any shape. Floor over ceiling.</small><span class="ev">Top 44% in 86% of 37 tested fields (upper bound)</span></button>
+        </div>
+        <div class="custom-note" id="customNote"></div>
         <h3>Rules</h3>
         <div class="field"><label for="bN">Lineups</label><input type="number" id="bN" min="1" max="150" value="20"></div>
-        <div class="field"><label>Structure</label><div class="seg" id="bStruct"><button type="button" aria-pressed="true" data-v="any">Any split</button><button type="button" aria-pressed="false" data-v="51">5-1 only</button><button type="button" aria-pressed="false" data-v="hedge">Half 5-1</button></div></div>
+        <div class="field"><label>Structure</label><div class="seg" id="bStruct"><button type="button" aria-pressed="false" data-v="any">Any split</button><button type="button" aria-pressed="true" data-v="51">5-1 only</button><button type="button" aria-pressed="false" data-v="hedge">Half 5-1</button></div></div>
         <div class="field"><label for="bCap">Max lineups per captain</label><input type="number" id="bCap" min="1" max="150" value="6"></div>
         <div class="field"><label for="bExp">Max exposure per player (%)</label><input type="number" id="bExp" min="10" max="100" value="100"></div>
         <div class="field"><label for="bUniq">Min players different between lineups</label><input type="number" id="bUniq" min="1" max="4" value="1"></div>
@@ -243,13 +272,13 @@ footer .ico { color: var(--ember); }
         <label class="check"><input type="checkbox" id="bDst" checked> No DST against your captain</label>
         <button type="submit" class="btn primary" id="forgeBtn"><svg class="ico" aria-hidden="true"><use href="#i-hammer"/></svg>Forge lineups<span class="sparks" id="sparks"></span></button>
         <div class="status" id="bStatus" role="status"></div>
-        <p class="note">These defaults are the settings that tested best in FORGE's backtests.</p>
+        <p class="note">FORGE's entered build also mixes in lineups picked by a payout simulator, which this page can't run. Its exact lineups are on the FORGE Lineups tab. Backtests replay real 2026 contests; they aren't a promise.</p>
       </form>
       <div style="min-width:0">
-        <div class="toolbar"><button class="btn small" id="resetProj" type="button">Reset projections</button><span class="note">Lock = in every lineup. Out = never used.</span></div>
-        <div class="tbl-wrap"><table id="btable"><thead><tr><th>Player</th><th>Pos</th><th class="n">Salary</th><th class="n">Proj</th><th>Lock</th><th>Out</th></tr></thead><tbody></tbody></table></div>
+        <div class="toolbar"><button class="btn small" id="resetProj" type="button">Reset projections</button><span class="note">CPT pool = only these can captain (none ticked = anyone). Lock = in every lineup. Out = never used.</span></div>
+        <div class="tbl-wrap"><table id="btable"><thead><tr><th>Player</th><th>Pos</th><th class="n">Salary</th><th class="n">Proj</th><th title="Only these players can be captain">CPT pool</th><th>Lock</th><th>Out</th></tr></thead><tbody></tbody></table></div>
         <div id="bOut" hidden>
-          <div class="toolbar" style="margin-top:16px"><h3 style="font-size:22px">Fresh off the anvil</h3><button class="btn small" id="copyMine" type="button">Copy for DraftKings</button></div>
+          <div class="toolbar" style="margin-top:16px"><h3 style="font-size:22px">Fresh off the anvil</h3><button class="btn small" id="copyMine" type="button">Copy for DraftKings</button><button class="btn small" id="dlMine" type="button">Download CSV</button></div>
           <div class="expo" id="bExpo"></div>
           <div class="grid" id="bGrid"></div>
         </div>
@@ -291,7 +320,7 @@ footer .ico { color: var(--ember); }
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const fmt = (v, d = 1) => (v === null || v === undefined || Number.isNaN(v)) ? '—' : Number(v).toFixed(d);
   const money = v => '$' + Number(v).toLocaleString('en-US');
-  let D = null, sortKey = 'proj', sortDir = -1, builder = { proj: {}, lock: new Set(), out: new Set(), struct: 'any', result: [] };
+  let D = null, sortKey = 'proj', sortDir = -1, builder = { proj: {}, lock: new Set(), out: new Set(), cpt: new Set(), struct: '51', result: [], recipe: 'gpp' };
   const LS = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
 
   // tabs
@@ -326,7 +355,13 @@ footer .ico { color: var(--ember); }
     const pill = $('#statusPill'); pill.className = 'pill ' + (s.status === 'final' ? 'ok' : 'hot');
     $('#statusText').textContent = s.status === 'final' ? 'Tempered · final build' : 'Heating · preliminary data';
     D.players.forEach(p => { p.value = p.proj / (p.sal / 1000); builder.proj[p.name] = p.proj; });
-    renderPlayers(); initLineups(); renderBuilderTable(); renderRecord();
+    const loc = u => { if (!u) return null; const d = new Date(String(u).replace(' UTC', 'Z').replace(' ', 'T')); return isNaN(d) ? null : d.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); };
+    const fr = loc(s.odds_as_of); $('#fresh').textContent = fr ? 'Odds as of ' + fr + (s.refreshed_utc ? ' · projections refreshed ' + loc(s.refreshed_utc) : '') : '';
+    if (!LS.get('forge_start_seen')) $('#startCard').hidden = false;
+    $('#startX').addEventListener('click', () => { $('#startCard').hidden = true; LS.set('forge_start_seen', '1'); });
+    const g = (D.record && D.record.backtest || []).find(b => b.name === 'B1ax');
+    $('#evGpp').textContent = g ? `Backtest, ${g.games} real contests: ${g.roi > 0 ? '+' : ''}${g.roi}% capped ROI (median ${g.median > 0 ? '+' : ''}${g.median}%)` : '';
+    renderPlayers(); initLineups(); renderBuilderTable(); renderRecord(); applyRecipe(LS.get('forge_recipe') || 'gpp', true);
     const t = LS.get('forge_tab'); if (t && $('#p-' + t)) show(t);
   }
 
@@ -339,10 +374,20 @@ footer .ico { color: var(--ember); }
     const ic = (id, cls, t) => `<svg class="ico ${cls}" role="img" aria-label="${t}"><use href="#${id}"/></svg>`;
     const rows = [...D.players].sort((a, b) => sortDir * ((a[sortKey] ?? -1) - (b[sortKey] ?? -1)));
     $('#ptable tbody').innerHTML = rows.map(p => `<tr>
-      <td class="who"><b>${p.name}</b>${hot.has(p.name) ? ic('i-flame', 'flame', 'Hottest captain') : ''}${gold.has(p.name) ? ic('i-ingot', 'ingot', 'Gold value') : ''}<small>${p.team}</small>${p.shrunk ? '<span class="tag">cheap-adjusted</span>' : ''}${/out/i.test(p.status) ? '<span class="tag out">Out</span>' : (p.status ? '<span class="tag">' + p.status + '</span>' : '')}</td>
+      <td class="who"><b>${p.name}</b>${hot.has(p.name) ? ic('i-flame', 'flame', 'Hottest captain') : ''}${gold.has(p.name) ? ic('i-ingot', 'ingot', 'Gold value') : ''}<small>${p.team}</small>${mvTag(p)}${p.shrunk ? '<span class="tag">cheap-adjusted</span>' : ''}${/out/i.test(p.status) ? '<span class="tag out">Out</span>' : (p.status ? '<span class="tag">' + p.status + '</span>' : '')}${linesTxt(p)}</td>
       <td><span class="pos">${p.pos}</span></td><td class="n">${money(p.sal)}</td><td class="n">${fmt(p.proj)}</td><td class="n">${fmt(p.value, 2)}</td>
       <td class="n">${p.own_flex == null ? '—' : fmt(p.own_flex, 0) + '%'}</td><td class="n">${p.own_cpt == null ? '—' : fmt(p.own_cpt, 0) + '%'}</td>
       <td class="n heat"><i style="width:${maxP ? (100 * (p.p_mvp || 0) / maxP).toFixed(0) : 0}%"></i><span>${p.p_mvp == null ? '—' : fmt(100 * p.p_mvp, 1) + '%'}</span></td></tr>`).join('');
+  }
+
+  const LN = { pass: 'pass yds', passyds: 'pass yds', rush: 'rush yds', rushyds: 'rush yds', rec: 'rec', recyds: 'rec yds', td: 'TD', anytd: 'TD', passtd: 'pass TD', att: 'att', comp: 'comp', int: 'INT', kpts: 'kicking pts' };
+  function linesTxt(p) {
+    const L = p.lines || {}; const parts = Object.entries(L).filter(([k, v]) => Array.isArray(v) && v[0] != null && k !== 'td' && k !== 'anytd').map(([k, v]) => `${v[0]} ${LN[k] || k}`);
+    return parts.length ? `<span class="lines">DK: ${parts.join(' · ')}</span>` : '';
+  }
+  function mvTag(p) {
+    if (p.proj_build == null || p.proj == null) return ''; const d = p.proj - p.proj_build; if (Math.abs(d) < 0.3) return '';
+    return `<span class="mv ${d > 0 ? 'up' : 'dn'}" title="Change since FORGE's last build">${d > 0 ? '▲' : '▼'}${Math.abs(d).toFixed(1)}</span>`;
   }
 
   // FORGE lineups
@@ -360,7 +405,13 @@ footer .ico { color: var(--ember); }
     const forged = l.forged ? ' forged' : '';
     return `<article class="lu${forged}"><header><span>#${i + 1}${l.contest ? ' · ' + shortContest(l.contest) : ''}</span><span><b>${fmt(l.proj)}</b> pts · <b>${money(l.sal)}</b></span></header><ol>
       <li class="cpt"><span><svg class="ico" aria-hidden="true"><use href="#i-flame"/></svg>CPT ${l.cpt}</span><span class="p">${pp(l.cpt).pos || ''} ${pp(l.cpt).team || ''}</span></li>
-      ${l.flex.map(n => `<li><span>${n}</span><span class="p">${pp(n).pos || ''} ${pp(n).team || ''}</span></li>`).join('')}</ol></article>`;
+      ${l.flex.map(n => `<li><span>${n}</span><span class="p">${pp(n).pos || ''} ${pp(n).team || ''}</span></li>`).join('')}</ol>${badges(l)}</article>`;
+  }
+  function badges(l) {
+    const b = [];
+    if (l.pct != null) b.push(`<span class="badge ${l.pct <= 10 ? 'top' : ''}" title="Where this lineup's projection ranks among every legal lineup under your rules">Top ${l.pct < 0.1 ? l.pct.toFixed(2) : l.pct < 1 ? l.pct.toFixed(1) : Math.ceil(l.pct)}%</span>`);
+    if (l.own != null) b.push(`<span class="badge" title="Sum of projected ownership: captain % + FLEX %. Lower = more unique">Own ${Math.round(l.own)}%</span>`);
+    return b.length ? `<div class="badges">${b.join('')}</div>` : '';
   }
   function shortContest(c) { return c.replace(/^NFL Showdown /, '').replace(/\s*\(.*?\)\s*$/, '').replace(/\[.*?\]/g, '').trim(); }
   function exposure(L, el) {
@@ -382,23 +433,42 @@ footer .ico { color: var(--ember); }
   }
   $('#copyForge').addEventListener('click', e => copy(dkCSV(currentForge()), e.currentTarget));
   $('#copyMine').addEventListener('click', e => copy(dkCSV(builder.result), e.currentTarget));
+  $('#dlMine').addEventListener('click', () => { try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([dkCSV(builder.result) + '\n'], { type: 'text/csv' })); a.download = `FORGE_${D.slate.away}${D.slate.home}_lineups.csv`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); } catch (e) { copy(dkCSV(builder.result), $('#dlMine')); } });
 
   // builder table
   function renderBuilderTable() {
     const rows = [...D.players].sort((a, b) => b.sal - a.sal);
     $('#btable tbody').innerHTML = rows.map((p, i) => `<tr><td class="who"><b>${p.name}</b><small>${p.team}</small></td><td><span class="pos">${p.pos}</span></td>
       <td class="n">${money(p.sal)}</td><td class="n"><input class="projin" type="number" step="0.1" id="pj-${i}" data-n="${p.name}" value="${fmt(builder.proj[p.name])}" aria-label="Projection for ${p.name}"></td>
+      <td><input type="checkbox" id="cp-${i}" data-n="${p.name}" data-a="cpt" ${builder.cpt.has(p.name) ? 'checked' : ''} aria-label="Allow ${p.name} as captain"></td>
       <td><input type="checkbox" id="lk-${i}" data-n="${p.name}" data-a="lock" ${builder.lock.has(p.name) ? 'checked' : ''} aria-label="Lock ${p.name}"></td>
       <td><input type="checkbox" id="ot-${i}" data-n="${p.name}" data-a="out" ${builder.out.has(p.name) || /out/i.test(p.status) ? 'checked' : ''} aria-label="Exclude ${p.name}"></td></tr>`).join('');
     D.players.forEach(p => { if (/out/i.test(p.status)) builder.out.add(p.name); });
-    $$('#btable .projin').forEach(inp => inp.addEventListener('change', () => { const v = parseFloat(inp.value); if (!Number.isNaN(v)) builder.proj[inp.dataset.n] = v; }));
+    $$('#btable .projin').forEach(inp => inp.addEventListener('change', () => { const v = parseFloat(inp.value); if (!Number.isNaN(v)) { builder.proj[inp.dataset.n] = v; markCustom(); } }));
     $$('#btable input[type="checkbox"]').forEach(cb => cb.addEventListener('change', () => {
-      const s = cb.dataset.a === 'lock' ? builder.lock : builder.out; cb.checked ? s.add(cb.dataset.n) : s.delete(cb.dataset.n);
+      if (cb.dataset.a === 'cpt') { cb.checked ? builder.cpt.add(cb.dataset.n) : builder.cpt.delete(cb.dataset.n); markCustom(); return; }
+      const s = cb.dataset.a === 'lock' ? builder.lock : builder.out; cb.checked ? s.add(cb.dataset.n) : s.delete(cb.dataset.n); markCustom();
       if (cb.checked) { const other = cb.dataset.a === 'lock' ? builder.out : builder.lock; other.delete(cb.dataset.n); const o = $(`#btable input[data-n="${CSS.escape(cb.dataset.n)}"][data-a="${cb.dataset.a === 'lock' ? 'out' : 'lock'}"]`); if (o) o.checked = false; }
     }));
   }
-  $('#resetProj').addEventListener('click', () => { D.players.forEach(p => builder.proj[p.name] = p.proj); builder.lock.clear(); builder.out.clear(); renderBuilderTable(); });
-  $$('#bStruct button').forEach(b => b.addEventListener('click', () => { builder.struct = b.dataset.v; $$('#bStruct button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); }));
+  $('#resetProj').addEventListener('click', () => { D.players.forEach(p => builder.proj[p.name] = p.proj); builder.lock.clear(); builder.out.clear(); builder.cpt.clear(); renderBuilderTable(); applyRecipe(builder.recipe, true); });
+  function setStruct(v) { builder.struct = v; $$('#bStruct button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === v))); }
+  $$('#bStruct button').forEach(b => b.addEventListener('click', () => { setStruct(b.dataset.v); markCustom(); }));
+  // recipes: settings FORGE has tested (P51-M-SX for tournaments = PREREG_ROUND11 B1ax; single entry = P51 #1, Round 24; cash = best projected lineup of any shape, Round 24)
+  const RECIPES = {
+    gpp: { n: 20, struct: '51', cap: 6, exp: 100, uniq: 1, minSal: 47000, punt: 1, noCpt: true, dst: true, label: 'Tournament · FORGE default' },
+    se: { n: 1, struct: '51', cap: 6, exp: 100, uniq: 1, minSal: 47000, punt: 1, noCpt: true, dst: true, label: 'Single entry' },
+    cash: { n: 1, struct: 'any', cap: 6, exp: 100, uniq: 1, minSal: 47000, punt: 1, noCpt: true, dst: true, label: 'Cash' } };
+  let applying = false;
+  function applyRecipe(k, quiet) {
+    const r = RECIPES[k] || RECIPES.gpp; applying = true; builder.recipe = k in RECIPES ? k : 'gpp';
+    $('#bN').value = r.n; setStruct(r.struct); $('#bCap').value = r.cap; $('#bExp').value = r.exp; $('#bUniq').value = r.uniq; $('#bMinSal').value = r.minSal; $('#bPunt').value = r.punt;
+    $('#bNoCpt').checked = r.noCpt; $('#bDst').checked = r.dst; applying = false;
+    $$('#recipes .recipe').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.r === builder.recipe))); $('#customNote').textContent = ''; LS.set('forge_recipe', builder.recipe);
+  }
+  function markCustom() { if (applying) return; $('#customNote').textContent = 'Custom: started from ' + RECIPES[builder.recipe].label + '. Click it again to reset the rules.'; }
+  $$('#recipes .recipe').forEach(b => b.addEventListener('click', () => applyRecipe(b.dataset.r)));
+  $$('#bform input').forEach(i => i.addEventListener('change', markCustom));
 
   // the forge: enumerate every legal lineup, score by projection, pick greedily under caps
   $('#bform').addEventListener('submit', ev => { ev.preventDefault(); const st = $('#bStatus'); st.className = 'status'; st.textContent = 'Heating the steel…'; setTimeout(runForge, 30); });
@@ -410,10 +480,11 @@ footer .ico { color: var(--ember); }
     const maxExp = Math.max(1, Math.ceil(N * Math.min(100, Math.max(10, parseFloat($('#bExp').value) || 100)) / 100));
     const uniq = Math.max(1, Math.min(4, parseInt($('#bUniq').value) || 1)), minSal = parseInt($('#bMinSal').value) || 0, maxPunt = parseInt($('#bPunt').value);
     const noCpt = $('#bNoCpt').checked, dstRule = $('#bDst').checked;
+    const cptPool = new Set(P.map((p, i) => builder.cpt.has(p.name) ? i : -1).filter(i => i >= 0));
     const out = P.map(p => builder.out.has(p.name)), lock = P.map(p => builder.lock.has(p.name)), nLock = lock.filter(Boolean).length;
     const codes = [], scores = [], is51 = [];
     for (let c = 0; c < n; c++) {
-      if (out[c] || (noCpt && (pos[c] === 'TE' || pos[c] === 'K' || pos[c] === 'DST'))) continue;
+      if (out[c] || (noCpt && (pos[c] === 'TE' || pos[c] === 'K' || pos[c] === 'DST')) || (cptPool.size && !cptPool.has(c))) continue;
       const o = []; for (let i = 0; i < n; i++) if (i !== c && !out[i]) o.push(i);
       const m = o.length, cs = 1.5 * sal[c], cp = 1.5 * proj[c];
       for (let a = 0; a < m - 4; a++) { const A = o[a]; const sa = cs + sal[A];
@@ -429,7 +500,7 @@ footer .ico { color: var(--ember); }
           } } } } }
     }
     if (!codes.length) { st.className = 'status err'; st.textContent = 'No legal lineup fits these rules. Loosen a lock, the salary floor or the punt limit.'; return; }
-    const idx = Array.from(codes.keys()).sort((x, y) => scores[y] - scores[x]);
+    const idx = Array.from(codes.keys()).sort((x, y) => scores[y] - scores[x]); const rankOf = new Map(); idx.forEach((v, r) => rankOf.set(v, r));
     const pick = (want, need51, chosen, cc, ex) => {
       for (const i of idx) {
         if (chosen.length >= want) break;
@@ -438,13 +509,15 @@ footer .ico { color: var(--ember); }
         if ((cc[lu[0]] || 0) >= cap) continue; if (lu.some(x => (ex[x] || 0) >= maxExp && !lock[x])) continue;
         let ok = true; for (const ch of chosen) { let sh = (ch.lu[0] === lu[0]) ? 1 : 0; const fs = new Set(ch.lu.slice(1)); for (let k = 1; k < 6; k++) if (fs.has(lu[k])) sh++; if (6 - sh < uniq) { ok = false; break; } }
         if (!ok) continue;
-        chosen.push({ lu, s: scores[i] }); cc[lu[0]] = (cc[lu[0]] || 0) + 1; lu.forEach(x => ex[x] = (ex[x] || 0) + 1);
+        chosen.push({ lu, s: scores[i], rank: rankOf.get(i) }); cc[lu[0]] = (cc[lu[0]] || 0) + 1; lu.forEach(x => ex[x] = (ex[x] || 0) + 1);
       }
     };
     const chosen = [], cc = {}, ex = {};
     if (builder.struct === 'hedge') { pick(Math.ceil(N / 2), true, chosen, cc, ex); const half = {}; pick(N, false, chosen, half, ex); }
     else pick(N, null, chosen, cc, ex);
-    builder.result = chosen.map(ch => ({ cpt: P[ch.lu[0]].name, flex: ch.lu.slice(1).map(x => P[x].name), proj: ch.s, sal: 1.5 * sal[ch.lu[0]] + ch.lu.slice(1).reduce((t, x) => t + sal[x], 0) }));
+    const ownSum = lu => { let t = 0, any = false; const c0 = P[lu[0]]; if (c0.own_cpt != null) { t += c0.own_cpt; any = true; } lu.slice(1).forEach(x => { if (P[x].own_flex != null) { t += P[x].own_flex; any = true; } }); return any ? t : null; };
+    builder.result = chosen.map(ch => ({ cpt: P[ch.lu[0]].name, flex: ch.lu.slice(1).map(x => P[x].name), proj: ch.s, sal: 1.5 * sal[ch.lu[0]] + ch.lu.slice(1).reduce((t, x) => t + sal[x], 0),
+      pct: 100 * (ch.rank + 1) / codes.length, own: ownSum(ch.lu) }));
     const ms = Math.round(performance.now() - t0);
     st.textContent = `Forged ${chosen.length} of ${N} lineups · ${codes.length.toLocaleString('en-US')} legal lineups scored in ${ms} ms` + (chosen.length < N ? ' · loosen caps for more' : '');
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) { const sp = $('#sparks'); sp.innerHTML = Array.from({ length: 18 }, () => { const a = Math.random() * Math.PI * 2, r = 40 + Math.random() * 70; return `<b style="--dx:${(Math.cos(a) * r).toFixed(0)}px;--dy:${(Math.sin(a) * r - 20).toFixed(0)}px"></b>`; }).join(''); setTimeout(() => sp.innerHTML = '', 800); }
