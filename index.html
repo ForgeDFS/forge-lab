@@ -278,7 +278,7 @@ footer .ico { color: var(--ember); }
         <div class="toolbar"><button class="btn small" id="resetProj" type="button">Reset projections</button><span class="note">CPT pool = only these can captain (none ticked = anyone). Lock = in every lineup. Out = never used.</span></div>
         <div class="tbl-wrap"><table id="btable"><thead><tr><th>Player</th><th>Pos</th><th class="n">Salary</th><th class="n">Proj</th><th title="Only these players can be captain">CPT pool</th><th>Lock</th><th>Out</th></tr></thead><tbody></tbody></table></div>
         <div id="bOut" hidden>
-          <div class="toolbar" style="margin-top:16px"><h3 style="font-size:22px">Fresh off the anvil</h3><button class="btn small" id="copyMine" type="button">Copy for DraftKings</button><button class="btn small" id="dlMine" type="button">Download CSV</button></div>
+          <div class="toolbar" style="margin-top:16px"><h3 style="font-size:22px">Fresh off the anvil</h3><button class="btn small" id="copyMine" type="button">Copy for DraftKings</button><button class="btn small" id="dlMine" type="button" hidden>Download CSV</button></div>
           <div class="expo" id="bExpo"></div>
           <div class="grid" id="bGrid"></div>
         </div>
@@ -338,7 +338,7 @@ footer .ico { color: var(--ember); }
   }
   function gate(enc) {
     const g = $('#gate'), f = $('#gateForm'), i = $('#gatePw'), m = $('#gateMsg');
-    const tryPw = (pw, silent) => unlock(enc, pw).then(d => { LS.set('forge_pw', pw); g.hidden = true; init(d); })
+    const tryPw = (pw, silent) => unlock(enc, pw).then(d => { LS.set('forge_pw', pw); g.hidden = true; $('#dlMine').hidden = false; init(d); })
       .catch(() => { g.hidden = false; if (!silent) { m.textContent = 'That password is not right. Check with Drew.'; i.select(); } });
     const saved = LS.get('forge_pw'); if (saved) tryPw(saved, true); else { g.hidden = false; setTimeout(() => i.focus(), 50); }
     f.addEventListener('submit', ev => { ev.preventDefault(); m.textContent = 'Heating the forge…'; tryPw(i.value.trim(), false); });
