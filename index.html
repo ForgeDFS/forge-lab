@@ -177,6 +177,26 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 .slate-chip small { color: var(--muted); font-size: 11.5px; }
 .slate-chip[aria-pressed="true"] { border-color: var(--ember); box-shadow: inset 0 -3px 0 var(--ember); }
 .slate-chip.live, .slate-chip.complete { opacity: .7; }
+#emode { position: fixed; inset: 0; z-index: 40; background: var(--bg); color: var(--fg); display: flex; flex-direction: column; padding: max(12px, env(safe-area-inset-top)) 14px max(12px, env(safe-area-inset-bottom)); overflow-y: auto; }
+#emode[hidden] { display: none; }
+.em-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.em-count { font-family: var(--f-display); font-weight: 800; font-size: 19px; white-space: nowrap; letter-spacing: .06em; text-transform: uppercase; }
+.em-contest { color: var(--gold); font-family: var(--f-display); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; font-size: 14px; margin: 8px 0 6px; }
+.em-dots { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+.em-dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); display: inline-block; }
+.em-dots i.d { background: var(--good); } .em-dots i.c { background: var(--ember); }
+.em-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.em-list li { display: grid; grid-template-columns: 54px 1fr auto; align-items: center; gap: 10px; background: var(--plate); border: 1px solid var(--line); border-radius: 8px; padding: 12px; min-height: 58px; cursor: pointer; user-select: text; -webkit-user-select: text; }
+.em-list li .slot { font-family: var(--f-display); font-weight: 800; font-size: 15px; letter-spacing: .08em; color: var(--muted); }
+.em-list li .nm { font-size: 20px; font-weight: 700; line-height: 1.15; }
+.em-list li .nm small { display: block; font-size: 12.5px; font-weight: 400; color: var(--muted); margin-top: 2px; }
+.em-list li .sal { font-family: var(--f-data); font-size: 14px; color: var(--muted); }
+.em-list li.cap { border-color: var(--ember); } .em-list li.cap .slot { color: var(--ember); }
+.em-list li.ok { opacity: .45; } .em-list li.ok .nm { text-decoration: line-through; }
+.em-sum { margin: 12px 0; font-family: var(--f-data); color: var(--muted); font-size: 14px; }
+.em-nav { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: auto; padding-top: 8px; }
+.em-nav .btn { padding: 14px 8px; font-size: 16px; justify-content: center; white-space: nowrap; }
+.em-tip { color: var(--muted); font-size: 12.5px; text-align: center; margin: 10px 0 0; }
 .appbox { background: var(--plate); border: 1px solid var(--line); border-left: 3px solid var(--ember); border-radius: 6px; padding: 12px 14px; margin: 0 0 16px; max-width: 760px; line-height: 1.45; }
 .steps { margin: 0 0 16px; padding-left: 22px; display: grid; gap: 14px; max-width: 760px; }
 .steps li { line-height: 1.45; }
@@ -386,7 +406,9 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
         <div id="dkResult" class="dkres" role="status"></div></li>
       <li><b>Upload it back.</b> On DraftKings (draftkings.com/lineups → Edit Entries) tap <b>Upload</b> and pick the filled file (it's in your Downloads / Files). DraftKings shows how many entries were updated.</li>
     </ol>
-    <details class="manual"><summary>Only entering one or two? Do it by hand</summary>
+    <div class="appbox emode-cta"><b>Using the DraftKings app?</b> Entry mode shows one lineup at a time, big and in the app's slot order, so you can tap the same players in DraftKings. It remembers where you left off.
+      <div class="toolbar" style="margin-top:8px"><label for="emContest" class="note">Lineups</label><select id="emContest"></select><button class="btn primary" type="button" id="emStart">Start entry mode</button></div></div>
+    <details class="manual"><summary>Checklist view</summary>
       <p class="note">Your current lineups in DraftKings' slot order. Tick each one off as you enter it in the app; this phone remembers the ticks.</p>
       <div class="grid" id="dkManual"></div></details>
   </section>
@@ -416,6 +438,15 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
   </section>
 
   <div id="gate" hidden><form id="gateForm" class="gatebox"><svg class="ico gateico" aria-hidden="true"><use href="#i-anvil"/></svg><div class="gatek">Invite only</div><h2 class="gateh">Enter the forge</h2><p class="gatep">Type the password Drew sent you. This device will remember it.</p><input id="gatePw" type="password" autocomplete="current-password" placeholder="Password" aria-label="Password"><button type="submit" class="btn primary">Unlock</button><div id="gateMsg" class="gatem" role="status"></div></form></div>
+  <div id="emode" hidden role="dialog" aria-label="Entry mode">
+    <div class="em-top"><button type="button" class="btn small" id="emClose" aria-label="Close">✕</button><div class="em-count" id="emCount"></div><button type="button" class="btn small" id="emWake" title="Keep the screen on">☀ On</button></div>
+    <div class="em-contest" id="emTitle"></div>
+    <div class="em-dots" id="emDots"></div>
+    <ol class="em-list" id="emList"></ol>
+    <div class="em-sum" id="emSum"></div>
+    <div class="em-nav"><button type="button" class="btn" id="emPrev">‹ Back</button><button type="button" class="btn primary" id="emNext">Entered · Next ›</button></div>
+    <p class="em-tip">Tap a player when you've picked him in DraftKings. Long-press a name to copy it for DraftKings' search.</p>
+  </div>
   <footer id="foot"><svg class="ico" aria-hidden="true"><use href="#i-anvil"/></svg> Hammered out in the FORGE · private test site for friends · not affiliated with DraftKings · play within your means</footer>
 </div>
 
@@ -478,7 +509,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 
   function init(data, meta) {
     meta = meta || {}; const isC = data.slate && data.slate.kind === 'classic'; document.body.classList.toggle('classic', isC);
-    setTimeout(() => { if (typeof DKFILE !== 'undefined' && DKFILE) fillDK(DKFILE); renderManual(); }, 0);   // re-check a loaded entries file against the newly picked game
+    setTimeout(() => { if (typeof DKFILE !== 'undefined' && DKFILE) fillDK(DKFILE); renderManual(); emFill(); }, 0);   // re-check a loaded entries file against the newly picked game
     if (isC) { D = data; return initClassic(data, meta); }
     $('#tAt').textContent = '@'; $('#lSpread').textContent = 'Spread'; $('#lTotal').textContent = 'Total';
     D = data; const s = D.slate;
@@ -876,10 +907,53 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
       return card.replace('<article class="lu', `<article data-i="${i}" class="lu${done ? ' done' : ''}`).replace(/<\/article>$/, `<label class="tick"><input type="checkbox" data-i="${i}" ${done ? 'checked' : ''}> Entered</label></article>`); }).join('');
     $$('#dkManual input[type=checkbox]').forEach(cb => cb.onchange = () => { LS.set(key(cb.dataset.i), cb.checked ? '1' : '0'); cb.closest('article').classList.toggle('done', cb.checked); });
   }
-  $$('[data-send]').forEach(b => b.addEventListener('click', () => { DKSRC = b.dataset.send; $$('#dkSrc button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === DKSRC))); show('dk'); renderManual(); if (DKFILE) fillDK(DKFILE); window.scrollTo({ top: $('#p-dk').offsetTop - 60, behavior: 'smooth' }); }));
-  $('#tab-dk').addEventListener('click', () => { renderManual(); if (DKFILE) fillDK(DKFILE); });
+  $$('[data-send]').forEach(b => b.addEventListener('click', () => { DKSRC = b.dataset.send; $$('#dkSrc button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === DKSRC))); show('dk'); renderManual(); emFill(); if (DKFILE) fillDK(DKFILE); window.scrollTo({ top: $('#p-dk').offsetTop - 60, behavior: 'smooth' }); }));
+  $('#tab-dk').addEventListener('click', () => { renderManual(); emFill(); if (DKFILE) fillDK(DKFILE); });
 
   // Android: open DraftKings in Chrome itself, not the DraftKings app (draftkings.com links are claimed by the app)
+  // ---------------------------------------------------------------- Entry mode (2026-10-15): one lineup at a time for people entering in the DraftKings app
+  const EM = { L: [], i: 0, key: '', wake: null };
+  function emSets() {        // [{label, lineups:[{slots:[{slot, name, pos, team, sal}], contest}]}]
+    const kind = D.slate.kind === 'classic' ? 'classic' : 'showdown', out = [];
+    const toSlots = l => kind === 'classic'
+      ? (l.players || []).map(p => { const q = typeof p === 'string' ? (D.players.find(z => z.name === p) || { name: p }) : p; return { slot: q.slot || q.pos, name: q.name, pos: q.pos, team: q.team, sal: q.sal }; })
+      : [l.cpt, ...l.flex].map((n, k) => { const q = D.players.find(z => z.name === n) || { name: n }; return { slot: k ? 'FLEX' : 'CPT', name: n, pos: q.pos, team: q.team, sal: q.sal ? (k ? q.sal : Math.round(q.sal * 1.5)) : null }; });
+    const mine = kind === 'classic' ? CL.result : builder.result;
+    if (mine && mine.length) out.push({ label: `My Builder lineups (${mine.length})`, lineups: mine.map(l => ({ slots: toSlots(l), contest: 'My Builder' })) });
+    const B = D.builds || {}; const k = Object.keys(B).find(x => /^(Entered|FORGE build)/.test(x)) || Object.keys(B).find(x => (B[x] || []).length);
+    if (k && B[k] && B[k].length) {
+      const by = {}; B[k].forEach(l => (by[l.contest || 'FORGE'] = by[l.contest || 'FORGE'] || []).push(l));
+      Object.entries(by).forEach(([c, L]) => out.push({ label: `FORGE · ${shortContest(c)} (${L.length})`, lineups: L.map(l => ({ slots: toSlots(l), contest: c })) }));
+    }
+    return out;
+  }
+  function emFill() { const S = emSets(); const big = S.reduce((b, x, j) => x.lineups.length > (S[b] ? S[b].lineups.length : -1) ? j : b, 0);
+    $('#emContest').innerHTML = S.length ? S.map((x, j) => `<option value="${j}" ${j === big ? 'selected' : ''}>${x.label}</option>`).join('') : '<option>No lineups yet</option>'; $('#emStart').disabled = !S.length; }
+  $('#emStart').addEventListener('click', () => {
+    const S = emSets(), set = S[+$('#emContest').value || 0]; if (!set) return;
+    EM.L = set.lineups; EM.key = 'forge_em_' + (D.slate.id || D.slate.game) + '_' + set.label.replace(/\W+/g, '');
+    EM.i = Math.min(EM.L.length - 1, +(LS.get(EM.key + '_i') || 0)); $('#emode').hidden = false; document.body.style.overflow = 'hidden'; emRender(); emWakeOn();
+  });
+  function emState() { try { return JSON.parse(LS.get(EM.key) || '{}'); } catch (e) { return {}; } }
+  function emSave(st) { LS.set(EM.key, JSON.stringify(st)); LS.set(EM.key + '_i', String(EM.i)); }
+  function emRender() {
+    const st = emState(), l = EM.L[EM.i], picked = st['p' + EM.i] || [];
+    $('#emCount').textContent = `Lineup ${EM.i + 1} of ${EM.L.length}`; $('#emTitle').textContent = shortContest(l.contest || '');
+    $('#emDots').innerHTML = EM.L.map((_, j) => `<i class="${j === EM.i ? 'c' : (st['d' + j] ? 'd' : '')}"></i>`).join('');
+    $('#emList').innerHTML = l.slots.map((p, j) => `<li data-j="${j}" class="${p.slot === 'CPT' ? 'cap' : ''} ${picked.includes(j) ? 'ok' : ''}"><span class="slot">${p.slot}</span><span class="nm">${p.name}<small>${p.pos || ''} · ${p.team || ''}</small></span><span class="sal">${p.sal ? money(p.sal) : ''}</span></li>`).join('');
+    const tot = l.slots.reduce((t, p) => t + (p.sal || 0), 0); $('#emSum').textContent = tot ? `Salary ${money(tot)} of $50,000` : '';
+    $('#emPrev').disabled = EM.i === 0; $('#emNext').textContent = EM.i === EM.L.length - 1 ? 'Entered ✓ Done' : 'Entered · Next ›';
+    $$('#emList li').forEach(li => li.onclick = () => { const s2 = emState(), a = s2['p' + EM.i] || [], j = +li.dataset.j; s2['p' + EM.i] = a.includes(j) ? a.filter(x => x !== j) : [...a, j]; emSave(s2); li.classList.toggle('ok'); });
+  }
+  $('#emPrev').addEventListener('click', () => { if (EM.i > 0) { EM.i--; emSave(emState()); emRender(); } });
+  $('#emNext').addEventListener('click', () => { const st = emState(); st['d' + EM.i] = 1; emSave(st);
+    if (EM.i < EM.L.length - 1) { EM.i++; emSave(st); emRender(); window.scrollTo(0, 0); } else { emClose(); $('#dkResult').innerHTML = `<div class="ok">✓ All ${EM.L.length} lineups marked entered.</div>`; } });
+  function emClose() { $('#emode').hidden = true; document.body.style.overflow = ''; if (EM.wake) { EM.wake.release().catch(() => {}); EM.wake = null; } renderManual(); }
+  $('#emClose').addEventListener('click', emClose);
+  async function emWakeOn() { try { if ('wakeLock' in navigator) { EM.wake = await navigator.wakeLock.request('screen'); $('#emWake').textContent = '☀ Stays on'; } else $('#emWake').hidden = true; } catch (e) { $('#emWake').textContent = '☀ On'; } }
+  $('#emWake').addEventListener('click', emWakeOn);
+  document.addEventListener('visibilitychange', () => { if (!$('#emode').hidden && document.visibilityState === 'visible') emWakeOn(); });
+
   // installable app + Android share target (site/pwa/manifest.webmanifest + sw.js; public site only)
   let installEvt = null;
   window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; $('#installBtn').hidden = false; $('#installHint').textContent = 'One tap, then FORGE shows up in your Share menu.'; });
