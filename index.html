@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-192.png">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -176,6 +177,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 .slate-chip small { color: var(--muted); font-size: 11.5px; }
 .slate-chip[aria-pressed="true"] { border-color: var(--ember); box-shadow: inset 0 -3px 0 var(--ember); }
 .slate-chip.live, .slate-chip.complete { opacity: .7; }
+.appbox { background: var(--plate); border: 1px solid var(--line); border-left: 3px solid var(--ember); border-radius: 6px; padding: 12px 14px; margin: 0 0 16px; max-width: 760px; line-height: 1.45; }
 .steps { margin: 0 0 16px; padding-left: 22px; display: grid; gap: 14px; max-width: 760px; }
 .steps li { line-height: 1.45; }
 .steps .btn { margin-top: 6px; display: inline-flex; }
@@ -370,6 +372,10 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 
   <section class="panel" id="p-dk" hidden>
     <p class="lede">Get FORGE's lineups (or your own from the Builder) into DraftKings from your phone. Use your phone's web browser for DraftKings here, not the DraftKings app: the app can't take a file, the website can.</p>
+    <div class="appbox" id="appBox">
+      <b>Android: skip the file hunt.</b> Install FORGE as an app once. After that, when your entries file downloads, open it from the download message or your Downloads, tap <b>Share</b>, pick <b>FORGE</b>, and it lands here already filled.
+      <div class="toolbar" style="margin-top:8px"><button class="btn primary" type="button" id="installBtn" hidden>Install FORGE app</button><span class="note" id="installHint">In Chrome: tap the ⋮ menu, then <b>Install app</b> or <b>Add to Home screen</b>.</span></div>
+    </div>
     <ol class="steps">
       <li><b>Join your contests.</b> In DraftKings, enter every contest you want with any lineup (or reserve your entries). You'll replace those lineups in a minute.</li>
       <li><b>Download your entries file.</b> Open DraftKings in Safari or Chrome, go to <b>Lineups → Edit Entries</b> and download the file (DKEntries.csv). <a class="btn small" href="https://www.draftkings.com/entry/upload" target="_blank" rel="noopener">Open DraftKings Edit Entries</a></li>
@@ -455,6 +461,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     IDX = (await getJSON('index')).slates || []; if (!IDX.length) throw new Error('no slates published');
     const want = LS.get('forge_slate'), w = IDX.find(x => x.id === want), dflt = defaultSlate();
     await loadSlate((w && (w.status === 'preliminary' || w.status === 'final' || w.status === 'scheduled')) ? w.id : dflt.id);
+    pickupShared();
   }
   function gate(enc) {
     const g = $('#gate'), f = $('#gateForm'), i = $('#gatePw'), m = $('#gateMsg');
@@ -870,6 +877,30 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
   }
   $$('[data-send]').forEach(b => b.addEventListener('click', () => { DKSRC = b.dataset.send; $$('#dkSrc button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === DKSRC))); show('dk'); renderManual(); if (DKFILE) fillDK(DKFILE); window.scrollTo({ top: $('#p-dk').offsetTop - 60, behavior: 'smooth' }); }));
   $('#tab-dk').addEventListener('click', () => { renderManual(); if (DKFILE) fillDK(DKFILE); });
+
+  // installable app + Android share target (site/pwa/manifest.webmanifest + sw.js; public site only)
+  let installEvt = null;
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; $('#installBtn').hidden = false; $('#installHint').textContent = 'One tap, then FORGE shows up in your Share menu.'; });
+  $('#installBtn').addEventListener('click', async () => { if (!installEvt) return; installEvt.prompt(); const r = await installEvt.userChoice; installEvt = null; $('#installBtn').hidden = true; $('#installHint').textContent = r.outcome === 'accepted' ? 'Installed. Open FORGE from your home screen from now on.' : 'You can install it later from the ⋮ menu.'; });
+  if (matchMedia('(display-mode: standalone)').matches) { $('#appBox').innerHTML = '<b>FORGE app installed.</b> Downloaded your entries file? Open it from your Downloads, tap <b>Share</b> → <b>FORGE</b>, and it lands here filled.'; }
+  if ('serviceWorker' in navigator && location.protocol === 'https:' && /github\.io$/.test(location.hostname)) navigator.serviceWorker.register('sw.js').catch(() => {});
+  function slateForFile(text) {        // which published slate an entries file belongs to (Showdown: its game; Classic: the Classic slate)
+    const rows = csvParse(text.replace(/^﻿/, '')); const hdr = rows[0] || [];
+    if (hdr.includes('QB')) { const c = IDX.find(x => x.kind === 'classic' && x.status !== 'complete'); return c && c.id; }
+    let pr = -1, pc = -1; for (let i = 0; i < rows.length && pr < 0; i++) { const j = rows[i].indexOf('Name + ID'); if (j >= 0) { pr = i; pc = j; } }
+    if (pr < 0) return null; const g = (rows[pr + 1] || [])[pc + 5]; const game = g ? g.split(' ')[0] : null;
+    const m = IDX.find(x => x.kind === 'showdown' && x.game === game); return m && m.id;
+  }
+  async function pickupShared() {
+    if (!/[?&]shared=1/.test(location.search) || !('caches' in window)) return;
+    try {
+      const c = await caches.open('forge-share'), r = await c.match('shared-entries'); history.replaceState(null, '', location.pathname);
+      if (!r) return; const text = await r.text(); await c.delete('shared-entries'); if (!text.trim()) return;
+      DKFILE = text; const id = slateForFile(text); show('dk');
+      if (id && id !== CUR) await loadSlate(id); else fillDK(DKFILE);
+      window.scrollTo({ top: $('#p-dk').offsetTop - 60, behavior: 'smooth' });
+    } catch (e) {}
+  }
 
   // record
   function renderRecord() {
