@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="29b259f4de0d"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="30969531d51b"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -1508,7 +1508,7 @@ td.lev { color: var(--steel); }
   function renderPrivate() {
     const el = $('#privBox'); if (!el || !D) return; const S = D.entered_summary;
     if (D.owner) { el.innerHTML = `<p class="note ownernote">Owner view · these sets are visible only on devices signed in as owner. Friends see the summary below after lock.</p>${S ? '<h3 class="subh">What friends see after lock</h3>' + sumHTML(S) : ''}`; return; }
-    const meta = IDX.find(x => x.id === CUR) || {}, ko = meta.kickoff_utc ? new Date(meta.kickoff_utc) : null, mins = ko ? Math.round((ko - Date.now()) / 60e3) : null;
+    const meta = IDX.find(x => x.id === CUR) || {}, ko = meta.kickoff_utc ? new Date(new Date(meta.kickoff_utc).getTime() - 15 * 60e3) : null, mins = ko ? Math.round((ko - Date.now()) / 60e3) : null;
     const when = ko ? `${ko.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}${mins > 0 ? ` · in ${mins >= 60 ? Math.floor(mins / 60) + ' h ' : ''}${mins % 60} min` : ''}` : 'kickoff';
     const mine = D.slate.kind === 'classic' ? [] : mineShown(), yours = `<h3 class="subh" style="margin-top:22px">Your lineups</h3>` + (mine.length
       ? `<p class="note">${mine.length} lineups from your Builder on this phone.</p>${breakdown(mine)}<div class="toolbar" style="margin-top:10px"><button type="button" class="btn" data-goto="builder">Back to the Builder</button><button type="button" class="btn primary" data-send2="mine">Send to DraftKings →</button></div>`
@@ -1527,8 +1527,8 @@ td.lev { color: var(--steel); }
       </div>`;
     }
     el.innerHTML = S
-      ? `<h3 class="subh">How we played it</h3><p class="lede">The slate is locked. This is how our entered lineups were spread: who we captained, who filled the flex, and who we left out. The lineups themselves stay private.</p>${sumHTML(S)}${yours}`
-      : `<div class="privhead"><svg class="ico" aria-hidden="true"><use href="#i-anvil"/></svg><div><h3 class="subh" style="margin:0">Our lineups stay private</h3><p>So nobody ends up with the same lineups and splits a prize, FORGE's entries aren't shared. ${D.builds_private ? `How we played it (captain and flex percentages, who we faded) unlocks when the slate locks: <b>${when}</b>.` : ''}</p></div></div>${glance}${yours}`;
+      ? `<h3 class="subh">How we played it</h3><p class="lede">This is how our entered lineups are spread: who we captained, who filled the flex, and who we left out. The lineups themselves stay private.</p>${sumHTML(S)}${yours}`
+      : `<div class="privhead"><svg class="ico" aria-hidden="true"><use href="#i-anvil"/></svg><div><h3 class="subh" style="margin:0">Our lineups stay private</h3><p>So nobody ends up with the same lineups and splits a prize, FORGE's entries aren't shared. ${D.builds_private ? `How we played it (captain and flex percentages, who we faded) unlocks 15 minutes before kickoff: <b>${when}</b>.` : ''}</p></div></div>${glance}${yours}`;
     $$('[data-send2]', el).forEach(b => b.onclick = () => { const x = document.querySelector('[data-send="mine"]'); if (x) x.click(); });
     $$('[data-goto]', el).forEach(b => b.onclick = () => { show(b.dataset.goto); window.scrollTo({ top: 0, behavior: 'smooth' }); });
     const rs = $('#entSum'); if (rs) rs.innerHTML = S ? '<h3 style="font-size:22px;margin:22px 0 10px">How we played this slate</h3>' + sumHTML(S) : '';
