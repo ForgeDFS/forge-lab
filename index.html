@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="ae8a1bad4be2"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="0fdbc6ada2a2"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -252,6 +252,8 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 .ownernote { border: 1px dashed var(--gold); border-radius: 6px; padding: 6px 10px; color: var(--gold); }
 .linkbtn { background: none; border: 0; padding: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font-size: 12px; }
 .check.mine { margin-top: 2px; }
+.bdown { margin: 0 0 12px; } .bdown summary { cursor: pointer; font-family: var(--f-display); font-weight: 700; letter-spacing: .05em; text-transform: uppercase; font-size: 15px; padding: 4px 0; }
+td.lev { color: var(--steel); }
 .slate-chip b { font-family: var(--f-display); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
 .slate-chip span { font-family: var(--f-display); font-weight: 800; font-size: 19px; letter-spacing: .02em; }
 .slate-chip small { color: var(--muted); font-size: 11.5px; }
@@ -371,9 +373,11 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     <div class="sd-only">
     <p class="lede">Projections come from the betting markets: DraftKings and FanDuel player props, converted to DraftKings Showdown points. Very cheap players get pulled toward what players at their price actually score. <b>Top scorer</b> is the chance, across 100,000 simulated games, that the player is the game's highest scorer, which makes him the ideal captain.</p>
     <div class="legend"><span><svg class="ico flame" aria-hidden="true"><use href="#i-flame"/></svg> Hottest captains: top 3 top-scorer chances</span><span><svg class="ico ingot" aria-hidden="true"><use href="#i-ingot"/></svg> Gold value: top 3 points per $1K (5+ point projections)</span></div>
+    <p class="note" id="simLegend" hidden>From 2,000 simulated games (the same ones the Builder uses). <b>Floor / Ceiling</b>: his 15th and 85th percentile score. <b>Opt CPT / Opt FLEX</b>: how often he is in the single best legal lineup of a simulated game, as captain or flex. <b>Leverage</b> <span class="tag steel">untested</span>: optimal rate minus projected ownership (captain + flex, in points of %); positive = the best lineups use him more than the field will.</p>
     <div class="tbl-wrap"><table id="ptable"><thead><tr>
       <th>Player</th><th>Pos</th><th class="n sort" data-k="sal">Salary</th><th class="n sort" data-k="proj">Proj</th><th class="n sort" data-k="value">Pts / $1K</th>
       <th class="n sort" data-k="own_flex">Own FLEX</th><th class="n sort" data-k="own_cpt">Own CPT</th><th class="n sort" data-k="p_mvp">Top scorer</th>
+      <th class="n sort simcol" data-k="floor">Floor</th><th class="n sort simcol" data-k="ceil">Ceiling</th><th class="n sort simcol" data-k="opt_cpt">Opt CPT</th><th class="n sort simcol" data-k="opt_flex">Opt FLEX</th><th class="n sort simcol" data-k="lev">Leverage</th>
     </tr></thead><tbody></tbody></table></div>
     </div>
   </section>
@@ -476,6 +480,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
           <div class="toolbar" style="margin-top:16px"><h3 style="font-size:22px">Fresh off the anvil</h3><button class="btn small" id="copyMine" type="button">Copy for DraftKings</button><button class="btn small" id="dlMine" type="button" hidden>Download CSV</button><button class="btn small primary" type="button" data-send="mine">Send to DraftKings →</button></div>
           <div class="flt" id="fltMine"></div>
           <div class="expo" id="bExpo"></div>
+          <details class="bdown" id="bBreak"><summary>Breakdown: captains, flex, team splits</summary><div id="bBreakBody"></div></details>
           <div class="grid" id="bGrid"></div>
         </div>
         <section class="tester" id="tester" hidden>
@@ -659,6 +664,11 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     const st = (meta.status === 'live' || meta.status === 'complete') ? meta.status : s.status; const pill = $('#statusPill'); pill.className = 'pill ' + (st === 'final' || st === 'complete' ? 'ok' : st === 'live' ? '' : 'hot');
     $('#statusText').textContent = { final: 'Tempered · final build', live: 'Locked · game on', complete: 'Cooled · final results' }[st] || 'Heating · preliminary build';
     D.players.forEach(p => { p.value = p.proj / (p.sal / 1000); builder.proj[p.name] = p.proj; });
+    const ST = D.simpack && D.simpack.stats, ix = ST ? Object.fromEntries(D.simpack.names.map((n, k) => [n, k])) : {};   // sim stats (tools/sim_pack.sim_stats)
+    D.players.forEach(p => { const k = ix[p.name]; if (!ST || k == null) { p.floor = p.ceil = p.opt_cpt = p.opt_flex = p.lev = null; return; }
+      p.floor = ST.p15[k]; p.ceil = ST.p85[k]; p.sd = ST.sd[k]; p.opt_cpt = 100 * ST.opt_cpt[k]; p.opt_flex = 100 * ST.opt_flex[k];
+      p.lev = (p.own_flex == null || p.own_cpt == null) ? null : (p.opt_cpt + p.opt_flex) - (p.own_flex + p.own_cpt); });
+    $$('#ptable .simcol').forEach(x => x.hidden = !ST); $('#simLegend').hidden = !ST;
     const loc = u => { if (!u) return null; const d = new Date(String(u).replace(' UTC', 'Z').replace(' ', 'T')); return isNaN(d) ? null : d.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); };
     const fr = loc(s.odds_as_of); $('#fresh').textContent = fr ? 'Odds as of ' + fr + (s.refreshed_utc ? ' · projections refreshed ' + loc(s.refreshed_utc) : '') : '';
     if (!LS.get('forge_start_seen')) $('#startCard').hidden = false;
@@ -680,7 +690,8 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
       <td class="who"><b>${p.name}</b>${hot.has(p.name) ? ic('i-flame', 'flame', 'Hottest captain') : ''}${gold.has(p.name) ? ic('i-ingot', 'ingot', 'Gold value') : ''}<small>${p.team}</small>${mvTag(p)}${p.shrunk ? '<span class="tag">cheap-adjusted</span>' : ''}${/out/i.test(p.status) ? '<span class="tag out">Out</span>' : (p.status ? '<span class="tag">' + p.status + '</span>' : '')}${linesTxt(p)}</td>
       <td><span class="pos">${p.pos}</span></td><td class="n">${money(p.sal)}</td><td class="n">${fmt(p.proj)}</td><td class="n">${fmt(p.value, 2)}</td>
       <td class="n">${p.own_flex == null ? '—' : fmt(p.own_flex, 0) + '%'}</td><td class="n">${p.own_cpt == null ? '—' : fmt(p.own_cpt, 0) + '%'}</td>
-      <td class="n heat"><i style="width:${maxP ? (100 * (p.p_mvp || 0) / maxP).toFixed(0) : 0}%"></i><span>${p.p_mvp == null ? '—' : fmt(100 * p.p_mvp, 1) + '%'}</span></td></tr>`).join('');
+      <td class="n heat"><i style="width:${maxP ? (100 * (p.p_mvp || 0) / maxP).toFixed(0) : 0}%"></i><span>${p.p_mvp == null ? '—' : fmt(100 * p.p_mvp, 1) + '%'}</span></td>
+      ${p.floor === undefined || !(D.simpack && D.simpack.stats) ? '' : `<td class="n">${fmt(p.floor)}</td><td class="n">${fmt(p.ceil)}</td><td class="n">${p.opt_cpt == null ? '—' : fmt(p.opt_cpt, 1) + '%'}</td><td class="n">${p.opt_flex == null ? '—' : fmt(p.opt_flex, 1) + '%'}</td><td class="n lev">${p.lev == null ? '—' : (p.lev > 0 ? '+' : '') + fmt(p.lev, 1)}</td>`}</tr>`).join('');
   }
 
   const LN = { pass: 'pass yds', passyds: 'pass yds', rush: 'rush yds', rushyds: 'rush yds', rec: 'rec', recyds: 'rec yds', td: 'TD', anytd: 'TD', passtd: 'pass TD', att: 'att', comp: 'comp', int: 'INT', kpts: 'kicking pts' };
@@ -1018,7 +1029,18 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
       + (n ? `<p class="note">Against ${setLabel(fk)}'s ${n} lineups in the same simulated games: their average payout ${avg(Array.from(ev)).toFixed(2)}x, cash ${pc(avg(Array.from(S_.cash)))}, top 1% ${pc(avg(Array.from(S_.top1)))}. Yours would rank ${rank} of ${n + 1} by average payout.</p>` : '')
       + `<p class="note">20-max payout curve, simulated field from FORGE's ownership model. Simulation output is evidence, not a promise.</p>`;
   }
-  function renderMine() { fltBar($('#fltMine'), 'mine', builder.result, renderMine); const L = mineShown(); exposure(L, $('#bExpo')); $('#bGrid').innerHTML = L.length ? L.map((l, i) => luCard(l, i)).join('') : '<p class="note">No lineup matches the filter.</p>'; }
+  function breakdown(L) {     // captain / flex / total % per player for the shown Builder lineups, next to field ownership and the sim's optimal rates
+    if (!L.length) return '<p class="note">No lineups.</p>'; const n = L.length, c = {}, f = {}, sp = {};
+    L.forEach(l => { c[l.cpt] = (c[l.cpt] || 0) + 1; l.flex.forEach(x => f[x] = (f[x] || 0) + 1);
+      const t = {}; [l.cpt, ...l.flex].forEach(x => { const p = D.players.find(z => z.name === x); if (p) t[p.team] = (t[p.team] || 0) + 1; });
+      const k = Object.entries(t).sort((a, b) => b[1] - a[1]).map(([tm, v]) => v + ' ' + tm).join(' / '); sp[k] = (sp[k] || 0) + 1; });
+    const names = [...new Set([...Object.keys(c), ...Object.keys(f)])].map(nm => ({ nm, p: D.players.find(z => z.name === nm) || {}, c: 100 * (c[nm] || 0) / n, f: 100 * (f[nm] || 0) / n })).sort((a, b) => (b.c + b.f) - (a.c + a.f));
+    const pc = v => v ? fmt(v, 0) + '%' : '<span class="dim">0%</span>';
+    return `<div class="chips" style="margin:6px 0 10px">${Object.entries(sp).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span class="chip">${k} <small>× ${v}</small></span>`).join('')}</div>
+      <div class="tbl-wrap"><table class="sumt"><thead><tr><th>Player</th><th class="n">Captain</th><th class="n">Flex</th><th class="n">Total</th><th class="n">Field</th><th class="n">Opt rate</th></tr></thead><tbody>${names.map(r => `<tr><td><b>${r.nm}</b> <small class="dim">${r.p.pos || ''} ${r.p.team || ''}</small></td><td class="n">${pc(r.c)}</td><td class="n">${pc(r.f)}</td><td class="n"><b>${pc(r.c + r.f)}</b></td><td class="n">${r.p.own_flex == null ? '—' : fmt(r.p.own_flex + (r.p.own_cpt || 0), 0) + '%'}</td><td class="n">${r.p.opt_cpt == null ? '—' : fmt(r.p.opt_cpt + r.p.opt_flex, 0) + '%'}</td></tr>`).join('')}</tbody></table></div>
+      <p class="note">Field = projected ownership (captain + flex). Opt rate = how often the player is in the best lineup of a simulated game (captain + flex).</p>`;
+  }
+  function renderMine() { fltBar($('#fltMine'), 'mine', builder.result, renderMine); const L = mineShown(); exposure(L, $('#bExpo')); $('#bBreakBody').innerHTML = breakdown(L); $('#bGrid').innerHTML = L.length ? L.map((l, i) => luCard(l, i)).join('') : '<p class="note">No lineup matches the filter.</p>'; }
 
 
   // ---------------------------------------------------------------- Classic (2026-10-15): projections, QB environment, in-browser optimizer (GLPK, WebAssembly)
