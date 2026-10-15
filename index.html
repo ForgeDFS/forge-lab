@@ -164,6 +164,12 @@ footer .ico { color: var(--ember); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 .slates { display: flex; gap: 8px; overflow-x: auto; margin-top: 14px; padding-bottom: 4px; scrollbar-width: thin; }
 .slates[hidden] { display: none; }
+body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
+.qbenv { background: var(--plate); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; margin: 0 0 14px; }
+.qbenv h3 { font-size: 17px; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px; }
+.qbenv ol { margin: 0; padding-left: 22px; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 2px 18px; font-size: 13.5px; }
+.qbenv small { color: var(--muted); }
+#cSearch, #cbSearch { font: inherit; font-size: 13px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--plate); color: var(--fg); min-width: 0; width: 150px; }
 .slate-chip { flex: 0 0 auto; display: grid; gap: 1px; text-align: left; border: 1px solid var(--line); background: var(--plate); color: var(--fg); border-radius: 6px; padding: 7px 12px; cursor: pointer; min-width: 128px; }
 .slate-chip b { font-family: var(--f-display); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
 .slate-chip span { font-family: var(--f-display); font-weight: 800; font-size: 19px; letter-spacing: .02em; }
@@ -215,12 +221,12 @@ footer .ico { color: var(--ember); }
   <nav class="slates" id="slatePicker" aria-label="Games" hidden></nav>
   <section class="plate" aria-label="Game"><div class="glow" aria-hidden="true"></div>
     <div>
-      <div class="matchup"><div class="team" id="tAway">—</div><div class="at">@</div><div class="team" id="tHome">—</div></div>
+      <div class="matchup"><div class="team" id="tAway">—</div><div class="at" id="tAt">@</div><div class="team" id="tHome">—</div></div>
       <div class="sub" id="kick">—</div><div class="sub fresh" id="fresh"></div>
     </div>
     <div class="meta">
-      <div class="stat"><b id="mSpread">—</b><span>Spread</span></div>
-      <div class="stat"><b id="mTotal">—</b><span>Total</span></div>
+      <div class="stat"><b id="mSpread">—</b><span id="lSpread">Spread</span></div>
+      <div class="stat"><b id="mTotal">—</b><span id="lTotal">Total</span></div>
       <div class="stat"><b id="mWeek">—</b><span>NFL week</span></div>
     </div>
   </section>
@@ -238,15 +244,25 @@ footer .ico { color: var(--ember); }
       <li><b>Players</b> shows each player's projection, prop lines, projected ownership and chance to be the top scorer. Numbers refresh through the day.</li>
       <li><b>FORGE Lineups</b> shows the exact sets FORGE entered, by contest. Copy them if you want the same thing.</li>
       <li><b>Builder</b> starts on FORGE's best-tested settings. Pick your contest type, tweak anything, press Forge, then copy or download for DraftKings.</li></ol></div>
+    <div class="cl-only">
+      <p class="lede">Classic main slate: 9 players, $50,000. Projections come from DraftKings and FanDuel player props converted to DraftKings points. Players without enough prop lines get a salary-based number and are tagged. Games with no lines yet have no projections.</p>
+      <div class="qbenv" id="qbEnv"></div>
+      <div class="toolbar"><div class="seg" id="cPos"></div><input type="search" id="cSearch" placeholder="Search players" aria-label="Search players"></div>
+      <div class="tbl-wrap"><table id="ctable"><thead><tr><th>Player</th><th>Pos</th><th class="n sort" data-k="sal">Salary</th><th class="n sort" data-k="proj">Proj</th><th class="n sort" data-k="value">Pts / $1K</th><th>DK lines</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="sd-only">
     <p class="lede">Projections come from the betting markets: DraftKings and FanDuel player props, converted to DraftKings Showdown points. Very cheap players get pulled toward what players at their price actually score. <b>Top scorer</b> is the chance, across 100,000 simulated games, that the player is the game's highest scorer, which makes him the ideal captain.</p>
     <div class="legend"><span><svg class="ico flame" aria-hidden="true"><use href="#i-flame"/></svg> Hottest captains: top 3 top-scorer chances</span><span><svg class="ico ingot" aria-hidden="true"><use href="#i-ingot"/></svg> Gold value: top 3 points per $1K (5+ point projections)</span></div>
     <div class="tbl-wrap"><table id="ptable"><thead><tr>
       <th>Player</th><th>Pos</th><th class="n sort" data-k="sal">Salary</th><th class="n sort" data-k="proj">Proj</th><th class="n sort" data-k="value">Pts / $1K</th>
       <th class="n sort" data-k="own_flex">Own FLEX</th><th class="n sort" data-k="own_cpt">Own CPT</th><th class="n sort" data-k="p_mvp">Top scorer</th>
     </tr></thead><tbody></tbody></table></div>
+    </div>
   </section>
 
   <section class="panel" id="p-lineups" hidden>
+    <div class="cl-only" id="cForge"></div>
+    <div class="sd-only">
     <p class="lede">The lineups FORGE builds for this game. The entered build is what goes into our contests; the others run alongside it so every approach is graded on real results.</p>
     <div class="toolbar">
       <label for="buildSel" class="note">Set</label><select id="buildSel"></select>
@@ -256,9 +272,50 @@ footer .ico { color: var(--ember); }
     <div class="note" id="expoHead">Exposure</div>
     <div class="expo" id="expo"></div>
     <div class="grid" id="luGrid"></div>
+    </div>
   </section>
 
   <section class="panel" id="p-builder" hidden>
+    <div class="cl-only">
+    <p class="lede">Build your own Classic set. Edit any projection, lock or exclude players, set the rules, then press Forge. An optimizer runs in your browser and finds the best lineup under your rules, one lineup at a time, each different from the last.</p>
+    <div class="builder">
+      <form class="controls" id="cform">
+        <h3>Start from</h3>
+        <div class="recipes" id="crecipes">
+          <button type="button" class="recipe" data-r="gpp" aria-pressed="true"><b>Tournament · FORGE Classic rules</b><small>QB stacked with his own WR or TE, no QB with his own RB or DST, nobody facing your DST, a value play, salary nearly maxed, at most 6 games, no questionable players.</small><span class="ev">Rules from FORGE's Classic field studies (3 contest datasets); the full process is unproven (2 backtested slates)</span></button>
+          <button type="button" class="recipe" data-r="se" aria-pressed="false"><b>Single entry</b><small>The single best lineup under the same rules.</small><span class="ev">Same rules, 1 lineup</span></button>
+          <button type="button" class="recipe" data-r="cash" aria-pressed="false"><b>Cash · Double Up, 50/50</b><small>The highest projected legal lineup. No stacking rules.</small><span class="ev">Not tested on Classic yet</span></button>
+        </div>
+        <div class="custom-note" id="cCustomNote"></div>
+        <h3>Rules</h3>
+        <div class="field"><label for="cN">Lineups</label><input type="number" id="cN" min="1" max="50" value="20"></div>
+        <div class="field"><label for="cMinSal">Min salary used</label><input type="number" id="cMinSal" min="40000" max="50000" step="100" value="49500"></div>
+        <div class="field"><label for="cGames">Max games in a lineup</label><input type="number" id="cGames" min="2" max="9" value="6"></div>
+        <div class="field"><label for="cUniq">Min players different between lineups</label><input type="number" id="cUniq" min="1" max="6" value="3"></div>
+        <div class="field"><label for="cExp">Max exposure per player (%)</label><input type="number" id="cExp" min="5" max="100" value="50"></div>
+        <div class="field"><label for="cDstCap">Max lineups per DST</label><input type="number" id="cDstCap" min="1" max="50" value="7"></div>
+        <label class="check"><input type="checkbox" id="cStack" checked> QB + at least one of his WR/TE</label>
+        <label class="check"><input type="checkbox" id="cBring"> Bring-back: a player from the QB's opponent</label>
+        <label class="check"><input type="checkbox" id="cOwnRb" checked> No QB with his own RB</label>
+        <label class="check"><input type="checkbox" id="cDstOpp" checked> Nobody facing your DST</label>
+        <label class="check"><input type="checkbox" id="cOwnDst" checked> No QB with his own DST</label>
+        <label class="check"><input type="checkbox" id="cValue" checked> At least one player at $4,000 or less</label>
+        <label class="check"><input type="checkbox" id="cNoQ" checked> Skip questionable (Q) players</label>
+        <button type="submit" class="btn primary" id="cForgeBtn"><svg class="ico" aria-hidden="true"><use href="#i-hammer"/></svg>Forge lineups</button>
+        <div class="status" id="cStatus" role="status"></div>
+      </form>
+      <div style="min-width:0">
+        <div class="toolbar"><div class="seg" id="cbPos"></div><input type="search" id="cbSearch" placeholder="Search players" aria-label="Search players"><button class="btn small" id="cReset" type="button">Reset</button><span class="note">Lock = in every lineup. Out = never used.</span></div>
+        <div class="tbl-wrap"><table id="cbtable"><thead><tr><th>Player</th><th>Pos</th><th class="n">Salary</th><th class="n">Proj</th><th>Lock</th><th>Out</th></tr></thead><tbody></tbody></table></div>
+        <div id="cOut" hidden>
+          <div class="toolbar" style="margin-top:16px"><h3 style="font-size:22px">Fresh off the anvil</h3><button class="btn small" id="cCopy" type="button">Copy for DraftKings</button><button class="btn small" id="cDl" type="button" hidden>Download CSV</button></div>
+          <div class="expo" id="cExpo"></div>
+          <div class="grid" id="cGrid"></div>
+        </div>
+      </div>
+    </div>
+    </div>
+    <div class="sd-only">
     <p class="lede">Build your own set. Edit any projection, lock or exclude players, set the rules, then press Forge. Your browser checks all 1.4 million possible combinations, keeps the legal ones under your rules, and picks the best under your caps.</p>
     <div class="builder">
       <form class="controls" id="bform">
@@ -291,9 +348,10 @@ footer .ico { color: var(--ember); }
           <div class="expo" id="bExpo"></div>
           <div class="grid" id="bGrid"></div>
         </div>
-        <div id="copyBox" hidden><p class="note">Copy didn't go through on this device. Select the text below and copy it.</p><textarea id="copyText" readonly></textarea></div>
       </div>
     </div>
+    </div>
+    <div id="copyBox" hidden><p class="note">Copy didn't go through on this device. Select the text below and copy it.</p><textarea id="copyText" readonly></textarea></div>
   </section>
 
   <section class="panel" id="p-record" hidden>
@@ -381,7 +439,10 @@ footer .ico { color: var(--ember); }
     .catch(() => { ENC = false; start().catch(fail); });
 
   function init(data, meta) {
-    D = data; const s = D.slate; meta = meta || {};
+    meta = meta || {}; const isC = data.slate && data.slate.kind === 'classic'; document.body.classList.toggle('classic', isC);
+    if (isC) { D = data; return initClassic(data, meta); }
+    $('#tAt').textContent = '@'; $('#lSpread').textContent = 'Spread'; $('#lTotal').textContent = 'Total';
+    D = data; const s = D.slate;
     builder.proj = {}; builder.lock.clear(); builder.out.clear(); builder.cpt.clear(); builder.result = []; $('#bOut').hidden = true; $('#bStatus').textContent = '';
     $('#tAway').textContent = s.away; $('#tHome').textContent = s.home;
     $('#kick').textContent = 'Kickoff ' + s.kickoff + ' · data built ' + s.built_utc;
@@ -557,6 +618,135 @@ footer .ico { color: var(--ember); }
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) { const sp = $('#sparks'); sp.innerHTML = Array.from({ length: 18 }, () => { const a = Math.random() * Math.PI * 2, r = 40 + Math.random() * 70; return `<b style="--dx:${(Math.cos(a) * r).toFixed(0)}px;--dy:${(Math.sin(a) * r - 20).toFixed(0)}px"></b>`; }).join(''); setTimeout(() => sp.innerHTML = '', 800); }
     $('#bOut').hidden = false; exposure(builder.result, $('#bExpo')); $('#bGrid').innerHTML = builder.result.map((l, i) => luCard(l, i)).join('');
   }
+
+
+  // ---------------------------------------------------------------- Classic (2026-10-15): projections, QB environment, in-browser optimizer (GLPK, WebAssembly)
+  const CL = { proj: {}, lock: new Set(), out: new Set(), pos: 'All', bpos: 'All', sort: 'proj', dir: -1, result: [], recipe: 'gpp' };
+  const POS = ['All', 'QB', 'RB', 'WR', 'TE', 'DST'];
+  function initClassic(data, meta) {
+    const s = data.slate, P = data.players; CL.proj = {}; CL.lock.clear(); CL.out.clear(); CL.result = []; $('#cOut').hidden = true; $('#cStatus').textContent = '';
+    $('#tAway').textContent = 'Classic'; $('#tAt').textContent = '·'; $('#tHome').textContent = s.games + ' games';
+    $('#kick').textContent = 'Main slate locks ' + new Date(s.kickoff_utc).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' · data built ' + s.built_utc;
+    const nm = P.filter(p => p.source === 'market').length, nf = P.filter(p => p.source === 'salary-fit').length, nn = P.filter(p => p.source === 'none').length;
+    $('#fresh').textContent = (s.odds_as_of ? 'Odds as of ' + new Date(String(s.odds_as_of).replace(' UTC', 'Z').replace(' ', 'T')).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' · ' : '') + `${nm} market projections, ${nf} salary-based` + (nn ? `, ${nn} waiting for lines` : '');
+    $('#mSpread').textContent = Object.keys(data.lines || {}).length + '/' + s.games; $('#lSpread').textContent = 'Games with lines';
+    $('#mTotal').textContent = P.length; $('#lTotal').textContent = 'Players'; $('#mWeek').textContent = s.week ?? '—';
+    const st = (meta.status === 'live' || meta.status === 'complete') ? meta.status : s.status; $('#statusPill').className = 'pill ' + (st === 'live' ? '' : 'hot');
+    $('#statusText').textContent = { live: 'Locked · games on', complete: 'Cooled · final results' }[st] || 'Heating · preliminary build';
+    P.forEach(p => { p.value = p.proj == null ? null : p.proj / (p.sal / 1000); CL.proj[p.name] = p.proj; if (/^(OUT|IR|D)$/.test(p.status) || p.proj == null) CL.out.add(p.name); });
+    const E = (data.passenv || []).filter(e => e.env != null);
+    $('#qbEnv').innerHTML = E.length ? `<h3>QB environment <small>· FORGE's QB pick model (pass game, opponent, game total); backtest rank skill 0.31, 2026 so far ~0</small></h3><ol>${E.slice(0, 12).map(e => `<li><b>${e.name}</b> <small>${e.team} vs ${e.opp} · ${fmt(e.env, 1)}</small></li>`).join('')}</ol>` : '';
+    $('#cPos').innerHTML = POS.map(x => `<button type="button" data-v="${x}" aria-pressed="${x === CL.pos}">${x}</button>`).join('');
+    $$('#cPos button').forEach(b => b.onclick = () => { CL.pos = b.dataset.v; $$('#cPos button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); renderCPlayers(); });
+    $('#cSearch').oninput = renderCPlayers; $$('#ctable th.sort').forEach(th => th.onclick = () => { const k = th.dataset.k; CL.dir = CL.sort === k ? -CL.dir : -1; CL.sort = k; renderCPlayers(); });
+    $('#cbPos').innerHTML = POS.map(x => `<button type="button" data-v="${x}" aria-pressed="${x === CL.bpos}">${x}</button>`).join('');
+    $$('#cbPos button').forEach(b => b.onclick = () => { CL.bpos = b.dataset.v; $$('#cbPos button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); renderCBuilder(); });
+    $('#cbSearch').oninput = renderCBuilder;
+    const B = data.builds || {}; const keys = Object.keys(B).filter(k => (B[k] || []).length);
+    $('#cForge').innerHTML = keys.length ? keys.map(k => `<h3 style="font-size:20px;margin:6px 0 10px">${k}</h3><div class="grid">${B[k].map((l, i) => cCard(l, i)).join('')}</div>`).join('')
+      : `<p class="lede">FORGE's own Classic lineups appear here once the Classic engine runs for this slate. Until then, the Builder uses the same projections with FORGE's Classic rules.</p>`;
+    renderCPlayers(); renderCBuilder(); applyCRecipe(LS.get('forge_crecipe') || 'gpp');
+    const t = LS.get('forge_tab'); if (t && $('#p-' + t)) show(t);
+  }
+  function linesC(p) { const L = p.lines || {}; const parts = Object.entries(L).filter(([k, v]) => Array.isArray(v)).map(([k, v]) => `${v[0]} ${LN[k] || k}`); return parts.length ? parts.join(' · ') : ''; }
+  function srcTag(p) { return p.source === 'salary-fit' ? '<span class="tag" title="Not enough prop lines; salary-based projection">salary-based</span>' : p.source === 'none' ? '<span class="tag out">no lines yet</span>' : ''; }
+  function stTag(p) { return p.status ? `<span class="tag ${/OUT|IR|^D$/.test(p.status) ? 'out' : ''}">${p.status}</span>` : ''; }
+  function renderCPlayers() {
+    const q = ($('#cSearch').value || '').toLowerCase(); let L = D.players.filter(p => (CL.pos === 'All' || p.pos === CL.pos) && (!q || p.name.toLowerCase().includes(q) || p.team.toLowerCase() === q));
+    L = L.sort((a, b) => CL.dir * ((a[CL.sort] ?? -1) - (b[CL.sort] ?? -1))).slice(0, 300);
+    $('#ctable tbody').innerHTML = L.map(p => `<tr><td class="who"><b>${p.name}</b><small>${p.team} vs ${p.opp}</small>${stTag(p)}${srcTag(p)}</td><td><span class="pos">${p.pos}</span></td>
+      <td class="n">${money(p.sal)}</td><td class="n">${fmt(p.proj)}</td><td class="n">${fmt(p.value, 2)}</td><td><span class="lines">${linesC(p)}</span></td></tr>`).join('');
+  }
+  function renderCBuilder() {
+    const q = ($('#cbSearch').value || '').toLowerCase(); const L = D.players.filter(p => (CL.bpos === 'All' || p.pos === CL.bpos) && (!q || p.name.toLowerCase().includes(q) || p.team.toLowerCase() === q)).sort((a, b) => b.sal - a.sal).slice(0, 250);
+    $('#cbtable tbody').innerHTML = L.map(p => { const k = D.players.indexOf(p); return `<tr><td class="who"><b>${p.name}</b><small>${p.team} vs ${p.opp}</small>${stTag(p)}${srcTag(p)}</td><td><span class="pos">${p.pos}</span></td><td class="n">${money(p.sal)}</td>
+      <td class="n"><input class="projin" type="number" step="0.1" data-k="${k}" value="${CL.proj[p.name] == null ? '' : fmt(CL.proj[p.name])}" aria-label="Projection for ${p.name}"></td>
+      <td><input type="checkbox" data-k="${k}" data-a="lock" ${CL.lock.has(p.name) ? 'checked' : ''} aria-label="Lock ${p.name}"></td><td><input type="checkbox" data-k="${k}" data-a="out" ${CL.out.has(p.name) ? 'checked' : ''} aria-label="Exclude ${p.name}"></td></tr>`; }).join('');
+    $$('#cbtable .projin').forEach(inp => inp.onchange = () => { const p = D.players[+inp.dataset.k], v = parseFloat(inp.value); CL.proj[p.name] = Number.isNaN(v) ? null : v; if (!Number.isNaN(v)) CL.out.delete(p.name); markCCustom(); renderCBuilder(); });
+    $$('#cbtable input[type="checkbox"]').forEach(cb => cb.onchange = () => { const p = D.players[+cb.dataset.k]; const S = cb.dataset.a === 'lock' ? CL.lock : CL.out, O = cb.dataset.a === 'lock' ? CL.out : CL.lock;
+      cb.checked ? (S.add(p.name), O.delete(p.name)) : S.delete(p.name); markCCustom(); renderCBuilder(); });
+  }
+  const CRECIPES = {
+    gpp: { n: 20, minSal: 49500, games: 6, uniq: 3, exp: 50, dstCap: 7, stack: true, bring: false, ownRb: true, dstOpp: true, ownDst: true, value: true, noQ: true, label: 'Tournament · FORGE Classic rules' },
+    se: { n: 1, minSal: 49500, games: 6, uniq: 3, exp: 100, dstCap: 50, stack: true, bring: false, ownRb: true, dstOpp: true, ownDst: true, value: true, noQ: true, label: 'Single entry' },
+    cash: { n: 1, minSal: 40000, games: 9, uniq: 1, exp: 100, dstCap: 50, stack: false, bring: false, ownRb: false, dstOpp: false, ownDst: false, value: false, noQ: true, label: 'Cash' } };
+  let capplying = false;
+  function applyCRecipe(k) {
+    const r = CRECIPES[k] || CRECIPES.gpp; capplying = true; CL.recipe = k in CRECIPES ? k : 'gpp';
+    $('#cN').value = r.n; $('#cMinSal').value = r.minSal; $('#cGames').value = r.games; $('#cUniq').value = r.uniq; $('#cExp').value = r.exp; $('#cDstCap').value = r.dstCap;
+    $('#cStack').checked = r.stack; $('#cBring').checked = r.bring; $('#cOwnRb').checked = r.ownRb; $('#cDstOpp').checked = r.dstOpp; $('#cOwnDst').checked = r.ownDst; $('#cValue').checked = r.value; $('#cNoQ').checked = r.noQ;
+    capplying = false; $$('#crecipes .recipe').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.r === CL.recipe))); $('#cCustomNote').textContent = ''; LS.set('forge_crecipe', CL.recipe);
+  }
+  function markCCustom() { if (capplying) return; $('#cCustomNote').textContent = 'Custom: started from ' + CRECIPES[CL.recipe].label + '. Click it again to reset the rules.'; }
+  $$('#crecipes .recipe').forEach(b => b.addEventListener('click', () => applyCRecipe(b.dataset.r)));
+  $$('#cform input').forEach(i => i.addEventListener('change', markCCustom));
+  $('#cReset').addEventListener('click', () => { D.players.forEach(p => { CL.proj[p.name] = p.proj; }); CL.lock.clear(); CL.out.clear(); D.players.forEach(p => { if (/^(OUT|IR|D)$/.test(p.status) || p.proj == null) CL.out.add(p.name); }); renderCBuilder(); applyCRecipe(CL.recipe); });
+  let GLPK_ = null;
+  async function glpk() { if (!GLPK_) { const m = await import('https://cdn.jsdelivr.net/npm/glpk.js@4.0.2/dist/index.js'); GLPK_ = await m.default(); } return GLPK_; }
+  $('#cform').addEventListener('submit', async ev => {
+    ev.preventDefault(); const st = $('#cStatus'); st.className = 'status'; st.textContent = 'Loading the optimizer…'; $('#cForgeBtn').disabled = true;
+    try { const g = await glpk(); st.textContent = 'Heating the steel…'; await new Promise(r => setTimeout(r, 20)); await runClassic(g); }
+    catch (e) { st.className = 'status err'; st.textContent = 'The optimizer could not load (' + e.message + '). Check your connection and try again.'; }
+    finally { $('#cForgeBtn').disabled = false; }
+  });
+  async function runClassic(g) {
+    const st = $('#cStatus'), t0 = performance.now(); const opt = {
+      n: Math.max(1, Math.min(50, parseInt($('#cN').value) || 20)), minSal: parseInt($('#cMinSal').value) || 0, games: parseInt($('#cGames').value) || 9,
+      uniq: Math.max(1, Math.min(6, parseInt($('#cUniq').value) || 1)), exp: Math.max(5, Math.min(100, parseFloat($('#cExp').value) || 100)), dstCap: parseInt($('#cDstCap').value) || 50,
+      stack: $('#cStack').checked, bring: $('#cBring').checked, ownRb: $('#cOwnRb').checked, dstOpp: $('#cDstOpp').checked, ownDst: $('#cOwnDst').checked, value: $('#cValue').checked, noQ: $('#cNoQ').checked };
+    const P = D.players.map((p, i) => ({ ...p, i, q: CL.proj[p.name] })).filter(p => p.q != null && !CL.out.has(p.name) && !/^(OUT|IR|D)$/.test(p.status) && !(opt.noQ && p.status === 'Q' && !CL.lock.has(p.name)));
+    const x = p => 'x' + p.i, teams = [...new Set(P.map(p => p.team))], gamesL = [...new Set(P.map(p => p.game))];
+    const capP = Math.max(1, Math.ceil(opt.n * opt.exp / 100)), cnt = {}, chosen = [];
+    const B = (lo, hi) => lo === hi ? { type: g.GLP_FX, lb: lo, ub: hi } : hi == null ? { type: g.GLP_LO, lb: lo, ub: 0 } : lo == null ? { type: g.GLP_UP, lb: 0, ub: hi } : { type: g.GLP_DB, lb: lo, ub: hi };
+    for (let k = 0; k < opt.n; k++) {
+      const sub = []; const row = (name, vars, lo, hi) => { const v = vars.filter(t => t.coef !== 0); if (v.length) sub.push({ name, vars: v, bnds: B(lo, hi) }); };
+      const pick = f => P.filter(f).map(p => ({ name: x(p), coef: 1 }));
+      row('sal', P.map(p => ({ name: x(p), coef: p.sal })), opt.minSal, 50000);
+      row('QB', pick(p => p.pos === 'QB'), 1, 1); row('DST', pick(p => p.pos === 'DST'), 1, 1); row('RB', pick(p => p.pos === 'RB'), 2, 3); row('WR', pick(p => p.pos === 'WR'), 3, 4); row('TE', pick(p => p.pos === 'TE'), 1, 2);
+      row('FX', pick(p => ['RB', 'WR', 'TE'].includes(p.pos)), 7, 7);
+      for (const t of teams) {
+        const qb = P.filter(p => p.team === t && p.pos === 'QB'), oppT = (P.find(p => p.team === t) || {}).opp;
+        if (opt.stack && qb.length) row('stk' + t, [...qb.map(p => ({ name: x(p), coef: -1 })), ...pick(p => p.team === t && (p.pos === 'WR' || p.pos === 'TE'))], 0, null);
+        if (opt.bring && qb.length) row('bb' + t, [...qb.map(p => ({ name: x(p), coef: -1 })), ...pick(p => p.team === oppT && p.pos !== 'DST')], 0, null);
+        if (opt.ownRb && qb.length) row('orb' + t, [...qb.map(p => ({ name: x(p), coef: 3 })), ...pick(p => p.team === t && p.pos === 'RB')], null, 3);
+        if (opt.ownDst) row('odst' + t, pick(p => p.team === t && (p.pos === 'QB' || p.pos === 'DST')), null, 1);
+        if (opt.dstOpp) { const d = P.filter(p => p.team === t && p.pos === 'DST'); if (d.length) row('dop' + t, [...d.map(p => ({ name: x(p), coef: 8 })), ...pick(p => p.team === oppT && p.pos !== 'DST')], null, 8); }
+      }
+      if (opt.value) row('val', pick(p => !['QB', 'DST'].includes(p.pos) && p.sal <= 4000), 1, null);
+      const yv = [];
+      if (opt.games < gamesL.length) { gamesL.forEach((gm, j) => { row('g' + j, [...pick(p => p.game === gm), { name: 'y' + j, coef: -9 }], null, 0); yv.push('y' + j); }); row('gmax', yv.map(y => ({ name: y, coef: 1 })), null, opt.games); }
+      chosen.forEach((c, j) => row('u' + j, c.lu.map(p => ({ name: x(p), coef: 1 })), null, 9 - opt.uniq));
+      // exposure caps and locks as rows (glpk.js resets bounds on binary variables)
+      const capd = P.filter(p => (cnt[p.i] || 0) >= (p.pos === 'DST' ? Math.min(opt.dstCap, capP) : capP) && !CL.lock.has(p.name)); if (capd.length) row('cap', capd.map(p => ({ name: x(p), coef: 1 })), null, 0);
+      const lk = P.filter(p => CL.lock.has(p.name)); if (lk.length) row('lock', lk.map(p => ({ name: x(p), coef: 1 })), lk.length, null);
+      const lp = { name: 'forge', objective: { direction: g.GLP_MAX, name: 'obj', vars: P.map(p => ({ name: x(p), coef: p.q })) }, subjectTo: sub, binaries: [...P.map(x), ...yv] };
+      const r = await Promise.resolve(g.solve(lp, { msglev: g.GLP_MSG_OFF, presol: true }));   // browser build runs in a worker (returns a promise)
+      if (k % 5 === 4) st.textContent = `Forging… ${k + 1} of ${opt.n}`;
+      if (!r || !r.result || (r.result.status !== g.GLP_OPT && r.result.status !== g.GLP_FEAS)) break;
+      const lu = P.filter(p => r.result.vars[x(p)] > 0.5); if (lu.length !== 9) break;
+      chosen.push({ lu, s: lu.reduce((t, p) => t + p.q, 0) }); lu.forEach(p => cnt[p.i] = (cnt[p.i] || 0) + 1);
+    }
+    if (!chosen.length) { st.className = 'status err'; st.textContent = 'No legal lineup fits these rules. Loosen a lock, the salary floor or a rule.'; return; }
+    CL.result = chosen.map(c => ({ players: slotOrder(c.lu), proj: c.s, sal: c.lu.reduce((t, p) => t + p.sal, 0) }));
+    st.textContent = `Forged ${chosen.length} of ${opt.n} lineups in ${Math.round(performance.now() - t0)} ms` + (chosen.length < opt.n ? ' · loosen the rules for more' : '');
+    $('#cOut').hidden = false; $('#cGrid').innerHTML = CL.result.map((l, i) => cCard(l, i)).join('');
+    const n = CL.result.length, ex = {}; CL.result.forEach(l => l.players.forEach(p => ex[p.name] = (ex[p.name] || 0) + 1));
+    $('#cExpo').innerHTML = Object.entries(ex).sort((a, b) => b[1] - a[1]).slice(0, 40).map(([k, v]) => `<span class="chip">${k} <b>${Math.round(100 * v / n)}%</b></span>`).join('');
+    if (ENC) $('#cDl').hidden = false;
+  }
+  function slotOrder(lu) {
+    const by = pz => lu.filter(p => p.pos === pz).sort((a, b) => b.sal - a.sal); const qb = by('QB'), rb = by('RB'), wr = by('WR'), te = by('TE'), dst = by('DST');
+    const flex = [...rb.slice(2), ...wr.slice(3), ...te.slice(1)][0];
+    return [qb[0], rb[0], rb[1], wr[0], wr[1], wr[2], te[0], flex, dst[0]].map((p, k) => ({ ...p, slot: ['QB', 'RB', 'RB', 'WR', 'WR', 'WR', 'TE', 'FLEX', 'DST'][k] }));
+  }
+  function cCard(l, i) {
+    const ps = l.players || (l.lineup || []).map(n => { const p = D.players.find(z => z.name === n) || { name: n }; return p; });
+    return `<article class="lu"><header><span>#${i + 1}${l.contest ? ' · ' + shortContest(l.contest) : ''}</span><span>${l.proj != null ? `<b>${fmt(l.proj)}</b> pts · ` : ''}<b>${money(l.sal || ps.reduce((t, p) => t + (p.sal || 0), 0))}</b></span></header><ol>
+      ${ps.map(p => `<li${p.slot === 'QB' || p.pos === 'QB' ? ' class="cpt"' : ''}><span>${p.slot ? `<small class="p" style="display:inline-block;width:34px">${p.slot}</small>` : ''}${p.name}</span><span class="p">${p.pos || ''} ${p.team || ''}</span></li>`).join('')}</ol></article>`;
+  }
+  function dkCSVc(L) { return ['QB,RB,RB,WR,WR,WR,TE,FLEX,DST', ...L.map(l => l.players.map(p => `"${p.name} (${p.id})"`).join(','))].join('\n'); }
+  $('#cCopy').addEventListener('click', e => copy(dkCSVc(CL.result), e.currentTarget));
+  $('#cDl').addEventListener('click', () => { try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([dkCSVc(CL.result) + '\n'], { type: 'text/csv' })); a.download = 'FORGE_classic_lineups.csv'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); } catch (e) { copy(dkCSVc(CL.result), $('#cDl')); } });
 
   // record
   function renderRecord() {
