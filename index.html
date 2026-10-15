@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="05a81505582a"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="16f85a3d59dd"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-192.png">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -598,7 +598,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     const loc = u => { if (!u) return null; const d = new Date(String(u).replace(' UTC', 'Z').replace(' ', 'T')); return isNaN(d) ? null : d.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); };
     const fr = loc(s.odds_as_of); $('#fresh').textContent = fr ? 'Odds as of ' + fr + (s.refreshed_utc ? ' · projections refreshed ' + loc(s.refreshed_utc) : '') : '';
     if (!LS.get('forge_start_seen')) $('#startCard').hidden = false;
-    const g = (D.record && D.record.backtest || []).find(b => b.name === 'B1ax');
+    const g = (D.record && D.record.backtest || []).find(b => b.name === 'H1ax');   // the gpp recipe uses method 'hyb' = the entered build (FORGE Pick)
     $('#evGpp').textContent = g ? `Backtest, ${g.games} real contests: ${g.roi > 0 ? '+' : ''}${g.roi}% capped ROI (median ${g.median > 0 ? '+' : ''}${g.median}%)` : '';
     renderPlayers(); initLineups(); renderBuilderTable(); renderRecord(); applyRecipe(LS.get('forge_recipe') || 'gpp', true); initTester();
     const t = LS.get('forge_tab'); if (t && $('#p-' + t)) show(t);
