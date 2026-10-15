@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="bfeee3028d65"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="29b259f4de0d"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -455,6 +455,7 @@ td.lev { color: var(--steel); }
         <label class="check"><input type="checkbox" id="cNoQ" checked> Skip questionable (Q) players</label>
         <label class="check mine"><input type="checkbox" id="cMine" checked> Make my lineups mine <span class="tag steel">untested</span></label>
         <p class="note">Nudges every projection (typically within ±8%) in a pattern unique to this phone, so friends using FORGE don't build the same lineups and split a prize. It can cost a little projected score; turn it off to get FORGE's exact numbers.</p>
+        <p class="note">FORGE keeps a copy of the lineups you build here (no names or accounts, just an anonymous phone ID) and grades them after the game to improve its methods.</p>
         <button type="submit" class="btn primary" id="cForgeBtn"><svg class="ico" aria-hidden="true"><use href="#i-hammer"/></svg>Forge lineups</button>
         <div class="status" id="cStatus" role="status"></div>
       </form>
@@ -496,6 +497,7 @@ td.lev { color: var(--steel); }
         <label class="check"><input type="checkbox" id="bDst" checked> No DST against your captain</label>
         <label class="check mine"><input type="checkbox" id="bMine" checked> Make my lineups mine <span class="tag steel">untested</span></label>
         <p class="note">Nudges every projection (typically within ±8%) in a pattern unique to this phone, so friends using FORGE don't build the same lineups and split a prize. It can cost a little projected score; turn it off to get FORGE's exact numbers.</p>
+        <p class="note">FORGE keeps a copy of the lineups you build here (no names or accounts, just an anonymous phone ID) and grades them after the game to improve its methods.</p>
         <button type="submit" class="btn primary" id="forgeBtn"><svg class="ico" aria-hidden="true"><use href="#i-hammer"/></svg>Forge lineups<span class="sparks" id="sparks"></span></button>
         <div class="status" id="bStatus" role="status"></div>
         <p class="note">The simulation methods run FORGE's own game simulation in your browser (2,000 simulated games against a simulated field of 3,000 lineups; the server build uses 8,000), using your projections. Backtests replay real 2026 contests; they aren't a promise.</p>
@@ -638,7 +640,7 @@ td.lev { color: var(--steel); }
     IDX = (await getJSON('index')).slates || []; if (!IDX.length) throw new Error('no slates published');
     const want = LS.get('forge_slate'), w = IDX.find(x => x.id === want), dflt = defaultSlate();
     await loadSlate((w && (w.status === 'preliminary' || w.status === 'final' || w.status === 'scheduled')) ? w.id : dflt.id);
-    pickupShared(); loadOverlays(); setInterval(() => { if (!document.hidden) loadOverlays(); }, 5 * 60e3);
+    pickupShared(); loadOverlays(); setTimeout(flushInbox, 3000); setInterval(() => { if (!document.hidden) loadOverlays(); }, 5 * 60e3);
   }
   // overlay alert: guaranteed contests running under their prize pool (tools/overlay_scan.py, every 10 min before NFL locks). FORGE never enters contests.
   async function loadOverlays() {
@@ -840,6 +842,33 @@ td.lev { color: var(--steel); }
   }
 
   // ownership lean (2026-10-15, Drew): user lever, OFF by default (Hard Rule 7: untested; PREREG_ROUND18 uniqueness penalty did not beat the default on 14 games)
+  // build inbox (2026-10-15): every Builder run is queued on this device and filed to FORGE (anonymous device id, no names or accounts) so it can be
+  // graded on the real outcome. Sent as a GitHub issue (label site-build) with a token limited to issues; kept in the queue until a send succeeds.
+  let INBOX = null;
+  async function inboxCfg() { if (INBOX !== null) return INBOX; try { INBOX = ENC ? await getJSON('inbox') : false; } catch (e) { INBOX = false; } return INBOX; }
+  function anonId() { return 'd' + hash32('forge-device|' + devSeed()).toString(36); }
+  function logBuild(kind, settings, lineups) {
+    try {
+      const rec = { v: 1, kind, slate: D.slate.id || D.slate.game, device: anonId(), owner: !!D.owner, ts: new Date().toISOString(), page: (document.querySelector('meta[name="forge-version"]') || {}).content || null,
+        status: (IDX.find(x => x.id === CUR) || {}).status || null, settings, lineups };
+      let q = []; try { q = JSON.parse(LS.get('forge_outbox') || '[]'); } catch (e) {}
+      q.push(rec); LS.set('forge_outbox', JSON.stringify(q.slice(-60))); flushInbox();
+    } catch (e) { /* logging never blocks a build */ }
+  }
+  let flushing = false;
+  async function flushInbox() {
+    if (flushing) return; flushing = true;
+    try {
+      const cfg = await inboxCfg(); if (!cfg || !cfg.token) return;
+      let q = []; try { q = JSON.parse(LS.get('forge_outbox') || '[]'); } catch (e) {}
+      while (q.length) {
+        const r = q[0], body = 'FORGE site build (automatic)\n\n```json\n' + JSON.stringify(r) + '\n```';
+        const res = await fetch(`https://api.github.com/repos/${cfg.repo}/issues`, { method: 'POST', headers: { Authorization: 'Bearer ' + cfg.token, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: `site build ${r.slate} ${r.kind} ${r.device} ${r.ts}`, body, labels: [cfg.label || 'site-build'] }) });
+        if (!res.ok) break; q.shift(); LS.set('forge_outbox', JSON.stringify(q));
+      }
+    } catch (e) { /* offline or blocked: stays queued */ } finally { flushing = false; }
+  }
   // per-phone uniqueness (2026-10-15): a fixed, seeded nudge per player for this device + slate (owner devices are never nudged)
   function devSeed() { let v = LS.get('forge_seed'); if (!v) { v = String(Math.floor(Math.random() * 2147483647)); LS.set('forge_seed', v); } return v; }
   function hash32(str) { let h = 2166136261; for (let k = 0; k < str.length; k++) { h ^= str.charCodeAt(k); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -1023,6 +1052,10 @@ td.lev { color: var(--steel); }
     st.className = 'status'; st.textContent = `Forged ${chosen.length} of ${N} lineups (${setInfo({ p51: 'P51-M-SX', hyb: 'HYB-M-SX', ev: 'EV-M', hyb0: 'HYB-M' }[method]).name}) · ${codes.length.toLocaleString('en-US')} legal lineups${sim ? ', ' + Math.min(codes.length, D.simpack.topn || 10000).toLocaleString('en-US') + ' simulated' : ''} in ${(ms / 1000).toFixed(1)} s` + (chosen.length < N ? ' · loosen caps for more' : '');
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) { const sp = $('#sparks'); sp.innerHTML = Array.from({ length: 18 }, () => { const a = Math.random() * Math.PI * 2, r = 40 + Math.random() * 70; return `<b style="--dx:${(Math.cos(a) * r).toFixed(0)}px;--dy:${(Math.sin(a) * r - 20).toFixed(0)}px"></b>`; }).join(''); setTimeout(() => sp.innerHTML = '', 800); }
     FLT.mine = mkF(); $('#bOut').hidden = false; renderMine();
+    logBuild('showdown', { method, recipe: builder.recipe, n: N, cap, exp: maxExp, uniq, minSal, punt: maxPunt, noCpt, dst: dstRule, struct: builder.struct,
+      own_lean: parseInt($('#bOwn').value) || 0, mine: $('#bMine').checked, locks: [...builder.lock], outs: [...builder.out], cpt_pool: [...builder.cpt],
+      edits: Object.fromEntries(P.filter(p => builder.proj[p.name] != null && Math.abs(builder.proj[p.name] - p.proj) > 0.005).map(p => [p.name, builder.proj[p.name]])) },
+      builder.result.map(l => ({ cpt: l.cpt, flex: l.flex })));
   }
   // ---- single-lineup simulator (2026-10-15)
   function initTester() {
@@ -1185,6 +1218,9 @@ td.lev { color: var(--steel); }
     CL.result = chosen.map(c => ({ players: slotOrder(c.lu), proj: c.s, sal: c.lu.reduce((t, p) => t + p.sal, 0) }));
     st.textContent = `Forged ${chosen.length} of ${opt.n} lineups in ${Math.round(performance.now() - t0)} ms` + (chosen.length < opt.n ? ' · loosen the rules for more' : '');
     $('#cOut').hidden = false; FLT.c = mkF(); renderC();
+    logBuild('classic', Object.assign({ recipe: CL.recipe, mine: $('#cMine').checked, locks: [...CL.lock], outs: [...CL.out],
+      edits: Object.fromEntries(D.players.filter(p => CL.proj[p.name] != null && p.proj != null && Math.abs(CL.proj[p.name] - p.proj) > 0.005).map(p => [p.name, CL.proj[p.name]])) }, opt),
+      CL.result.map(l => ({ players: l.players.map(p => p.name) })));
     if (ENC) $('#cDl').hidden = false;
   }
   function renderC() { fltBar($('#fltC'), 'c', CL.result, renderC); const L = cShown(); $('#cGrid').innerHTML = L.length ? L.map((l, i) => cCard(l, i)).join('') : '<p class="note">No lineup matches the filter.</p>';
