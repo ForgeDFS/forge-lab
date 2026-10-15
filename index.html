@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="07f35fce6729"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="44f0c8723b73"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-192.png">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -126,6 +126,16 @@ input[type="number"] { width: 84px; font-family: var(--f-data); }
 .flt select, .flt input { font-size: 13px; max-width: 170px; } .flt input { width: 76px; }
 .flt .chip { cursor: pointer; } .flt .chip.inc { border: 1px solid var(--good, #5a9); } .flt .chip.exc { border: 1px solid var(--bad); text-decoration: line-through; } .flt .chip.cpt { border: 1px solid var(--ember); }
 .flt .count { font-family: var(--f-data); font-size: 12px; color: var(--muted); }
+/* overlay alert (2026-10-15) */
+.ovl { margin-top: 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--plate); padding: 10px 12px; }
+.ovl.hot { border-color: var(--gold); box-shadow: inset 3px 0 0 var(--gold); }
+.ovl h3 { font-size: 17px; letter-spacing: .06em; text-transform: uppercase; margin: 0 0 2px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.ovl h3 small { font-family: var(--f-data); font-size: 11px; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.ovl .row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 8px 0; border-top: 1px solid var(--line); } .ovl .row .nm { flex: 1 1 60%; }
+.ovl .row:first-of-type { border-top: 0; }
+.ovl .nm { font-weight: 600; } .ovl .ometa { flex: 1 1 100%; font-family: var(--f-data); font-size: 11.5px; color: var(--muted); line-height: 1.45; }
+.ovl .val { font-family: var(--f-data); color: var(--gold); text-align: right; white-space: nowrap; }
+.ovl a.btn { color: var(--fg); text-decoration: none; } .ovl details summary { cursor: pointer; color: var(--muted); font-size: 12.5px; }
 .note { font-size: 12.5px; color: var(--muted); }
 .status { font-family: var(--f-data); font-size: 13px; color: var(--muted); min-height: 20px; }
 .status.err { color: var(--bad); }
@@ -279,6 +289,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 
   <div class="newver" id="newVer" hidden>A newer FORGE is ready. <button type="button" class="btn small primary" id="newVerBtn">Refresh now</button></div>
   <nav class="slates" id="slatePicker" aria-label="Games" hidden></nav>
+  <section class="ovl" id="ovl" hidden aria-live="polite"></section>
   <section class="plate" aria-label="Game"><div class="glow" aria-hidden="true"></div>
     <div>
       <div class="matchup"><div class="team" id="tAway">—</div><div class="at" id="tAt">@</div><div class="team" id="tHome">—</div></div>
@@ -523,7 +534,25 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     IDX = (await getJSON('index')).slates || []; if (!IDX.length) throw new Error('no slates published');
     const want = LS.get('forge_slate'), w = IDX.find(x => x.id === want), dflt = defaultSlate();
     await loadSlate((w && (w.status === 'preliminary' || w.status === 'final' || w.status === 'scheduled')) ? w.id : dflt.id);
-    pickupShared();
+    pickupShared(); loadOverlays(); setInterval(() => { if (!document.hidden) loadOverlays(); }, 5 * 60e3);
+  }
+  // overlay alert: guaranteed contests running under their prize pool (tools/overlay_scan.py, every 10 min before NFL locks). FORGE never enters contests.
+  async function loadOverlays() {
+    let O; try { O = await getJSON('overlays'); } catch (e) { return; }
+    const el = $('#ovl'), ago = Math.round((Date.now() - new Date(O.checked_utc).getTime()) / 60e3), ALL = (O.overlays || []).map(o => ({ ...o, mins: Math.round((new Date(o.locks_utc).getTime() - Date.now()) / 60e3) })).filter(o => o.mins > 0);
+    const isMad = o => o.madden || /madden/i.test(o.name), L = ALL.filter(o => !isMad(o)), M = ALL.filter(isMad);   // Madden Stream = DK contests on simulated video-game NFL games (FORGE has no projections for them)
+    if (ago > 240 && !ALL.length) { el.hidden = true; return; }
+    el.hidden = false; el.classList.toggle('hot', L.length > 0); const usd = v => '$' + (v >= 100 ? Math.round(v).toLocaleString('en-US') : v.toFixed(2));
+    const lock = m => m < 60 ? `locks in ${m} min` : `locks in ${Math.floor(m / 60)} h ${m % 60} min`;
+    const row = o => `<div class="row"><span class="nm">${o.name}</span><span class="val">${o.value_per_dollar.toFixed(2)}x</span>
+      <span class="ometa">${o.kind} · ${usd(o.fee)} entry · ${o.entries.toLocaleString('en-US')} of ${o.max_entries.toLocaleString('en-US')} entered · prize pool ${usd(o.prize_pool)} · DraftKings adds ${usd(o.overlay)} if it stays this way · ${lock(o.mins)}</span>
+      <a class="btn small" href="${o.url}" target="_blank" rel="noopener">Open on DraftKings</a></div>`;
+    el.innerHTML = L.length
+      ? `<h3>Overlay alert · ${L.length} guaranteed contest${L.length > 1 ? 's' : ''} under the prize pool <small>checked ${ago <= 1 ? 'just now' : ago + ' min ago'}</small></h3>
+         <p class="note" style="margin:0 0 4px">Entries so far × entry fee is less than what DraftKings guarantees to pay. "1.20x" = an average entry is worth $1.20 per $1 if you add one now. Counts change fast near lock; check the contest before entering.</p>
+         ${L.slice(0, 5).map(row).join('')}${L.length > 5 ? `<details><summary>${L.length - 5} more</summary>${L.slice(5).map(row).join('')}</details>` : ''}`
+      : ''; if (!L.length) el.innerHTML = `<h3>No overlays on real NFL games right now <small>checked ${ago <= 1 ? 'just now' : ago + ' min ago'} · ${O.watched || 0} guaranteed contests locking in the next ${Math.round((O.lookahead_min || 180) / 60)} h are filling normally</small></h3>`;
+    if (M.length) el.innerHTML += `<details style="margin-top:6px"><summary>${M.length} overlay${M.length > 1 ? 's' : ''} in Madden Stream contests (simulated video-game NFL; FORGE has no projections for these)</summary>${M.slice(0, 15).map(row).join('')}</details>`;
   }
   function gate(enc) {
     const g = $('#gate'), f = $('#gateForm'), i = $('#gatePw'), m = $('#gateMsg');
