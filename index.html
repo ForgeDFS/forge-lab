@@ -176,6 +176,19 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 .slate-chip small { color: var(--muted); font-size: 11.5px; }
 .slate-chip[aria-pressed="true"] { border-color: var(--ember); box-shadow: inset 0 -3px 0 var(--ember); }
 .slate-chip.live, .slate-chip.complete { opacity: .7; }
+.steps { margin: 0 0 16px; padding-left: 22px; display: grid; gap: 14px; max-width: 760px; }
+.steps li { line-height: 1.45; }
+.steps .btn { margin-top: 6px; display: inline-flex; }
+.filebtn { position: relative; overflow: hidden; cursor: pointer; }
+.filebtn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.dkres { margin-top: 10px; display: grid; gap: 8px; }
+.dkres .ok { color: var(--good); font-weight: 600; }
+.dkres .err { color: var(--bad); font-weight: 600; }
+.dkres table { font-size: 13px; }
+.manual { max-width: 980px; margin-top: 8px; }
+.manual summary { cursor: pointer; font-family: var(--f-display); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; font-size: 16px; padding: 8px 0; }
+.lu.done { opacity: .5; }
+.lu .tick { display: flex; gap: 8px; align-items: center; margin-top: 8px; font-size: 14px; }
 .recipes { display: grid; gap: 8px; }
 .recipe { text-align: left; border: 1px solid var(--line); background: var(--plate-2); border-radius: 6px; padding: 10px 12px; cursor: pointer; color: var(--fg); display: grid; gap: 2px; }
 .recipe b { font-family: var(--f-display); font-size: 17px; letter-spacing: .06em; text-transform: uppercase; }
@@ -235,6 +248,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     <button class="tab" role="tab" id="tab-players" aria-selected="true" data-p="players"><span class="kicker">The ore</span>Players</button>
     <button class="tab" role="tab" id="tab-lineups" aria-selected="false" data-p="lineups"><span class="kicker">Forged</span>FORGE Lineups</button>
     <button class="tab" role="tab" id="tab-builder" aria-selected="false" data-p="builder"><span class="kicker">The anvil</span>Builder</button>
+    <button class="tab" role="tab" id="tab-dk" aria-selected="false" data-p="dk"><span class="kicker">Out of the fire</span>To DraftKings</button>
     <button class="tab" role="tab" id="tab-record" aria-selected="false" data-p="record"><span class="kicker">Proof of steel</span>Record</button>
     <button class="tab" role="tab" id="tab-how" aria-selected="false" data-p="how"><span class="kicker">The process</span>How it works</button>
   </nav>
@@ -267,7 +281,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     <div class="toolbar">
       <label for="buildSel" class="note">Set</label><select id="buildSel"></select>
       <label for="contestSel" class="note">Contest</label><select id="contestSel"></select>
-      <button class="btn small" id="copyForge">Copy for DraftKings</button>
+      <button class="btn small" id="copyForge">Copy for DraftKings</button><button class="btn small primary" type="button" data-send="forge">Send to DraftKings →</button>
     </div>
     <div class="note" id="expoHead">Exposure</div>
     <div class="expo" id="expo"></div>
@@ -308,7 +322,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
         <div class="toolbar"><div class="seg" id="cbPos"></div><input type="search" id="cbSearch" placeholder="Search players" aria-label="Search players"><button class="btn small" id="cReset" type="button">Reset</button><span class="note">Lock = in every lineup. Out = never used.</span></div>
         <div class="tbl-wrap"><table id="cbtable"><thead><tr><th>Player</th><th>Pos</th><th class="n">Salary</th><th class="n">Proj</th><th>Lock</th><th>Out</th></tr></thead><tbody></tbody></table></div>
         <div id="cOut" hidden>
-          <div class="toolbar" style="margin-top:16px"><h3 style="font-size:22px">Fresh off the anvil</h3><button class="btn small" id="cCopy" type="button">Copy for DraftKings</button><button class="btn small" id="cDl" type="button" hidden>Download CSV</button></div>
+          <div class="toolbar" style="margin-top:16px"><h3 style="font-size:22px">Fresh off the anvil</h3><button class="btn small" id="cCopy" type="button">Copy for DraftKings</button><button class="btn small" id="cDl" type="button" hidden>Download CSV</button><button class="btn small primary" type="button" data-send="mine">Send to DraftKings →</button></div>
           <div class="expo" id="cExpo"></div>
           <div class="grid" id="cGrid"></div>
         </div>
@@ -344,7 +358,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
         <div class="toolbar"><button class="btn small" id="resetProj" type="button">Reset projections</button><span class="note">CPT pool = only these can captain (none ticked = anyone). Lock = in every lineup. Out = never used.</span></div>
         <div class="tbl-wrap"><table id="btable"><thead><tr><th>Player</th><th>Pos</th><th class="n">Salary</th><th class="n">Proj</th><th title="Only these players can be captain">CPT pool</th><th>Lock</th><th>Out</th></tr></thead><tbody></tbody></table></div>
         <div id="bOut" hidden>
-          <div class="toolbar" style="margin-top:16px"><h3 style="font-size:22px">Fresh off the anvil</h3><button class="btn small" id="copyMine" type="button">Copy for DraftKings</button><button class="btn small" id="dlMine" type="button" hidden>Download CSV</button></div>
+          <div class="toolbar" style="margin-top:16px"><h3 style="font-size:22px">Fresh off the anvil</h3><button class="btn small" id="copyMine" type="button">Copy for DraftKings</button><button class="btn small" id="dlMine" type="button" hidden>Download CSV</button><button class="btn small primary" type="button" data-send="mine">Send to DraftKings →</button></div>
           <div class="expo" id="bExpo"></div>
           <div class="grid" id="bGrid"></div>
         </div>
@@ -352,6 +366,21 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     </div>
     </div>
     <div id="copyBox" hidden><p class="note">Copy didn't go through on this device. Select the text below and copy it.</p><textarea id="copyText" readonly></textarea></div>
+  </section>
+
+  <section class="panel" id="p-dk" hidden>
+    <p class="lede">Get FORGE's lineups (or your own from the Builder) into DraftKings from your phone. Use your phone's web browser for DraftKings here, not the DraftKings app: the app can't take a file, the website can.</p>
+    <ol class="steps">
+      <li><b>Join your contests.</b> In DraftKings, enter every contest you want with any lineup (or reserve your entries). You'll replace those lineups in a minute.</li>
+      <li><b>Download your entries file.</b> Open DraftKings in Safari or Chrome, go to <b>Lineups → Edit Entries</b> and download the file (DKEntries.csv). <a class="btn small" href="https://www.draftkings.com/entry/upload" target="_blank" rel="noopener">Open DraftKings Edit Entries</a></li>
+      <li><b>Fill it here.</b> <label class="btn primary filebtn"><input type="file" id="dkFile" accept=".csv,text/csv,text/comma-separated-values,application/vnd.ms-excel">Choose your DKEntries file</label>
+        <div class="field" style="margin-top:10px"><label>Use these lineups</label><div class="seg" id="dkSrc"><button type="button" data-v="forge" aria-pressed="true">FORGE's lineups</button><button type="button" data-v="mine" aria-pressed="false">My Builder lineups</button></div></div>
+        <div id="dkResult" class="dkres" role="status"></div></li>
+      <li><b>Upload it back.</b> On DraftKings' Edit Entries page tap <b>Upload</b> and pick the filled file (it's in your Downloads / Files). DraftKings shows how many entries were updated.</li>
+    </ol>
+    <details class="manual"><summary>Only entering one or two? Do it by hand</summary>
+      <p class="note">Your current lineups in DraftKings' slot order. Tick each one off as you enter it in the app; this phone remembers the ticks.</p>
+      <div class="grid" id="dkManual"></div></details>
   </section>
 
   <section class="panel" id="p-record" hidden>
@@ -440,6 +469,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 
   function init(data, meta) {
     meta = meta || {}; const isC = data.slate && data.slate.kind === 'classic'; document.body.classList.toggle('classic', isC);
+    setTimeout(() => { if (typeof DKFILE !== 'undefined' && DKFILE) fillDK(DKFILE); renderManual(); }, 0);   // re-check a loaded entries file against the newly picked game
     if (isC) { D = data; return initClassic(data, meta); }
     $('#tAt').textContent = '@'; $('#lSpread').textContent = 'Spread'; $('#lTotal').textContent = 'Total';
     D = data; const s = D.slate;
@@ -747,6 +777,98 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
   function dkCSVc(L) { return ['QB,RB,RB,WR,WR,WR,TE,FLEX,DST', ...L.map(l => l.players.map(p => `"${p.name} (${p.id})"`).join(','))].join('\n'); }
   $('#cCopy').addEventListener('click', e => copy(dkCSVc(CL.result), e.currentTarget));
   $('#cDl').addEventListener('click', () => { try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([dkCSVc(CL.result) + '\n'], { type: 'text/csv' })); a.download = 'FORGE_classic_lineups.csv'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); } catch (e) { copy(dkCSVc(CL.result), $('#cDl')); } });
+
+
+  // ---------------------------------------------------------------- To DraftKings (2026-10-15): fill a DKEntries file in the browser, verified against DK's own player list in the file
+  let DKSRC = 'forge'; const CASHRX = /double up|50\/50|50-50|fifty|head ?to ?head|h2h/i, SERX = /single entry|\[single/i;
+  $$('#dkSrc button').forEach(b => b.addEventListener('click', () => { DKSRC = b.dataset.v; $$('#dkSrc button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); if (DKFILE) fillDK(DKFILE); renderManual(); }));
+  function csvParse(t) {
+    const out = []; let row = [], f = '', q = false;
+    for (let i = 0; i < t.length; i++) { const c = t[i];
+      if (q) { if (c === '"') { if (t[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+      else if (c === '"') q = true; else if (c === ',') { row.push(f); f = ''; } else if (c === '\n' || c === '\r') { if (c === '\r' && t[i + 1] === '\n') i++; row.push(f); out.push(row); row = []; f = ''; } else f += c; }
+    if (f !== '' || row.length) { row.push(f); out.push(row); } return out;
+  }
+  const csvCell = v => /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  let DKFILE = null;
+  $('#dkFile').addEventListener('change', async ev => { const f = ev.target.files[0]; if (!f) return; DKFILE = await f.text(); ev.target.value = ''; fillDK(DKFILE); });
+  function lineupsFor(kind) {      // -> { byContest: {name: [lu]}, gpp: [lu], se: lu, cash: lu } ; lu = {cpt, flex} (showdown) or {players} (classic)
+    if (DKSRC === 'mine') { const L = kind === 'classic' ? CL.result : builder.result; return { byContest: {}, gpp: L, se: L[0], cash: L[0] }; }
+    if (kind === 'classic') { const B = D.builds || {}; const k = Object.keys(B).find(x => (B[x] || []).length); const L = k ? B[k] : []; return { byContest: groupBy(L), gpp: L, se: L[0], cash: L[0] }; }
+    const keys = Object.keys(D.builds || {}); const k = keys.find(x => /^(Entered|FORGE build)/.test(x)) || keys[0]; const L = (D.builds[k] || []);
+    const by = groupBy(L), cashL = L.filter(l => CASHRX.test(l.contest || '')), seL = L.filter(l => SERX.test(l.contest || ''));
+    const seen = new Set(), gpp = [];
+    L.filter(l => !CASHRX.test(l.contest || '')).forEach(l => { const key = l.cpt + '|' + [...l.flex].sort().join(','); if (!seen.has(key)) { seen.add(key); gpp.push(l); } });
+    return { byContest: by, gpp, se: (seL[0] || gpp[0]), cash: (cashL[0] || gpp[0]) };
+  }
+  function groupBy(L) { const o = {}; L.forEach(l => { (o[l.contest] = o[l.contest] || []).push(l); }); return o; }
+  function fillDK(text) {
+    const res = $('#dkResult'); const say = (html) => res.innerHTML = html;
+    try {
+      const rows = csvParse(text.replace(/^﻿/, '')); const hdr = rows[0] || []; const isSD = hdr.includes('CPT'), isCL = hdr.includes('QB');
+      if (!isSD && !isCL) return say('<div class="err">That doesn\'t look like a DraftKings entries file (no CPT or QB columns). Download it from Lineups → Edit Entries.</div>');
+      const nS = isSD ? 6 : 9;
+      let pr = -1, pc = -1; for (let i = 0; i < rows.length && pr < 0; i++) { const j = rows[i].indexOf('Name + ID'); if (j >= 0) { pr = i; pc = j; } }
+      if (pr < 0) return say('<div class="err">The player list is missing from this file. Download a fresh copy from DraftKings.</div>');
+      const pool = {}, games = new Set();
+      for (let i = pr + 1; i < rows.length; i++) { const r = rows[i]; const nid = (r[pc] || '').trim(); if (!nid) continue;
+        const nm = (r[pc + 1] || '').trim(), rp = (r[pc + 3] || '').trim(), sal = +r[pc + 4] || 0, gi = (r[pc + 5] || '').split(' ')[0];
+        games.add(gi); pool[nm + '|' + (isSD ? rp : '')] = { nid, sal, rp, team: r[pc + 6] }; }
+      const entries = rows.slice(1).filter(r => /^\d+$/.test((r[0] || '').trim()) && (r[1] || '').trim());
+      if (!entries.length) return say('<div class="err">No entries in this file. Join or reserve your contests first, then download the file again.</div>');
+      const kind = D.slate.kind === 'classic' ? 'classic' : 'showdown';
+      if ((kind === 'classic') !== isCL) return say(`<div class="err">This is a ${isCL ? 'Classic' : 'Showdown'} file, but the game picked at the top is ${kind === 'classic' ? 'Classic' : 'a Showdown'}. Pick the matching game first.</div>`);
+      if (kind === 'classic') { const have = new Set(D.players.map(p => p.name)); const pn = Object.keys(pool).map(k => k.split('|')[0]); const hit = pn.filter(n => have.has(n)).length;
+        if (hit < 0.5 * pn.length) return say('<div class="err">This entries file is for a different Classic slate than the one on this page. Download the file for this Sunday\'s main slate.</div>'); }
+      if (kind === 'showdown') { const g = D.slate.away + '@' + D.slate.home; if (!games.has(g)) return say(`<div class="err">This file is for ${[...games].join(', ')}, but the game picked at the top is ${g}. Tap the right game at the top; this check runs again on its own.</div>`); }
+      const src = lineupsFor(kind); if (!src.gpp || !src.gpp.length) return say(`<div class="err">${DKSRC === 'mine' ? 'Build your lineups in the Builder first.' : 'FORGE has no lineups for this game yet. Try the Builder, then pick "My Builder lineups".'}</div>`);
+      const perContest = {}; entries.forEach(r => perContest[r[1].trim()] = (perContest[r[1].trim()] || 0) + 1);
+      if (DKSRC === 'mine' && Object.keys(perContest).some(c => !CASHRX.test(c) && (SERX.test(c) || perContest[c] === 1))) src.gpp = src.gpp.slice(1);   // FORGE rule: no lineup repeated across contests (single entry keeps #1)
+      let gp = 0; const used = {}, out = [], errs = [], plan = {};
+      const status = {}; D.players.forEach(p => status[p.name] = p.status || '');
+      for (const r of entries) {
+        const c = r[1].trim(); used[c] = used[c] || 0; let lu, why;
+        if (DKSRC === 'forge' && src.byContest[c] && src.byContest[c][used[c]]) { lu = src.byContest[c][used[c]]; why = 'FORGE set for this contest'; }
+        else if (CASHRX.test(c)) { lu = src.cash; why = 'cash lineup'; }
+        else if (SERX.test(c) || perContest[c] === 1) { lu = src.se; why = 'top lineup'; }
+        else { lu = src.gpp[gp++]; why = 'tournament lineups'; }
+        used[c]++;
+        if (!lu) { if (!errs.some(e => e.startsWith('Not enough'))) { const need = entries.filter(x => { const cc = x[1].trim(); return !(DKSRC === 'forge' && src.byContest[cc]) && !CASHRX.test(cc) && !(SERX.test(cc) || perContest[cc] === 1); }).length;
+            errs.push(`Not enough lineups: your tournament entries need ${need} different lineups and there are ${src.gpp.length}. ` + (DKSRC === 'mine' ? `In the Builder set Lineups to ${need + 1} (one more for your single-entry contests) and press Forge.` : 'Switch to "My Builder lineups" and build more.')); } continue; }
+        const names = kind === 'classic' ? lu.players.map(p => p.name || p) : [lu.cpt, ...lu.flex];
+        const ids = names.map((n, k) => { const e = pool[n + '|' + (kind === 'classic' ? '' : (k === 0 ? 'CPT' : 'FLEX'))]; return e; });
+        const miss = names.filter((n, k) => !ids[k]); if (miss.length) { errs.push(`${c}: ${miss.join(', ')} not found in your file's player list`); continue; }
+        const sal = ids.reduce((t, e) => t + e.sal, 0); if (sal > 50000) { errs.push(`${c}: lineup over the cap ($${sal})`); continue; }
+        if (new Set(names).size !== nS) { errs.push(`${c}: a player appears twice`); continue; }
+        const outP = names.filter(n => /^(OUT|IR|D)$/.test(status[n] || '')); if (outP.length) { errs.push(`${c}: ${outP.join(', ')} is ruled out`); continue; }
+        out.push([r[0], r[1], r[2], r[3], ...ids.map(e => e.nid)]); (plan[c] = plan[c] || { n: 0, why }).n++;
+      }
+      for (const c of Object.keys(perContest)) { if (CASHRX.test(c)) continue; const ls = out.filter(o => o[1].trim() === c).map(o => isSD ? o[4] + '|' + o.slice(5).sort().join(',') : o.slice(4).sort().join(',')); if (ls.length !== new Set(ls).size) errs.push(`${c}: the same lineup would be entered twice. Build more lineups.`); }
+      if (errs.length) return say('<div class="err">Not filled. Fix this first:</div><ul>' + errs.slice(0, 8).map(e => `<li>${e}</li>`).join('') + '</ul>');
+      const csv = [hdr.slice(0, 4 + nS).map(csvCell).join(','), ...out.map(r => r.map(x => csvCell(String(x))).join(','))].join('\r\n') + '\r\n';
+      const fname = `DKEntries_FORGE_${(D.slate.kind === 'classic' ? 'classic' : D.slate.away + D.slate.home)}.csv`;
+      say(`<div class="ok">✓ ${out.length} entries filled and checked against DraftKings' player list.</div>
+        <div class="tbl-wrap"><table><thead><tr><th>Contest</th><th class="n">Entries</th><th>Lineups used</th></tr></thead><tbody>${Object.entries(plan).map(([c, v]) => `<tr><td>${shortContest(c)}</td><td class="n">${v.n}</td><td>${v.why}</td></tr>`).join('')}</tbody></table></div>
+        <div class="toolbar"><button class="btn primary" type="button" id="dkDl">Download filled file</button><button class="btn small" type="button" id="dkCopy">Copy instead</button></div>
+        <p class="note">Then go back to DraftKings → Lineups → Edit Entries → Upload, and pick ${fname}.</p>`);
+      $('#dkDl').onclick = () => { try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = fname; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); } catch (e) { copy(csv, $('#dkDl')); } };
+      $('#dkCopy').onclick = e => copy(csv, e.currentTarget);
+    } catch (e) { say('<div class="err">Could not read that file (' + e.message + ').</div>'); }
+  }
+  function renderManual() {
+    const el = $('#dkManual'); if (!el || !D) return; const kind = D.slate.kind === 'classic' ? 'classic' : 'showdown';
+    let L = [];
+    if (DKSRC === 'mine') L = (kind === 'classic' ? CL.result : builder.result);
+    else if (kind === 'classic') { const B = D.builds || {}; const k = Object.keys(B).find(x => (B[x] || []).length); L = k ? B[k] : []; }
+    else { const keys = Object.keys(D.builds || {}); const k = keys.find(x => /^(Entered|FORGE build)/.test(x)) || keys[0]; L = k ? D.builds[k] : []; }
+    if (!L.length) { el.innerHTML = '<p class="note">No lineups yet. Build some in the Builder, or check back when FORGE has built this game.</p>'; return; }
+    const key = i => 'forge_done_' + (D.slate.id || D.slate.game) + '_' + DKSRC + '_' + i;
+    el.innerHTML = L.slice(0, 40).map((l, i) => { const card = kind === 'classic' ? cCard(l, i) : luCard(l, i); const done = LS.get(key(i)) === '1';
+      return card.replace('<article class="lu', `<article data-i="${i}" class="lu${done ? ' done' : ''}`).replace(/<\/article>$/, `<label class="tick"><input type="checkbox" data-i="${i}" ${done ? 'checked' : ''}> Entered</label></article>`); }).join('');
+    $$('#dkManual input[type=checkbox]').forEach(cb => cb.onchange = () => { LS.set(key(cb.dataset.i), cb.checked ? '1' : '0'); cb.closest('article').classList.toggle('done', cb.checked); });
+  }
+  $$('[data-send]').forEach(b => b.addEventListener('click', () => { DKSRC = b.dataset.send; $$('#dkSrc button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === DKSRC))); show('dk'); renderManual(); if (DKFILE) fillDK(DKFILE); window.scrollTo({ top: $('#p-dk').offsetTop - 60, behavior: 'smooth' }); }));
+  $('#tab-dk').addEventListener('click', () => { renderManual(); if (DKFILE) fillDK(DKFILE); });
 
   // record
   function renderRecord() {
