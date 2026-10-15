@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="6ee7718c9f18"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="05a81505582a"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-192.png">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -135,6 +135,10 @@ input[type="number"] { width: 84px; font-family: var(--f-data); }
 .ovl .row:first-of-type { border-top: 0; }
 .ovl .nm { font-weight: 600; } .ovl .ometa { flex: 1 1 100%; font-family: var(--f-data); font-size: 11.5px; color: var(--muted); line-height: 1.45; }
 .ovl .val { font-family: var(--f-data); color: var(--gold); text-align: right; white-space: nowrap; }
+.tpick { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; margin: 6px 0 8px; } .tpick select { width: 100%; font-size: 13px; }
+.tstats { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin: 10px 0; } .tstats div { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; background: var(--plate); }
+.tstats b { display: block; font-family: var(--f-data); font-size: 20px; } .tstats small { color: var(--muted); font-size: 11.5px; }
+.lu .testlu { margin: 6px 8px 8px; font-size: 11.5px; padding: 3px 8px; }
 .ovl a.btn { color: var(--fg); text-decoration: none; } .ovl details summary { cursor: pointer; color: var(--muted); font-size: 12.5px; }
 .note { font-size: 12.5px; color: var(--muted); }
 .status { font-family: var(--f-data); font-size: 13px; color: var(--muted); min-height: 20px; }
@@ -410,6 +414,8 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
         <div class="field"><label for="bUniq">Min players different between lineups</label><input type="number" id="bUniq" min="1" max="4" value="1"></div>
         <div class="field"><label for="bMinSal">Min salary used</label><input type="number" id="bMinSal" min="40000" max="50000" step="100" value="47000"></div>
         <div class="field"><label for="bPunt">Max FLEX at $1,000 or less</label><input type="number" id="bPunt" min="0" max="5" value="1"></div>
+        <div class="field"><label for="bOwn">Ownership lean <small id="bOwnV" style="text-transform:none;letter-spacing:0">off</small></label><input type="range" id="bOwn" min="-100" max="100" step="10" value="0" aria-describedby="bOwnNote">
+          <p class="note" id="bOwnNote">Left = fade popular players, right = play them more. Moves the projections every method uses (up to ±30% at the extremes, by how far a player's projected ownership is from the slate average). Untested lever: FORGE's tested settings keep it at 0, and a contrarian penalty did not beat the default on 14 backtested games.</p></div>
         <label class="check"><input type="checkbox" id="bNoCpt" checked> No TE, K or DST captain</label>
         <label class="check"><input type="checkbox" id="bDst" checked> No DST against your captain</label>
         <button type="submit" class="btn primary" id="forgeBtn"><svg class="ico" aria-hidden="true"><use href="#i-hammer"/></svg>Forge lineups<span class="sparks" id="sparks"></span></button>
@@ -425,6 +431,13 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
           <div class="expo" id="bExpo"></div>
           <div class="grid" id="bGrid"></div>
         </div>
+        <section class="tester" id="tester" hidden>
+          <h3 style="font-size:22px;margin-top:20px">Test a lineup</h3>
+          <p class="note">Pick a captain and five FLEX (or tap "Test" on any lineup card). FORGE plays it in 2,000 simulated games against a simulated field of 3,000 lineups, using the projections in the table above.</p>
+          <div class="tpick" id="tPick"></div>
+          <div class="toolbar"><button type="button" class="btn primary small" id="tRun">Simulate this lineup</button><span class="status" id="tStatus" role="status"></span></div>
+          <div id="tOut"></div>
+        </section>
       </div>
     </div>
     </div>
@@ -447,6 +460,8 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
         <div id="dkResult" class="dkres" role="status"></div></li>
       <li><b>Upload it back.</b> On DraftKings (Lineups → Edit Entries) tap <b>Upload</b> and pick the filled file (it's in your Downloads / Files). DraftKings shows how many entries were updated.</li>
     </ol>
+    <div class="appbox cl-only" id="lsBox"><b>Sunday late swap (Classic).</b> After the early games start, download your entries file again from DraftKings (Lineups → Edit Entries), choose it in step 3, then press the button. FORGE keeps every player whose game has started and re-picks the rest from players in games that haven't, using the latest projections and FORGE's Classic rules (QB stacked with his own WR/TE, no QB with his own RB or DST, nobody facing your DST). Only entries that gain at least 0.5 projected points are changed.
+      <div class="toolbar" style="margin-top:8px"><button class="btn primary" type="button" id="lsRun">Late swap my entries</button><span class="status" id="lsStatus" role="status"></span></div><div id="lsOut"></div></div>
     <div class="appbox emode-cta"><b>Using the DraftKings app?</b> Entry mode shows one lineup at a time, big and in the app's slot order, so you can tap the same players in DraftKings. It remembers where you left off.
       <div class="toolbar" style="margin-top:8px"><label for="emContest" class="note">Lineups</label><select id="emContest"></select><button class="btn primary" type="button" id="emStart">Start entry mode</button></div></div>
     <details class="manual"><summary>Checklist view</summary>
@@ -585,7 +600,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     if (!LS.get('forge_start_seen')) $('#startCard').hidden = false;
     const g = (D.record && D.record.backtest || []).find(b => b.name === 'B1ax');
     $('#evGpp').textContent = g ? `Backtest, ${g.games} real contests: ${g.roi > 0 ? '+' : ''}${g.roi}% capped ROI (median ${g.median > 0 ? '+' : ''}${g.median}%)` : '';
-    renderPlayers(); initLineups(); renderBuilderTable(); renderRecord(); applyRecipe(LS.get('forge_recipe') || 'gpp', true);
+    renderPlayers(); initLineups(); renderBuilderTable(); renderRecord(); applyRecipe(LS.get('forge_recipe') || 'gpp', true); initTester();
     const t = LS.get('forge_tab'); if (t && $('#p-' + t)) show(t);
   }
 
@@ -630,13 +645,21 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
   function setLabel(k) { const i = setInfo(k); return /^Entered build/.test(k) ? i.name + ' (entered)' : i.name; }
 
   // ---------------------------------------------------------------- lineup filters (2026-10-15): narrow any set after it is built; copy / send use what is shown
-  const FLT = { forge: { inc: new Set(), exc: new Set(), cpt: '', min: '' }, mine: { inc: new Set(), exc: new Set(), cpt: '', min: '' }, c: { inc: new Set(), exc: new Set(), cpt: '', min: '' } };
+  const mkF = () => ({ inc: new Set(), exc: new Set(), cpt: '', min: '', split: '', qbst: '', pairs: [] });
+  const FLT = { forge: mkF(), mine: mkF(), c: mkF() };
   const luNames = l => l.cpt ? [l.cpt, ...l.flex] : (l.players || l.lineup || []).map(p => typeof p === 'string' ? p : p.name);
-  function fltActive(f) { return f.inc.size || f.exc.size || f.cpt || (f.min !== '' && !Number.isNaN(parseFloat(f.min))); }
+  function fltActive(f) { return f.inc.size || f.exc.size || f.cpt || f.split || f.qbst || f.pairs.length || (f.min !== '' && !Number.isNaN(parseFloat(f.min))); }
+  const pInfo = n => (D && D.players.find(p => p.name === n)) || {};
+  function splitOf(l) { const c = {}; luNames(l).forEach(n => { const t = pInfo(n).team; c[t] = (c[t] || 0) + 1; }); const v = Object.values(c).sort((a, b) => b - a); return v.join('-'); }
+  function qbStackOf(l) { const ns = luNames(l), qb = ns.find(n => pInfo(n).pos === 'QB'); if (!qb) return 0; const t = pInfo(qb).team; return ns.filter(n => n !== qb && pInfo(n).team === t && /^(WR|TE)$/.test(pInfo(n).pos)).length; }
   function applyFlt(L, f) {
     if (!fltActive(f)) return L; const mn = parseFloat(f.min);
     return L.filter(l => { const ns = luNames(l); if ([...f.inc].some(x => !ns.includes(x))) return false; if (ns.some(x => f.exc.has(x))) return false;
-      if (f.cpt && l.cpt !== f.cpt) return false; if (!Number.isNaN(mn) && (l.proj ?? 0) < mn) return false; return true; });
+      if (f.cpt && l.cpt !== f.cpt) return false; if (!Number.isNaN(mn) && (l.proj ?? 0) < mn) return false;
+      if (f.split && splitOf(l) !== f.split) return false;
+      if (f.qbst) { const k = qbStackOf(l), [lo, hi] = { '0': [0, 0], '1': [1, 1], '2': [2, 2], '3+': [3, 9], '1+': [1, 9], '2+': [2, 9] }[f.qbst]; if (k < lo || k > hi) return false; }
+      for (const [a, b, mode] of f.pairs) { const ha = ns.includes(a), hb = ns.includes(b); if (mode === 'with' && ha !== hb) return false; if (mode === 'never' && ha && hb) return false; if (mode === 'if' && ha && !hb) return false; }
+      return true; });
   }
   function fltBar(el, key, L, onChange) {
     const f = FLT[key]; if (!el) return; if (!L.length) { el.innerHTML = ''; return; }
@@ -646,15 +669,21 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
       + `<select data-a="exc" aria-label="Leave out">${opt(pool.filter(n => !f.exc.has(n)), '− Leave out…')}</select>`
       + (caps.length ? `<select data-a="cpt" aria-label="Captain">${opt(caps, 'Any captain')}</select>` : '')
       + `<input type="number" step="0.5" data-a="min" placeholder="Min pts" value="${f.min}" aria-label="Minimum projected points">`
+      + (L[0] && L[0].cpt ? `<select data-a="split" aria-label="Team split">${['', '5-1', '4-2', '3-3'].map(v => `<option value="${v}" ${f.split === v ? 'selected' : ''}>${v ? v + ' split' : 'Any split'}</option>`).join('')}</select>`
+          : `<select data-a="qbst" aria-label="QB stack">${[['', 'Any QB stack'], ['0', 'QB alone'], ['1', 'QB + 1'], ['2', 'QB + 2'], ['3+', 'QB + 3 or more'], ['1+', 'QB + 1 or more'], ['2+', 'QB + 2 or more']].map(([v, t]) => `<option value="${v}" ${f.qbst === v ? 'selected' : ''}>${t}</option>`).join('')}</select>`)
+      + `<span class="pairf"><select data-p="a" aria-label="Player">${opt(pool, 'Player…')}</select><select data-p="m" aria-label="Rule"><option value="if">needs</option><option value="with">always with</option><option value="never">never with</option></select><select data-p="b" aria-label="Second player">${opt(pool, 'player…')}</select><button type="button" class="btn small" data-a="pair">Add</button></span>`
+      + f.pairs.map(([a, b, m], k) => `<span class="chip ${m === 'never' ? 'exc' : 'inc'}" data-pair="${k}" title="Remove">${a} ${m === 'if' ? 'needs' : m === 'with' ? '+' : '≠'} ${b} ×</span>`).join('')
       + [...f.inc].map(n => `<span class="chip inc" data-x="inc" data-n="${n}" title="Remove">${n} ×</span>`).join('') + [...f.exc].map(n => `<span class="chip exc" data-x="exc" data-n="${n}" title="Remove">${n} ×</span>`).join('')
       + `<span class="count">${shown} of ${L.length} shown</span>` + (fltActive(f) ? '<button type="button" class="btn small" data-a="clear">Clear</button>' : '');
     const cs = el.querySelector('select[data-a="cpt"]'); if (cs) cs.value = f.cpt;
-    el.querySelectorAll('select').forEach(sel => sel.onchange = () => { const a = sel.dataset.a; if (a === 'cpt') f.cpt = sel.value; else if (sel.value) f[a].add(sel.value); if (a === 'inc') f.exc.delete(sel.value); if (a === 'exc') f.inc.delete(sel.value); onChange(); });
+    el.querySelectorAll('select[data-a]').forEach(sel => sel.onchange = () => { const a = sel.dataset.a; if (a === 'cpt' || a === 'split' || a === 'qbst') f[a] = sel.value; else if (sel.value) f[a].add(sel.value); if (a === 'inc') f.exc.delete(sel.value); if (a === 'exc') f.inc.delete(sel.value); onChange(); });
+    const pb = el.querySelector('[data-a="pair"]'); if (pb) pb.onclick = () => { const a = el.querySelector('[data-p="a"]').value, b = el.querySelector('[data-p="b"]').value, m = el.querySelector('[data-p="m"]').value; if (a && b && a !== b) { f.pairs.push([a, b, m]); onChange(); } };
+    el.querySelectorAll('.chip[data-pair]').forEach(c => c.onclick = () => { f.pairs.splice(+c.dataset.pair, 1); onChange(); });
     el.querySelector('input[data-a="min"]').onchange = e => { f.min = e.target.value; onChange(); };
     el.querySelectorAll('.chip[data-x]').forEach(c => c.onclick = () => { f[c.dataset.x].delete(c.dataset.n); onChange(); });
-    const cl = el.querySelector('[data-a="clear"]'); if (cl) cl.onclick = () => { f.inc.clear(); f.exc.clear(); f.cpt = ''; f.min = ''; onChange(); };
+    const cl = el.querySelector('[data-a="clear"]'); if (cl) cl.onclick = () => { Object.assign(f, mkF()); onChange(); };
   }
-  function resetFlt() { Object.values(FLT).forEach(f => { f.inc.clear(); f.exc.clear(); f.cpt = ''; f.min = ''; }); }
+  function resetFlt() { Object.keys(FLT).forEach(k => FLT[k] = mkF()); }
 
   // ---------------------------------------------------------------- in-browser simulation (2026-10-15): FORGE's EV-M / FORGE Pick on the user's projections
   // Pack (tools/sim_pack.py) = the production simulation (correlated_sim 'corr+sd+skew', means = the projections the site shows) in 2,000 worlds + the production
@@ -686,19 +715,33 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     const inv = {}; pi.forEach((v, j) => inv[v] = j); const F = new Int32Array(FIELD * 6); for (let i = 0; i < FIELD * 6; i++) F[i] = inv[G.field[i]] ?? -1;
     const okF = []; for (let f = 0; f < FIELD; f++) { let ok = true; for (let k = 0; k < 6; k++) if (F[f * 6 + k] < 0) ok = false; if (ok) okF.push(f); }
     const m = cand.length, L = new Int32Array(m * 6); for (let i = 0; i < m; i++) { const code = codes[cand[i]]; L[i * 6] = code & 31; const fl = [1, 2, 3, 4, 5].map(k => (code >> (5 * k)) & 31).sort((x, y) => pi[x] - pi[y]); for (let k = 0; k < 5; k++) L[i * 6 + 1 + k] = fl[k]; }   // FLEX summed in FORGE's player order (float32 sums depend on order)
-    const acc = new Float64Array(m), NF = okF.length, col = new Float32Array(NF), CH = 100;
+    const acc = new Float64Array(m), accU = new Float64Array(m), nCash = new Float64Array(m), nTop = new Float64Array(m), nWin = new Float64Array(m), NF = okF.length, col = new Float32Array(NF), CH = 100;
+    const i99 = Math.min(NF - 1, Math.floor(0.99 * NF)); let sumCash = 0, sumFirst = 0, cashIdx = -1;
+    for (let k = NC - 1; k >= 0; k--) if (CV[k] > 0) { cashIdx = k; break; }
     for (let w0 = 0; w0 < W; w0 += CH) {
       const w1 = Math.min(W, w0 + CH);
       for (let w = w0; w < w1; w++) {
         for (let t = 0; t < NF; t++) { const f = okF[t] * 6; col[t] = sc6(S[F[f] * W + w], S[F[f + 1] * W + w], S[F[f + 2] * W + w], S[F[f + 3] * W + w], S[F[f + 4] * W + w], S[F[f + 5] * W + w]); }
-        col.sort();
+        col.sort(); sumFirst += col[NF - 1]; if (cashIdx >= 0) sumCash += col[Math.max(0, Math.min(NF - 1, Math.ceil(NF - cashIdx * step * (NF + 1))))];
         for (let i = 0; i < m; i++) { const b = i * 6, x = sc6(S[L[b] * W + w], S[L[b + 1] * W + w], S[L[b + 2] * W + w], S[L[b + 3] * W + w], S[L[b + 4] * W + w], S[L[b + 5] * W + w]);
           let lo = 0, hi = NF; while (lo < hi) { const md = (lo + hi) >> 1; if (col[md] <= x) lo = md + 1; else hi = md; }
-          const pos_ = ((NF - lo) / (NF + 1)) / step, i0 = Math.floor(pos_); if (i0 >= NC) continue; const c0 = CV[i0], c1 = i0 + 1 < NC ? CV[i0 + 1] : 0; acc[i] += Math.min(c0 + (c1 - c0) * (pos_ - i0), cap); }
+          if (x >= col[i99]) nTop[i]++; if (x > col[NF - 1]) nWin[i]++;
+          const pos_ = ((NF - lo) / (NF + 1)) / step, i0 = Math.floor(pos_); if (i0 >= NC) continue; const c0 = CV[i0], c1 = i0 + 1 < NC ? CV[i0 + 1] : 0, mu = c0 + (c1 - c0) * (pos_ - i0);
+          if (mu > 0) nCash[i]++; acc[i] += Math.min(mu, cap); accU[i] += mu; }
       }
       st.textContent = `Simulating… ${Math.round(100 * w1 / W)}% of ${W.toLocaleString('en-US')} games`; await new Promise(r => setTimeout(r, 0));
     }
-    for (let i = 0; i < m; i++) acc[i] /= W; return acc;
+    for (let i = 0; i < m; i++) acc[i] /= W;
+    acc.stats = { evU: accU.map(v => v / W), cash: nCash.map(v => v / W), top1: nTop.map(v => v / W), win: nWin.map(v => v / W), cashLine: sumCash / W, first: sumFirst / W }; return acc;
+  }
+
+  // ownership lean (2026-10-15, Drew): user lever, OFF by default (Hard Rule 7: untested; PREREG_ROUND18 uniqueness penalty did not beat the default on 14 games)
+  function ownLean(P, proj) {
+    const L = (parseInt(($('#bOwn') || {}).value) || 0) / 100; if (!L) return proj;
+    const o = P.map(p => p.own_flex); const v = o.filter(x => x != null); if (v.length < 4) return proj;
+    const mu = v.reduce((a, b) => a + b, 0) / v.length, sd = Math.sqrt(v.reduce((a, b) => a + (b - mu) ** 2, 0) / v.length) || 1;
+    P.forEach((p, j) => { if (o[j] == null) return; const z = Math.max(-2, Math.min(2, (o[j] - mu) / sd)); proj[j] = proj[j] * Math.max(0.05, 1 + 0.15 * L * z); });
+    return proj;
   }
 
   // FORGE lineups
@@ -716,7 +759,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     const forged = l.forged ? ' forged' : '';
     return `<article class="lu${forged}"><header><span>#${i + 1}${l.contest ? ' · ' + shortContest(l.contest) : ''}</span><span><b>${fmt(l.proj)}</b> pts · <b>${money(l.sal)}</b></span></header><ol>
       <li class="cpt"><span><svg class="ico" aria-hidden="true"><use href="#i-flame"/></svg>CPT ${l.cpt}</span><span class="p">${pp(l.cpt).pos || ''} ${pp(l.cpt).team || ''}</span></li>
-      ${l.flex.map(n => `<li><span>${n}</span><span class="p">${pp(n).pos || ''} ${pp(n).team || ''}</span></li>`).join('')}</ol>${badges(l)}</article>`;
+      ${l.flex.map(n => `<li><span>${n}</span><span class="p">${pp(n).pos || ''} ${pp(n).team || ''}</span></li>`).join('')}</ol>${badges(l)}${D && D.simpack ? `<button type="button" class="btn small testlu" data-cpt="${l.cpt}" data-flex="${l.flex.join('|')}">Test</button>` : ''}</article>`;
   }
   function badges(l) {
     const b = [];
@@ -772,6 +815,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     if (v === 'hyb0') $('#bNoCpt').checked = false; else if (v === 'hyb' || v === 'ev') $('#bNoCpt').checked = true;
     $('#methodNote').textContent = (D && !D.simpack && v === 'p51' ? 'Simulation methods appear after FORGE builds this game. ' : '') + METHOD_NOTE[v]; $('#bStruct').closest('.field').style.opacity = v === 'p51' ? '' : '.45'; }
   $$('#bMethod button').forEach(b => b.addEventListener('click', () => { setMethod(b.dataset.v); markCustom(); }));
+  $('#bOwn').addEventListener('input', () => { const v = parseInt($('#bOwn').value); $('#bOwnV').textContent = v === 0 ? 'off' : v < 0 ? `fade popular ${-v}%` : `play popular ${v}%`; });
   function setStruct(v) { builder.struct = v; $$('#bStruct button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === v))); }
   $$('#bStruct button').forEach(b => b.addEventListener('click', () => { setStruct(b.dataset.v); markCustom(); }));
   // recipes: settings FORGE has tested (P51-M-SX for tournaments = PREREG_ROUND11 B1ax; single entry = P51 #1, Round 24; cash = best projected lineup of any shape, Round 24)
@@ -783,7 +827,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
   function applyRecipe(k, quiet) {
     const r = RECIPES[k] || RECIPES.gpp; applying = true; builder.recipe = k in RECIPES ? k : 'gpp';
     $('#bN').value = r.n; setStruct(r.struct); $('#bCap').value = r.cap; $('#bExp').value = r.exp; $('#bUniq').value = r.uniq; $('#bMinSal').value = r.minSal; $('#bPunt').value = r.punt;
-    $('#bNoCpt').checked = r.noCpt; $('#bDst').checked = r.dst; setMethod(r.method || 'p51'); applying = false;
+    $('#bNoCpt').checked = r.noCpt; $('#bDst').checked = r.dst; setMethod(r.method || 'p51'); $('#bOwn').value = 0; $('#bOwnV').textContent = 'off'; applying = false;
     $$('#recipes .recipe').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.r === builder.recipe))); $('#customNote').textContent = ''; LS.set('forge_recipe', builder.recipe);
   }
   function markCustom() { if (applying) return; $('#customNote').textContent = 'Custom: started from ' + RECIPES[builder.recipe].label + '. Click it again to reset the rules.'; }
@@ -798,6 +842,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     const pkb = sim && D.simpack ? Object.fromEntries(D.simpack.names.map((nm, k) => [nm, D.simpack.base[k]])) : {};
     const proj = P.map(p => { const v = builder.proj[p.name] ?? p.proj; if (method === 'hyb0' && p.shrunk && v === p.proj && p.market != null) return p.market;
       return (sim && v === p.proj && pkb[p.name] != null && Math.abs(pkb[p.name] - v) < 0.006) ? pkb[p.name] : v; });   // unedited -> FORGE's unrounded value (page shows 2 decimals)
+    ownLean(P, proj);
     const teams = [...new Set(P.map(p => p.team))], tm = P.map(p => teams.indexOf(p.team));
     const N = Math.max(1, Math.min(150, parseInt($('#bN').value) || 20)), cap = Math.max(1, parseInt($('#bCap').value) || 6);
     const maxExp = Math.max(1, Math.ceil(N * Math.min(100, Math.max(10, parseFloat($('#bExp').value) || 100)) / 100));
@@ -863,7 +908,41 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     const ms = Math.round(performance.now() - t0);
     st.className = 'status'; st.textContent = `Forged ${chosen.length} of ${N} lineups (${setInfo({ p51: 'P51-M-SX', hyb: 'HYB-M-SX', ev: 'EV-M', hyb0: 'HYB-M' }[method]).name}) · ${codes.length.toLocaleString('en-US')} legal lineups${sim ? ', ' + Math.min(codes.length, D.simpack.topn || 10000).toLocaleString('en-US') + ' simulated' : ''} in ${(ms / 1000).toFixed(1)} s` + (chosen.length < N ? ' · loosen caps for more' : '');
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) { const sp = $('#sparks'); sp.innerHTML = Array.from({ length: 18 }, () => { const a = Math.random() * Math.PI * 2, r = 40 + Math.random() * 70; return `<b style="--dx:${(Math.cos(a) * r).toFixed(0)}px;--dy:${(Math.sin(a) * r - 20).toFixed(0)}px"></b>`; }).join(''); setTimeout(() => sp.innerHTML = '', 800); }
-    FLT.mine.inc.clear(); FLT.mine.exc.clear(); FLT.mine.cpt = ''; FLT.mine.min = ''; $('#bOut').hidden = false; renderMine();
+    FLT.mine = mkF(); $('#bOut').hidden = false; renderMine();
+  }
+  // ---- single-lineup simulator (2026-10-15)
+  function initTester() {
+    const el = $('#tester'); if (!el) return; el.hidden = !(D && D.simpack && D.slate.kind !== 'classic'); if (el.hidden) return;
+    const P = [...D.players].sort((a, b) => b.sal - a.sal), opts = P.map(p => `<option value="${p.name}">${p.name} · ${p.pos} ${p.team} · ${money(p.sal)}</option>`).join('');
+    $('#tPick').innerHTML = ['CPT', 'FLEX', 'FLEX', 'FLEX', 'FLEX', 'FLEX'].map((s_, k) => `<select data-k="${k}" aria-label="${s_} ${k}"><option value="">${s_}…</option>${opts}</select>`).join('');
+    $('#tOut').innerHTML = ''; $('#tStatus').textContent = '';
+  }
+  function setTester(cpt, flex) { const sels = $$('#tPick select'); [cpt, ...flex].forEach((n, k) => { if (sels[k]) sels[k].value = n; }); $('#tester').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  document.addEventListener('click', e => { const b = e.target.closest('.testlu'); if (!b) return; if ($('#p-builder').hidden) show('builder'); setTester(b.dataset.cpt, b.dataset.flex.split('|')); setTimeout(runTester, 350); });
+  $('#tRun').addEventListener('click', runTester);
+  async function runTester() {
+    const st = $('#tStatus'), names = $$('#tPick select').map(x => x.value);
+    if (names.some(n => !n) || new Set(names).size !== 6) { st.className = 'status err'; st.textContent = 'Pick a captain and five different FLEX players.'; return; }
+    const P = D.players, ix = names.map(n => P.findIndex(p => p.name === n)), sal = 1.5 * P[ix[0]].sal + ix.slice(1).reduce((t, i) => t + P[i].sal, 0);
+    const teams = new Set(ix.map(i => P[i].team)); const warn = [sal > 50000 ? `salary ${money(sal)} is over the $50,000 cap` : '', teams.size < 2 ? 'DraftKings needs players from both teams' : ''].filter(Boolean);
+    const pkb = Object.fromEntries(D.simpack.names.map((nm, k) => [nm, D.simpack.base[k]]));
+    const proj = P.map(p => { const v = builder.proj[p.name] ?? p.proj; return (v === p.proj && pkb[p.name] != null && Math.abs(pkb[p.name] - v) < 0.006) ? pkb[p.name] : v; }); ownLean(P, proj);
+    const pos = P.map(p => p.pos), tl = [...new Set(P.map(p => p.team))], tm = P.map(p => tl.indexOf(p.team)), enc = a => a.reduce((c, x, k) => c | (x << (5 * k)), 0);
+    const B = D.builds || {}, fk = Object.keys(B).find(k => /^(Entered|FORGE build)/.test(k)) || Object.keys(B)[0], FL = fk ? B[fk].filter(l => l.cpt) : [];
+    const seen = new Set(), FU = FL.filter(l => { const k = l.cpt + '|' + [...l.flex].sort().join(); if (seen.has(k)) return false; seen.add(k); return true; });
+    const lus = [ix, ...FU.map(l => [l.cpt, ...l.flex].map(n => P.findIndex(p => p.name === n)))].filter(a => a.every(i => i >= 0));
+    st.className = 'status'; $('#tRun').disabled = true; let ev;
+    try { ev = await simEV(P, proj, pos, tm, lus.map(enc), [], lus.map((_, i) => i), st); } catch (e) { st.className = 'status err'; st.textContent = 'Simulation failed: ' + e.message; return; } finally { $('#tRun').disabled = false; }
+    const S_ = ev.stats, pc = x => (100 * x < 1 && x > 0 ? (100 * x).toFixed(2) : (100 * x).toFixed(1)) + '%', n = lus.length - 1;
+    const avg = a => n ? a.slice(1).reduce((t, v) => t + v, 0) / n : null, rank = n ? 1 + Array.from(ev).slice(1).filter(v => v > ev[0]).length : null;
+    const pj = 1.5 * proj[ix[0]] + ix.slice(1).reduce((t, i) => t + proj[i], 0);
+    st.textContent = `Simulated in 2,000 games · simulated cash line ~${S_.cashLine.toFixed(1)} pts, simulated 1st place ~${S_.first.toFixed(1)} pts`;
+    $('#tOut').innerHTML = (warn.length ? `<p class="status err">Not a legal DraftKings lineup: ${warn.join('; ')}.</p>` : '') + `<div class="tstats">
+      <div><b>${ev[0].toFixed(2)}x</b><small>average payout per $1 (capped at 10x)</small></div>
+      <div><b>${pc(S_.cash[0])}</b><small>chance to cash</small></div><div><b>${pc(S_.top1[0])}</b><small>chance of the top 1%</small></div>
+      <div><b>${pc(S_.win[0])}</b><small>chance to finish 1st</small></div><div><b>${fmt(pj)}</b><small>projected points · ${money(sal)}</small></div></div>`
+      + (n ? `<p class="note">Against ${setLabel(fk)}'s ${n} lineups in the same simulated games: their average payout ${avg(Array.from(ev)).toFixed(2)}x, cash ${pc(avg(Array.from(S_.cash)))}, top 1% ${pc(avg(Array.from(S_.top1)))}. Yours would rank ${rank} of ${n + 1} by average payout.</p>` : '')
+      + `<p class="note">20-max payout curve, simulated field from FORGE's ownership model. Simulation output is evidence, not a promise.</p>`;
   }
   function renderMine() { fltBar($('#fltMine'), 'mine', builder.result, renderMine); const L = mineShown(); exposure(L, $('#bExpo')); $('#bGrid').innerHTML = L.length ? L.map((l, i) => luCard(l, i)).join('') : '<p class="note">No lineup matches the filter.</p>'; }
 
@@ -978,7 +1057,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     if (!chosen.length) { st.className = 'status err'; st.textContent = 'No legal lineup fits these rules. Loosen a lock, the salary floor or a rule.'; return; }
     CL.result = chosen.map(c => ({ players: slotOrder(c.lu), proj: c.s, sal: c.lu.reduce((t, p) => t + p.sal, 0) }));
     st.textContent = `Forged ${chosen.length} of ${opt.n} lineups in ${Math.round(performance.now() - t0)} ms` + (chosen.length < opt.n ? ' · loosen the rules for more' : '');
-    $('#cOut').hidden = false; FLT.c.inc.clear(); FLT.c.exc.clear(); FLT.c.cpt = ''; FLT.c.min = ''; renderC();
+    $('#cOut').hidden = false; FLT.c = mkF(); renderC();
     if (ENC) $('#cDl').hidden = false;
   }
   function renderC() { fltBar($('#fltC'), 'c', CL.result, renderC); const L = cShown(); $('#cGrid').innerHTML = L.length ? L.map((l, i) => cCard(l, i)).join('') : '<p class="note">No lineup matches the filter.</p>';
@@ -1027,6 +1106,79 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
     return { byContest: by, gpp, se: (seL[0] || gpp[0]), cash: (cashL[0] || gpp[0]) };
   }
   function groupBy(L) { const o = {}; L.forEach(l => { (o[l.contest] = o[l.contest] || []).push(l); }); return o; }
+  // ---- Classic late swap (2026-10-15): keep started players, re-optimise the rest (GLPK, same solver as the Classic builder)
+  function etDate(gi) {      // 'DET@ARI 10/11/2026 04:25PM ET' -> Date (US Eastern, DST-aware)
+    const m = String(gi).match(/(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})(AM|PM)/); if (!m) return null;
+    let h = +m[4] % 12 + (m[6] === 'PM' ? 12 : 0); const y = +m[3], mo = +m[1], d = +m[2];
+    const nthSun = (mm, n) => { const f = new Date(Date.UTC(y, mm - 1, 1)).getUTCDay(); return 1 + ((7 - f) % 7) + 7 * (n - 1); };
+    const dst = (mo > 3 && mo < 11) || (mo === 3 && d >= nthSun(3, 2)) || (mo === 11 && d < nthSun(11, 1));
+    return new Date(Date.UTC(y, mo - 1, d, h + (dst ? 4 : 5), +m[5]));
+  }
+  $('#lsRun').addEventListener('click', async () => {
+    const st = $('#lsStatus'), out = $('#lsOut'); st.className = 'status'; out.innerHTML = '';
+    if (!DKFILE) { st.className = 'status err'; st.textContent = 'Choose your entries file in step 3 first (download it again from DraftKings after the early games start).'; return; }
+    if (!D || D.slate.kind !== 'classic') { st.className = 'status err'; st.textContent = 'Pick the Classic main slate at the top first.'; return; }
+    try { st.textContent = 'Loading the optimizer…'; const g = await glpk(); await lateSwap(g, DKFILE, st, out); }
+    catch (e) { st.className = 'status err'; st.textContent = 'Late swap failed: ' + e.message; }
+  });
+  async function lateSwap(g, text, st, out) {
+    const rows = csvParse(text.replace(/^\uFEFF/, '')), hdr = rows[0] || [], qi = hdr.indexOf('QB'); if (qi < 0) throw new Error('this is not a Classic entries file');
+    let pr = -1, pc = -1; for (let i = 0; i < rows.length && pr < 0; i++) { const j = rows[i].indexOf('Name + ID'); if (j >= 0) { pr = i; pc = j; } }
+    if (pr < 0) throw new Error('the player list is missing from this file');
+    const qs = new URLSearchParams(location.search), now = qs.get('now') ? new Date(qs.get('now')).getTime() : Date.now();
+    const site = Object.fromEntries(D.players.map(p => [p.name, p])), PL = {};
+    for (let i = pr + 1; i < rows.length; i++) { const r = rows[i]; if (!(r[pc] || '').trim()) continue; const nm = (r[pc + 1] || '').trim(), gi = r[pc + 5] || '', k = etDate(gi), sp = site[nm] || {};
+      PL[nm] = { name: nm, id: (r[pc + 2] || '').trim(), pos: (r[pc - 1] || '').trim(), sal: +r[pc + 4] || 0, team: (r[pc + 6] || '').trim(), game: gi.split(' ')[0], kick: k ? k.getTime() : null, proj: sp.proj, status: sp.status || '' }; }
+    const P = Object.values(PL); P.forEach(p => { const [a, h] = (p.game || '@').split('@'); p.opp = p.team === a ? h : a; });
+    if (!P.some(p => p.kick != null && p.kick <= now)) { st.textContent = 'No game has started yet. Before the first kickoff, use step 3 to fill your entries instead.'; return; }
+    const SLOT = ['QB', 'RB', 'RB', 'WR', 'WR', 'WR', 'TE', 'FLEX', 'DST'], fits = (slot, pos) => slot === 'FLEX' ? /^(RB|WR|TE)$/.test(pos) : slot === pos;
+    const cellName = c => String(c || '').replace(/\s*\(LOCKED\)\s*$/i, '').replace(/\s*\(\d+\)\s*$/, '').trim();
+    const ok = p => p.kick != null && p.kick > now && p.proj != null && !/^(OUT|IR|D)$/.test(p.status);
+    const entries = rows.slice(1).filter(r => /^\d+$/.test((r[0] || '').trim()) && (r[1] || '').trim()); const changed = [], notes = []; let k = 0;
+    for (const r of entries) {
+      k++; const cur = SLOT.map((_, s_) => cellName(r[qi + s_])); if (cur.some(n => !n || !PL[n])) { notes.push(`Entry ${r[0]}: lineup not complete, skipped.`); continue; }
+      const locked = cur.map((n, s_) => /\(LOCKED\)/i.test(r[qi + s_] || '') || (PL[n].kick != null && PL[n].kick <= now));
+      if (locked.every(Boolean)) continue;
+      const lockedSet = new Set(cur.filter((n, s_) => locked[s_])), lockSal = cur.reduce((t, n, s_) => t + (locked[s_] ? PL[n].sal : 0), 0);
+      const cand = P.filter(p => ok(p) && !lockedSet.has(p.name)), X = [], vars = [];
+      SLOT.forEach((sl, s_) => { if (locked[s_]) return; cand.forEach(p => { if (fits(sl, p.pos)) { const v = `x${s_}_${cand.indexOf(p)}`; X.push({ v, s: s_, p }); vars.push(v); } }); });
+      const B = (lo, hi) => lo === hi ? { type: g.GLP_FX, lb: lo, ub: hi } : hi == null ? { type: g.GLP_LO, lb: lo, ub: 0 } : lo == null ? { type: g.GLP_UP, lb: 0, ub: hi } : { type: g.GLP_DB, lb: lo, ub: hi };
+      const base = []; const row = (A, name, f, lo, hi) => { const v = X.filter(f).map(x => ({ name: x.v, coef: typeof x.c === 'function' ? 1 : 1 })); if (v.length) A.push({ name, vars: v, bnds: B(lo, hi) }); };
+      SLOT.forEach((_, s_) => { if (!locked[s_]) row(base, 's' + s_, x => x.s === s_, 1, 1); });
+      cand.forEach((p, j) => row(base, 'p' + j, x => x.p === p, null, 1));
+      base.push({ name: 'sal', vars: X.map(x => ({ name: x.v, coef: x.p.sal })), bnds: B(null, 50000 - lockSal) });
+      const rules = [], lk = (t, f) => cur.filter((n, s_) => locked[s_] && PL[n].team === t && f(PL[n])).length;
+      for (const t of new Set(P.map(p => p.team))) {
+        const xs = f => X.filter(x => x.p.team === t && f(x.p)), qb = p => p.pos === 'QB', wt = p => p.pos === 'WR' || p.pos === 'TE', rb = p => p.pos === 'RB', dst = p => p.pos === 'DST';
+        const opp = (P.find(p => p.team === t) || {}).opp, offOpp = X.filter(x => x.p.team === opp && x.p.pos !== 'DST'), lkOffOpp = cur.filter((n, s_) => locked[s_] && PL[n].team === opp && PL[n].pos !== 'DST').length;
+        const vr = (arr, c) => arr.map(x => ({ name: x.v, coef: c }));
+        const push = (name, v, lo, hi) => { if (v.length) rules.push({ name, vars: v, bnds: B(lo, hi) }); };
+        push('stk' + t, [...vr(xs(wt), 1), ...vr(xs(qb), -1)], lk(t, qb) - lk(t, wt), null);                      // QB -> at least one own WR/TE
+        push('orb' + t, [...vr(xs(rb), 1), ...vr(xs(qb), 3)], null, 3 - lk(t, rb) - 3 * lk(t, qb));               // no QB + own RB
+        push('odst' + t, [...vr(xs(qb), 1), ...vr(xs(dst), 1)], null, 1 - lk(t, qb) - lk(t, dst));                // no QB + own DST
+        push('dop' + t, [...vr(xs(dst), 8), ...vr(offOpp, 1)], null, 8 - 8 * lk(t, dst) - lkOffOpp);             // nobody facing your DST
+      }
+      const solve = async A => { const r_ = await Promise.resolve(g.solve({ name: 'ls', objective: { direction: g.GLP_MAX, name: 'o', vars: X.map(x => ({ name: x.v, coef: x.p.proj })) }, subjectTo: A, binaries: vars }, { msglev: g.GLP_MSG_OFF, presol: true }));
+        return r_ && r_.result && (r_.result.status === g.GLP_OPT || r_.result.status === g.GLP_FEAS) ? r_.result : null; };
+      let res = await solve([...base, ...rules]), relaxed = false; if (!res) { res = await solve(base); relaxed = true; }
+      if (!res) { notes.push(`Entry ${r[0]}: no legal swap found.`); continue; }
+      const nu = [...cur]; X.forEach(x => { if (res.vars[x.v] > 0.5) nu[x.s] = x.p.name; });
+      const oldP = cur.reduce((t, n, s_) => t + (locked[s_] ? 0 : (PL[n].proj ?? 0)), 0), newP = nu.reduce((t, n, s_) => t + (locked[s_] ? 0 : PL[n].proj), 0);
+      const outOld = cur.filter((n, s_) => !locked[s_] && !ok(PL[n]));
+      if (newP - oldP < 0.5 && !outOld.length) continue;
+      const tot = nu.reduce((t, n) => t + PL[n].sal, 0); if (tot > 50000 || new Set(nu).size !== 9) { notes.push(`Entry ${r[0]}: check failed, left unchanged.`); continue; }
+      changed.push({ r, nu, gain: newP - oldP, relaxed, swaps: nu.map((n, s_) => n !== cur[s_] ? `${cur[s_]} → ${n}` : null).filter(Boolean) });
+      if (k % 5 === 0) { st.textContent = `Re-optimising… ${k} of ${entries.length}`; await new Promise(z => setTimeout(z, 0)); }
+    }
+    if (!changed.length) { st.textContent = `Checked ${entries.length} entries: no swap gains 0.5 projected points.`; out.innerHTML = notes.map(n => `<p class="note">${n}</p>`).join(''); return; }
+    const EOL = text.includes('\r\n') ? '\r\n' : '\n', cell = n => `${n} (${PL[n].id})`;
+    const lines = [hdr.slice(0, qi + 9).map(csvCell).join(',')];
+    changed.forEach(c => { const rr = c.r.slice(0, qi + 9); c.nu.forEach((n, s_) => rr[qi + s_] = cell(n)); lines.push(rr.map(v => csvCell(String(v))).join(',')); });
+    const blob = new Blob([lines.join(EOL) + EOL], { type: 'text/csv' }), url = URL.createObjectURL(blob);
+    st.textContent = `${changed.length} of ${entries.length} entries improved (average +${(changed.reduce((t, c) => t + c.gain, 0) / changed.length).toFixed(1)} projected points). Upload the file on DraftKings: Lineups → Edit Entries → Upload.`;
+    out.innerHTML = `<div class="toolbar"><a class="btn primary" href="${url}" download="DKEntries_FORGE_lateswap.csv">Download late-swap file</a></div>`
+      + changed.slice(0, 60).map(c => `<p class="note"><b>${c.r[1].replace(/\[.*?\]/g, '').trim()}</b> (entry ${c.r[0]}): ${c.swaps.join(', ')} · +${c.gain.toFixed(1)} pts${c.relaxed ? ' · rules relaxed (locked players already break one)' : ''}</p>`).join('') + notes.map(n => `<p class="note">${n}</p>`).join('');
+  }
   function fillDK(text) {
     const res = $('#dkResult'); const say = (html) => res.innerHTML = html;
     try {
