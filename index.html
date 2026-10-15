@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FORGE Showdown Lab</title>
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800;900&family=Saira:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: an app shell on a forge floor. Scoreboard plate up top, tabbed work surfaces below; dark-first, ember for heat and action. */
+:root {
+  --bg: #151210; --plate: #1e1a17; --plate-2: #27221e; --line: #3a322c; --fg: #f1e9df; --muted: #a8998b;
+  --ember: #ff6b1f; --ember-ink: #1a0d05; --gold: #f1b64a; --good: #6fcf8e; --warn: #f1b64a; --bad: #ef6a5a;
+  --heat-lo: rgba(255,107,31,.10); --heat-hi: rgba(255,107,31,.55);
+  --f-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --f-body: "Saira", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --f-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #eceae7; --plate: #f8f7f5; --plate-2: #e4e1dd; --line: #cfc9c2; --fg: #1d1a17; --muted: #6b625a;
+  --ember: #d1530f; --ember-ink: #fff6ee; --gold: #a86f08; --good: #23864a; --warn: #a86f08; --bad: #c0392b;
+  --heat-lo: rgba(209,83,15,.08); --heat-hi: rgba(209,83,15,.40); color-scheme: light; } }
+:root[data-theme="light"] {
+  --bg: #eceae7; --plate: #f8f7f5; --plate-2: #e4e1dd; --line: #cfc9c2; --fg: #1d1a17; --muted: #6b625a;
+  --ember: #d1530f; --ember-ink: #fff6ee; --gold: #a86f08; --good: #23864a; --warn: #a86f08; --bad: #c0392b;
+  --heat-lo: rgba(209,83,15,.08); --heat-hi: rgba(209,83,15,.40); color-scheme: light; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 18px 48px; }
+.mono, td.n, .n { font-family: var(--f-data); font-variant-numeric: tabular-nums; }
+h1, h2, h3 { font-family: var(--f-display); letter-spacing: .02em; text-wrap: balance; margin: 0; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+
+/* top bar */
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.mark { display: flex; align-items: baseline; gap: 10px; }
+.mark h1 { font-size: 34px; font-weight: 900; letter-spacing: .14em; }
+.mark h1 span { color: var(--ember); }
+.mark small { color: var(--muted); font-family: var(--f-display); font-weight: 700; font-size: 16px; letter-spacing: .1em; text-transform: uppercase; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 3px; font-family: var(--f-display); font-weight: 700; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; border: 1px solid var(--line); color: var(--muted); }
+.pill.hot { border-color: var(--ember); color: var(--ember); }
+.pill.ok { border-color: var(--good); color: var(--good); }
+.pill .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+/* scoreboard plate */
+.plate { margin-top: 16px; background: var(--plate); border: 1px solid var(--line); border-radius: 6px; padding: 18px 20px; display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; position: relative; overflow: hidden; }
+.plate::after { content: ""; position: absolute; inset: auto -10% -60% -10%; height: 120%; background: radial-gradient(ellipse at 50% 100%, var(--heat-lo), transparent 60%); pointer-events: none; }
+.matchup { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.team { font-family: var(--f-display); font-weight: 900; font-size: clamp(44px, 9vw, 76px); line-height: .9; letter-spacing: .03em; }
+.at { font-family: var(--f-display); color: var(--muted); font-size: 28px; }
+.meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-self: center; position: relative; z-index: 1; }
+.stat { border-left: 2px solid var(--line); padding-left: 10px; }
+.stat b { display: block; font-family: var(--f-data); font-size: 20px; font-weight: 500; }
+.stat span { font-family: var(--f-display); font-weight: 700; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.sub { margin-top: 6px; color: var(--muted); font-size: 13px; position: relative; z-index: 1; }
+
+/* tabs */
+.tabs { display: flex; gap: 2px; margin-top: 18px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.tab { background: none; border: 0; padding: 10px 14px; font-family: var(--f-display); font-weight: 800; font-size: 17px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; }
+.tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--ember); }
+.panel { padding-top: 18px; }
+.lede { color: var(--muted); max-width: 70ch; margin: 0 0 14px; }
+
+/* tables */
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--plate); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; font-family: var(--f-display); font-weight: 700; font-size: 15px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding: 9px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; cursor: default; }
+th.sort { cursor: pointer; } th.sort:hover { color: var(--fg); }
+td { padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.n, th.n { text-align: right; }
+.pos { display: inline-block; min-width: 34px; text-align: center; font-family: var(--f-display); font-weight: 800; font-size: 13px; letter-spacing: .04em; padding: 1px 5px; border-radius: 3px; background: var(--plate-2); color: var(--muted); }
+.who b { font-weight: 600; } .who small { color: var(--muted); margin-left: 6px; font-family: var(--f-data); font-size: 11px; }
+.heat { position: relative; }
+.heat i { position: absolute; inset: 4px 0 4px auto; background: var(--heat-hi); border-radius: 2px; opacity: .55; }
+.heat span { position: relative; }
+.tag { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--gold); margin-left: 6px; }
+.tag.out { color: var(--bad); }
+
+/* lineup cards */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.lu { background: var(--plate); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; min-width: 0; }
+.lu header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 12px; color: var(--muted); }
+.lu header b { font-family: var(--f-data); font-weight: 500; color: var(--fg); }
+.lu ol { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 3px; }
+.lu li { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; }
+.lu li.cpt { color: var(--ember); font-weight: 600; }
+.lu li .p { color: var(--muted); font-family: var(--f-data); font-size: 11px; }
+.toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+select, input[type="number"], input[type="text"] { background: var(--plate); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; }
+input[type="number"] { width: 84px; font-family: var(--f-data); }
+.expo { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 14px; }
+.chip { font-size: 12px; padding: 2px 8px; border-radius: 3px; background: var(--plate-2); font-family: var(--f-data); }
+.chip b { color: var(--ember); font-weight: 500; }
+
+/* builder */
+.builder { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; align-items: start; }
+.controls { background: var(--plate); border: 1px solid var(--line); border-radius: 6px; padding: 14px; display: grid; gap: 12px; position: sticky; top: env(safe-area-inset-top, 0px); }
+.controls h3 { font-size: 20px; letter-spacing: .08em; text-transform: uppercase; }
+.field { display: grid; gap: 4px; }
+.field label { font-family: var(--f-display); font-weight: 700; font-size: 14px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.check { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+.btn { border: 1px solid var(--line); background: var(--plate-2); border-radius: 4px; padding: 8px 12px; cursor: pointer; font-weight: 600; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--ember); border-color: var(--ember); color: var(--ember-ink); font-family: var(--f-display); font-size: 19px; letter-spacing: .1em; text-transform: uppercase; padding: 8px 16px; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.small { padding: 3px 8px; font-size: 12px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.seg button { border: 0; background: none; padding: 4px 10px; cursor: pointer; font-size: 12px; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--ember); color: var(--ember-ink); }
+.note { font-size: 12.5px; color: var(--muted); }
+.status { font-family: var(--f-data); font-size: 13px; color: var(--muted); min-height: 20px; }
+.status.err { color: var(--bad); }
+textarea { width: 100%; min-height: 130px; background: var(--plate); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 8px; font-family: var(--f-data); font-size: 12px; }
+.projin { width: 70px !important; }
+
+/* record */
+.bars { display: grid; gap: 10px; max-width: 760px; }
+.barrow { display: grid; grid-template-columns: 190px minmax(0, 1fr) 70px; gap: 10px; align-items: center; }
+.track { position: relative; height: 22px; background: var(--plate-2); border-radius: 3px; }
+.track .zero { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--muted); }
+.track .fill { position: absolute; top: 0; bottom: 0; border-radius: 3px; background: var(--muted); }
+.track .fill.lead { background: var(--ember); }
+.barrow .lbl { font-size: 14px; } .barrow .lbl small { display: block; color: var(--muted); font-size: 11px; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; margin-top: 18px; }
+.fact { border-top: 2px solid var(--line); padding-top: 8px; font-size: 14px; }
+.fact b { font-family: var(--f-display); font-size: 18px; letter-spacing: .04em; display: block; }
+footer { margin-top: 30px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+
+/* forge marks */
+.ico { width: 1em; height: 1em; display: inline-block; vertical-align: -0.12em; flex: none; }
+.mark .anvil { width: 34px; height: 34px; color: var(--ember); align-self: center; }
+.mark h1 span { background: linear-gradient(180deg, var(--gold), var(--ember)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.kicker { display: block; font-family: var(--f-display); font-weight: 600; font-size: 12px; letter-spacing: .1em; color: var(--gold); opacity: .85; }
+.tab[aria-selected="true"] .kicker { opacity: 1; }
+.flame { color: var(--ember); margin-left: 4px; }
+.ingot { color: var(--gold); margin-left: 4px; }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); margin: -4px 0 12px; }
+.legend span { display: inline-flex; gap: 5px; align-items: center; }
+.lu.forged { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); position: relative; }
+.lu.forged::before { content: "FORGED"; position: absolute; top: -8px; right: 10px; font-family: var(--f-display); font-weight: 800; font-size: 11px; letter-spacing: .16em; padding: 0 6px; background: var(--bg); color: var(--gold); }
+.lu li.cpt .ico { color: var(--ember); margin-right: 4px; }
+.track .fill.lead { background: linear-gradient(90deg, var(--ember), var(--gold)); }
+.temper { display: flex; gap: 6px; align-items: center; }
+.temper i { width: 26px; height: 5px; border-radius: 3px; background: var(--plate-2); }
+.temper i.on { background: linear-gradient(90deg, var(--ember), var(--gold)); }
+.btn.primary { position: relative; overflow: visible; display: inline-flex; justify-content: center; align-items: center; gap: 8px; }
+.sparks { position: absolute; inset: 0; pointer-events: none; }
+.sparks b { position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 6px var(--ember); animation: spark .7s ease-out forwards; }
+@keyframes spark { from { transform: translate(-50%, -50%) scale(1); opacity: 1; } to { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.3); opacity: 0; } }
+.plate .glow { position: absolute; left: 20%; right: 20%; bottom: -40px; height: 80px; background: radial-gradient(ellipse at 50% 100%, var(--heat-hi), transparent 70%); opacity: .35; pointer-events: none; animation: breathe 5s ease-in-out infinite; }
+@keyframes breathe { 0%, 100% { opacity: .25; } 50% { opacity: .45; } }
+footer .ico { color: var(--ember); }
+
+@media (max-width: 820px) {
+  .plate { grid-template-columns: 1fr; }
+  .builder { grid-template-columns: 1fr; }
+  .controls { position: static; }
+  .barrow { grid-template-columns: 120px minmax(0, 1fr) 60px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+#gate{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;background:radial-gradient(ellipse 60% 50% at 50% 110%,rgba(255,107,31,.35),transparent 70%),#141110}
+#gate[hidden]{display:none}
+.gatebox{width:100%;max-width:380px;text-align:center;display:flex;flex-direction:column;gap:12px;background:#1d1816;border:1px solid #3a2c24;border-radius:12px;padding:28px 24px;color:#f4ece4}
+.gateico{width:44px;height:44px;margin:0 auto;color:#f1b64a}
+.gatek{font-family:'Big Shoulders Display',sans-serif;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#f1b64a;font-size:14px}
+.gateh{font-family:'Big Shoulders Display',sans-serif;font-weight:900;text-transform:uppercase;font-size:40px;line-height:1;margin:0}
+.gatep{color:#a8988c;margin:0;font-size:15px}
+#gatePw{font:inherit;font-size:17px;padding:12px 14px;border-radius:8px;border:1px solid #3a2c24;background:#141110;color:#f4ece4;text-align:center}
+#gatePw:focus{outline:2px solid #ff6b1f;outline-offset:1px}
+.gatem{min-height:20px;font-size:14px;color:#ff9a5c}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-anvil" viewBox="0 0 32 32"><path fill="currentColor" d="M3 9h17c0 3.2 2.6 5.8 5.8 5.8H29v2.4h-4.2c-2.4 0-4.4 1.6-5 3.8H21l1.6 4H9.4l1.6-4h1.2c-.6-2.2-2.6-3.8-5-3.8H3z"/><path fill="currentColor" opacity=".55" d="M7 26h18v2H7z"/></symbol>
+  <symbol id="i-flame" viewBox="0 0 24 24"><path fill="currentColor" d="M12.6 2.5c.5 3-1.3 4.6-2.9 6.3-1.5 1.6-2.9 3.2-2.9 5.8a5.2 5.2 0 0 0 10.4 0c0-1.8-.7-3.2-1.6-4.4-.2 1.4-1 2.4-2.1 2.7.9-3.4-.3-7.4-.9-10.4z"/></symbol>
+  <symbol id="i-ingot" viewBox="0 0 24 24"><path fill="currentColor" d="M6.5 8h11l3.5 9H3z"/><path fill="currentColor" opacity=".5" d="M8 10.5h8l.6 1.6H7.4z"/></symbol>
+  <symbol id="i-hammer" viewBox="0 0 24 24"><path fill="currentColor" d="M13.4 3.2 20.8 10.6l-2.6 2.6-2.1-2.1-9.3 9.3a1.6 1.6 0 0 1-2.3-2.3l9.3-9.3-2.1-2.1z"/></symbol>
+</svg>
+<div class="wrap">
+  <div class="bar">
+    <div class="mark"><svg class="ico anvil" aria-hidden="true"><use href="#i-anvil"/></svg><h1>FORG<span>E</span></h1><small>Showdown Lab</small></div>
+    <div class="row"><span id="statusPill" class="pill"><span class="dot"></span><span id="statusText">Loading</span></span></div>
+  </div>
+
+  <section class="plate" aria-label="Game"><div class="glow" aria-hidden="true"></div>
+    <div>
+      <div class="matchup"><div class="team" id="tAway">—</div><div class="at">@</div><div class="team" id="tHome">—</div></div>
+      <div class="sub" id="kick">—</div>
+    </div>
+    <div class="meta">
+      <div class="stat"><b id="mSpread">—</b><span>Spread</span></div>
+      <div class="stat"><b id="mTotal">—</b><span>Total</span></div>
+      <div class="stat"><b id="mWeek">—</b><span>NFL week</span></div>
+    </div>
+  </section>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-players" aria-selected="true" data-p="players"><span class="kicker">The ore</span>Players</button>
+    <button class="tab" role="tab" id="tab-lineups" aria-selected="false" data-p="lineups"><span class="kicker">Forged</span>FORGE Lineups</button>
+    <button class="tab" role="tab" id="tab-builder" aria-selected="false" data-p="builder"><span class="kicker">The anvil</span>Builder</button>
+    <button class="tab" role="tab" id="tab-record" aria-selected="false" data-p="record"><span class="kicker">Proof of steel</span>Record</button>
+    <button class="tab" role="tab" id="tab-how" aria-selected="false" data-p="how"><span class="kicker">The process</span>How it works</button>
+  </nav>
+
+  <section class="panel" id="p-players">
+    <p class="lede">Projections come from the betting markets: DraftKings and FanDuel player props, converted to DraftKings Showdown points. Very cheap players get pulled toward what players at their price actually score. <b>Top scorer</b> is the chance, across 100,000 simulated games, that the player is the game's highest scorer, which makes him the ideal captain.</p>
+    <div class="legend"><span><svg class="ico flame" aria-hidden="true"><use href="#i-flame"/></svg> Hottest captains: top 3 top-scorer chances</span><span><svg class="ico ingot" aria-hidden="true"><use href="#i-ingot"/></svg> Gold value: top 3 points per $1K (5+ point projections)</span></div>
+    <div class="tbl-wrap"><table id="ptable"><thead><tr>
+      <th>Player</th><th>Pos</th><th class="n sort" data-k="sal">Salary</th><th class="n sort" data-k="proj">Proj</th><th class="n sort" data-k="value">Pts / $1K</th>
+      <th class="n sort" data-k="own_flex">Own FLEX</th><th class="n sort" data-k="own_cpt">Own CPT</th><th class="n sort" data-k="p_mvp">Top scorer</th>
+    </tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <section class="panel" id="p-lineups" hidden>
+    <p class="lede">The lineups FORGE builds for this game. The entered build is what goes into our contests; the others run alongside it so every approach is graded on real results.</p>
+    <div class="toolbar">
+      <label for="buildSel" class="note">Set</label><select id="buildSel"></select>
+      <label for="contestSel" class="note">Contest</label><select id="contestSel"></select>
+      <button class="btn small" id="copyForge">Copy for DraftKings</button>
+    </div>
+    <div class="note" id="expoHead">Exposure</div>
+    <div class="expo" id="expo"></div>
+    <div class="grid" id="luGrid"></div>
+  </section>
+
+  <section class="panel" id="p-builder" hidden>
+    <p class="lede">Build your own set. Edit any projection, lock or exclude players, set the rules, then press Forge. Your browser checks all 1.4 million possible combinations, keeps the legal ones under your rules, and picks the best under your caps.</p>
+    <div class="builder">
+      <form class="controls" id="bform">
+        <h3>Rules</h3>
+        <div class="field"><label for="bN">Lineups</label><input type="number" id="bN" min="1" max="150" value="20"></div>
+        <div class="field"><label>Structure</label><div class="seg" id="bStruct"><button type="button" aria-pressed="true" data-v="any">Any split</button><button type="button" aria-pressed="false" data-v="51">5-1 only</button><button type="button" aria-pressed="false" data-v="hedge">Half 5-1</button></div></div>
+        <div class="field"><label for="bCap">Max lineups per captain</label><input type="number" id="bCap" min="1" max="150" value="6"></div>
+        <div class="field"><label for="bExp">Max exposure per player (%)</label><input type="number" id="bExp" min="10" max="100" value="100"></div>
+        <div class="field"><label for="bUniq">Min players different between lineups</label><input type="number" id="bUniq" min="1" max="4" value="1"></div>
+        <div class="field"><label for="bMinSal">Min salary used</label><input type="number" id="bMinSal" min="40000" max="50000" step="100" value="47000"></div>
+        <div class="field"><label for="bPunt">Max FLEX at $1,000 or less</label><input type="number" id="bPunt" min="0" max="5" value="1"></div>
+        <label class="check"><input type="checkbox" id="bNoCpt" checked> No TE, K or DST captain</label>
+        <label class="check"><input type="checkbox" id="bDst" checked> No DST against your captain</label>
+        <button type="submit" class="btn primary" id="forgeBtn"><svg class="ico" aria-hidden="true"><use href="#i-hammer"/></svg>Forge lineups<span class="sparks" id="sparks"></span></button>
+        <div class="status" id="bStatus" role="status"></div>
+        <p class="note">These defaults are the settings that tested best in FORGE's backtests.</p>
+      </form>
+      <div style="min-width:0">
+        <div class="toolbar"><button class="btn small" id="resetProj" type="button">Reset projections</button><span class="note">Lock = in every lineup. Out = never used.</span></div>
+        <div class="tbl-wrap"><table id="btable"><thead><tr><th>Player</th><th>Pos</th><th class="n">Salary</th><th class="n">Proj</th><th>Lock</th><th>Out</th></tr></thead><tbody></tbody></table></div>
+        <div id="bOut" hidden>
+          <div class="toolbar" style="margin-top:16px"><h3 style="font-size:22px">Fresh off the anvil</h3><button class="btn small" id="copyMine" type="button">Copy for DraftKings</button></div>
+          <div class="expo" id="bExpo"></div>
+          <div class="grid" id="bGrid"></div>
+        </div>
+        <div id="copyBox" hidden><p class="note">Copy didn't go through on this device. Select the text below and copy it.</p><textarea id="copyText" readonly></textarea></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="p-record" hidden>
+    <p class="lede">How FORGE's builders have done. Backtests replay 14 real 2026 Showdowns: each builder makes 20 lineups from pre-game data only, then gets graded against the real contest field. Capped ROI limits any one lineup to 10× its entry, so a single huge hit can't hide a bad method.</p>
+    <h3 style="font-size:22px;margin-bottom:10px">Backtest, capped ROI</h3>
+    <div class="bars" id="bars"></div>
+    <h3 style="font-size:22px;margin:22px 0 10px">Live slates</h3>
+    <div id="live"></div>
+    <div class="facts">
+      <div class="fact"><b>The edge is construction</b>FORGE's lineups beat the field by about 11 points per lineup on average, but its sims don't pick the right captain more often than the crowd does.</div>
+      <div class="fact"><b>Cheap players are overrated</b>The prop market projects $1,500-and-under players at about twice what they score. FORGE corrects for it.</div>
+      <div class="fact"><b>Skip TE, K and DST captains</b>They almost never win. Removing them helped every builder we tested.</div>
+      <div class="fact"><b>Cash games want a floor</b>For double-ups the best-projected lineup of any shape cleared the cash line in 86% of tested fields.</div>
+    </div>
+  </section>
+
+  <section class="panel" id="p-how" hidden>
+    <p class="lede">FORGE is a research system, not a picks service. Every rule it uses was written down before it was tested, then checked against real contests.</p>
+    <div class="facts">
+      <div class="fact"><b>1 · Market projections</b>Player props from DraftKings and FanDuel are converted to expected Showdown points, captured automatically every two hours.</div>
+      <div class="fact"><b>2 · Simulation</b>100,000 correlated game simulations estimate each player's range and the chance he's the top scorer.</div>
+      <div class="fact"><b>3 · The hybrid build</b>Half the lineups are the best 5-1 stacks; half come from a payout simulator against a modeled field. The mix hedges whether one team dominates.</div>
+      <div class="fact"><b>4 · Graded live</b>After every game, all of FORGE's sets are graded on the real contest. A builder that falls behind gets switched out.</div>
+    </div>
+  </section>
+
+  <div id="gate" hidden><form id="gateForm" class="gatebox"><svg class="ico gateico" aria-hidden="true"><use href="#i-anvil"/></svg><div class="gatek">Invite only</div><h2 class="gateh">Enter the forge</h2><p class="gatep">Type the password Drew sent you. This device will remember it.</p><input id="gatePw" type="password" autocomplete="current-password" placeholder="Password" aria-label="Password"><button type="submit" class="btn primary">Unlock</button><div id="gateMsg" class="gatem" role="status"></div></form></div>
+  <footer id="foot"><svg class="ico" aria-hidden="true"><use href="#i-anvil"/></svg> Hammered out in the FORGE · private test site for friends · not affiliated with DraftKings · play within your means</footer>
+</div>
+
+<script>
+(function () {
+  const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const fmt = (v, d = 1) => (v === null || v === undefined || Number.isNaN(v)) ? '—' : Number(v).toFixed(d);
+  const money = v => '$' + Number(v).toLocaleString('en-US');
+  let D = null, sortKey = 'proj', sortDir = -1, builder = { proj: {}, lock: new Set(), out: new Set(), struct: 'any', result: [] };
+  const LS = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+
+  // tabs
+  function show(p) { $$('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.p === p))); $$('.panel').forEach(x => x.hidden = x.id !== 'p-' + p); LS.set('forge_tab', p); }
+  $$('.tab').forEach(t => t.addEventListener('click', () => show(t.dataset.p)));
+
+  const fail = e => { $('#statusText').textContent = 'No slate data'; $('#ptable tbody').innerHTML = '<tr><td colspan="8">The slate data file could not be loaded (' + e.message + ').</td></tr>'; };
+  // public site: data is AES-GCM encrypted with a key derived from the friends' password (PBKDF2-SHA256); artifact copy: plain slate.json
+  const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+  async function unlock(enc, pw) {
+    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+    const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64(enc.salt), iterations: enc.iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(enc.iv) }, key, b64(enc.ct));
+    return JSON.parse(new TextDecoder().decode(pt));
+  }
+  function gate(enc) {
+    const g = $('#gate'), f = $('#gateForm'), i = $('#gatePw'), m = $('#gateMsg');
+    const tryPw = (pw, silent) => unlock(enc, pw).then(d => { LS.set('forge_pw', pw); g.hidden = true; init(d); })
+      .catch(() => { g.hidden = false; if (!silent) { m.textContent = 'That password is not right. Check with Drew.'; i.select(); } });
+    const saved = LS.get('forge_pw'); if (saved) tryPw(saved, true); else { g.hidden = false; setTimeout(() => i.focus(), 50); }
+    f.addEventListener('submit', ev => { ev.preventDefault(); m.textContent = 'Heating the forge…'; tryPw(i.value.trim(), false); });
+  }
+  fetch('data/slate.enc.json').then(r => { if (!r.ok) throw new Error('plain'); return r.json(); }).then(gate)
+    .catch(() => fetch('data/slate.json').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(init).catch(fail));
+
+  function init(data) {
+    D = data; const s = D.slate;
+    $('#tAway').textContent = s.away; $('#tHome').textContent = s.home;
+    $('#kick').textContent = 'Kickoff ' + s.kickoff + ' · data built ' + s.built_utc;
+    const sp = s.spread_home; $('#mSpread').textContent = sp === 0 ? 'PK' : (sp > 0 ? s.away + ' −' + sp : s.home + ' −' + (-sp));
+    $('#mTotal').textContent = fmt(s.total, 1); $('#mWeek').textContent = s.week;
+    const pill = $('#statusPill'); pill.className = 'pill ' + (s.status === 'final' ? 'ok' : 'hot');
+    $('#statusText').textContent = s.status === 'final' ? 'Tempered · final build' : 'Heating · preliminary data';
+    D.players.forEach(p => { p.value = p.proj / (p.sal / 1000); builder.proj[p.name] = p.proj; });
+    renderPlayers(); initLineups(); renderBuilderTable(); renderRecord();
+    const t = LS.get('forge_tab'); if (t && $('#p-' + t)) show(t);
+  }
+
+  // players
+  $$('#ptable th.sort').forEach(th => th.addEventListener('click', () => { const k = th.dataset.k; sortDir = (sortKey === k) ? -sortDir : -1; sortKey = k; renderPlayers(); }));
+  function renderPlayers() {
+    const maxP = Math.max(...D.players.map(p => p.p_mvp || 0));
+    const hot = new Set([...D.players].sort((a, b) => (b.p_mvp || 0) - (a.p_mvp || 0)).slice(0, 3).map(p => p.name));
+    const gold = new Set(D.players.filter(p => p.proj >= 5).sort((a, b) => b.value - a.value).slice(0, 3).map(p => p.name));
+    const ic = (id, cls, t) => `<svg class="ico ${cls}" role="img" aria-label="${t}"><use href="#${id}"/></svg>`;
+    const rows = [...D.players].sort((a, b) => sortDir * ((a[sortKey] ?? -1) - (b[sortKey] ?? -1)));
+    $('#ptable tbody').innerHTML = rows.map(p => `<tr>
+      <td class="who"><b>${p.name}</b>${hot.has(p.name) ? ic('i-flame', 'flame', 'Hottest captain') : ''}${gold.has(p.name) ? ic('i-ingot', 'ingot', 'Gold value') : ''}<small>${p.team}</small>${p.shrunk ? '<span class="tag">cheap-adjusted</span>' : ''}${/out/i.test(p.status) ? '<span class="tag out">Out</span>' : (p.status ? '<span class="tag">' + p.status + '</span>' : '')}</td>
+      <td><span class="pos">${p.pos}</span></td><td class="n">${money(p.sal)}</td><td class="n">${fmt(p.proj)}</td><td class="n">${fmt(p.value, 2)}</td>
+      <td class="n">${p.own_flex == null ? '—' : fmt(p.own_flex, 0) + '%'}</td><td class="n">${p.own_cpt == null ? '—' : fmt(p.own_cpt, 0) + '%'}</td>
+      <td class="n heat"><i style="width:${maxP ? (100 * (p.p_mvp || 0) / maxP).toFixed(0) : 0}%"></i><span>${p.p_mvp == null ? '—' : fmt(100 * p.p_mvp, 1) + '%'}</span></td></tr>`).join('');
+  }
+
+  // FORGE lineups
+  function initLineups() {
+    const bs = Object.keys(D.builds).filter(k => D.builds[k].length); $('#buildSel').innerHTML = bs.map(b => `<option>${b}</option>`).join('');
+    $('#buildSel').addEventListener('change', fillContests); $('#contestSel').addEventListener('change', renderForge); fillContests();
+  }
+  function fillContests() {
+    const L = D.builds[$('#buildSel').value]; const cs = [...new Set(L.map(l => l.contest))];
+    $('#contestSel').innerHTML = '<option value="__all">All contests</option>' + cs.map(c => `<option>${c}</option>`).join(''); renderForge();
+  }
+  function currentForge() { const L = D.builds[$('#buildSel').value], c = $('#contestSel').value; return c === '__all' ? L : L.filter(l => l.contest === c); }
+  function luCard(l, i) {
+    const pp = n => D.players.find(p => p.name === n) || {};
+    const forged = l.forged ? ' forged' : '';
+    return `<article class="lu${forged}"><header><span>#${i + 1}${l.contest ? ' · ' + shortContest(l.contest) : ''}</span><span><b>${fmt(l.proj)}</b> pts · <b>${money(l.sal)}</b></span></header><ol>
+      <li class="cpt"><span><svg class="ico" aria-hidden="true"><use href="#i-flame"/></svg>CPT ${l.cpt}</span><span class="p">${pp(l.cpt).pos || ''} ${pp(l.cpt).team || ''}</span></li>
+      ${l.flex.map(n => `<li><span>${n}</span><span class="p">${pp(n).pos || ''} ${pp(n).team || ''}</span></li>`).join('')}</ol></article>`;
+  }
+  function shortContest(c) { return c.replace(/^NFL Showdown /, '').replace(/\s*\(.*?\)\s*$/, '').replace(/\[.*?\]/g, '').trim(); }
+  function exposure(L, el) {
+    const n = L.length, cnt = {}; L.forEach(l => [l.cpt, ...l.flex].forEach(x => cnt[x] = (cnt[x] || 0) + 1));
+    const cc = {}; L.forEach(l => cc[l.cpt] = (cc[l.cpt] || 0) + 1);
+    el.innerHTML = Object.entries(cnt).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span class="chip">${k} <b>${Math.round(100 * v / n)}%</b>${cc[k] ? ' · CPT ' + cc[k] : ''}</span>`).join('');
+  }
+  function renderForge() { const L = currentForge().map(l => ({ ...l, forged: /^Entered/.test($('#buildSel').value) })); $('#expoHead').textContent = `Exposure across ${L.length} lineups`; exposure(L, $('#expo')); $('#luGrid').innerHTML = L.map(luCard).join(''); }
+
+  // copy
+  function dkCSV(L) {
+    const id = (n, slot) => { const p = D.players.find(x => x.name === n); return p ? (slot === 'CPT' ? p.cpt_id : p.flex_id) : n; };
+    return ['CPT,FLEX,FLEX,FLEX,FLEX,FLEX', ...L.map(l => [id(l.cpt, 'CPT'), ...l.flex.map(f => id(f, 'FLEX'))].map(v => '"' + v + '"').join(','))].join('\n');
+  }
+  function copy(text, btn) {
+    const done = () => { const t = btn.textContent; btn.textContent = 'Copied'; setTimeout(() => btn.textContent = t, 1600); $('#copyBox').hidden = true; };
+    const fail = () => { $('#copyText').value = text; $('#copyBox').hidden = false; show('builder'); $('#copyText').select(); };
+    try { navigator.clipboard.writeText(text).then(done, fail); } catch (e) { fail(); }
+  }
+  $('#copyForge').addEventListener('click', e => copy(dkCSV(currentForge()), e.currentTarget));
+  $('#copyMine').addEventListener('click', e => copy(dkCSV(builder.result), e.currentTarget));
+
+  // builder table
+  function renderBuilderTable() {
+    const rows = [...D.players].sort((a, b) => b.sal - a.sal);
+    $('#btable tbody').innerHTML = rows.map((p, i) => `<tr><td class="who"><b>${p.name}</b><small>${p.team}</small></td><td><span class="pos">${p.pos}</span></td>
+      <td class="n">${money(p.sal)}</td><td class="n"><input class="projin" type="number" step="0.1" id="pj-${i}" data-n="${p.name}" value="${fmt(builder.proj[p.name])}" aria-label="Projection for ${p.name}"></td>
+      <td><input type="checkbox" id="lk-${i}" data-n="${p.name}" data-a="lock" ${builder.lock.has(p.name) ? 'checked' : ''} aria-label="Lock ${p.name}"></td>
+      <td><input type="checkbox" id="ot-${i}" data-n="${p.name}" data-a="out" ${builder.out.has(p.name) || /out/i.test(p.status) ? 'checked' : ''} aria-label="Exclude ${p.name}"></td></tr>`).join('');
+    D.players.forEach(p => { if (/out/i.test(p.status)) builder.out.add(p.name); });
+    $$('#btable .projin').forEach(inp => inp.addEventListener('change', () => { const v = parseFloat(inp.value); if (!Number.isNaN(v)) builder.proj[inp.dataset.n] = v; }));
+    $$('#btable input[type="checkbox"]').forEach(cb => cb.addEventListener('change', () => {
+      const s = cb.dataset.a === 'lock' ? builder.lock : builder.out; cb.checked ? s.add(cb.dataset.n) : s.delete(cb.dataset.n);
+      if (cb.checked) { const other = cb.dataset.a === 'lock' ? builder.out : builder.lock; other.delete(cb.dataset.n); const o = $(`#btable input[data-n="${CSS.escape(cb.dataset.n)}"][data-a="${cb.dataset.a === 'lock' ? 'out' : 'lock'}"]`); if (o) o.checked = false; }
+    }));
+  }
+  $('#resetProj').addEventListener('click', () => { D.players.forEach(p => builder.proj[p.name] = p.proj); builder.lock.clear(); builder.out.clear(); renderBuilderTable(); });
+  $$('#bStruct button').forEach(b => b.addEventListener('click', () => { builder.struct = b.dataset.v; $$('#bStruct button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); }));
+
+  // the forge: enumerate every legal lineup, score by projection, pick greedily under caps
+  $('#bform').addEventListener('submit', ev => { ev.preventDefault(); const st = $('#bStatus'); st.className = 'status'; st.textContent = 'Heating the steel…'; setTimeout(runForge, 30); });
+  function runForge() {
+    const st = $('#bStatus'), t0 = performance.now();
+    const P = D.players, n = P.length, sal = P.map(p => p.sal), proj = P.map(p => builder.proj[p.name] ?? p.proj), pos = P.map(p => p.pos);
+    const teams = [...new Set(P.map(p => p.team))], tm = P.map(p => teams.indexOf(p.team));
+    const N = Math.max(1, Math.min(150, parseInt($('#bN').value) || 20)), cap = Math.max(1, parseInt($('#bCap').value) || 6);
+    const maxExp = Math.max(1, Math.ceil(N * Math.min(100, Math.max(10, parseFloat($('#bExp').value) || 100)) / 100));
+    const uniq = Math.max(1, Math.min(4, parseInt($('#bUniq').value) || 1)), minSal = parseInt($('#bMinSal').value) || 0, maxPunt = parseInt($('#bPunt').value);
+    const noCpt = $('#bNoCpt').checked, dstRule = $('#bDst').checked;
+    const out = P.map(p => builder.out.has(p.name)), lock = P.map(p => builder.lock.has(p.name)), nLock = lock.filter(Boolean).length;
+    const codes = [], scores = [], is51 = [];
+    for (let c = 0; c < n; c++) {
+      if (out[c] || (noCpt && (pos[c] === 'TE' || pos[c] === 'K' || pos[c] === 'DST'))) continue;
+      const o = []; for (let i = 0; i < n; i++) if (i !== c && !out[i]) o.push(i);
+      const m = o.length, cs = 1.5 * sal[c], cp = 1.5 * proj[c];
+      for (let a = 0; a < m - 4; a++) { const A = o[a]; const sa = cs + sal[A];
+       for (let b = a + 1; b < m - 3; b++) { const B = o[b]; const sb = sa + sal[B]; if (sb > 50000) continue;
+        for (let d = b + 1; d < m - 2; d++) { const Dd = o[d]; const sd = sb + sal[Dd]; if (sd > 50000) continue;
+         for (let e = d + 1; e < m - 1; e++) { const E = o[e]; const se = sd + sal[E]; if (se > 50000) continue;
+          for (let f = e + 1; f < m; f++) { const F = o[f]; const tot = se + sal[F]; if (tot > 50000 || tot < minSal) continue;
+            const fl = [A, B, Dd, E, F]; let same = 1, punt = 0, lk = lock[c] ? 1 : 0, bad = false;
+            for (const x of fl) { if (tm[x] === tm[c]) same++; if (sal[x] <= 1000) punt++; if (lock[x]) lk++; if (dstRule && pos[x] === 'DST' && tm[x] !== tm[c] && pos[c] !== 'K' && pos[c] !== 'DST') bad = true; }
+            if (bad || same === 6 || punt > maxPunt || lk < nLock) continue;
+            const s51 = (same === 5 || same === 1); if (builder.struct === '51' && !s51) continue;
+            codes.push(c | (A << 5) | (B << 10) | (Dd << 15) | (E << 20) | (F << 25)); scores.push(cp + proj[A] + proj[B] + proj[Dd] + proj[E] + proj[F]); is51.push(s51);
+          } } } } }
+    }
+    if (!codes.length) { st.className = 'status err'; st.textContent = 'No legal lineup fits these rules. Loosen a lock, the salary floor or the punt limit.'; return; }
+    const idx = Array.from(codes.keys()).sort((x, y) => scores[y] - scores[x]);
+    const pick = (want, need51, chosen, cc, ex) => {
+      for (const i of idx) {
+        if (chosen.length >= want) break;
+        if (need51 === true && !is51[i]) continue; if (need51 === false && is51[i]) continue;
+        const code = codes[i], lu = [code & 31, (code >> 5) & 31, (code >> 10) & 31, (code >> 15) & 31, (code >> 20) & 31, (code >> 25) & 31];
+        if ((cc[lu[0]] || 0) >= cap) continue; if (lu.some(x => (ex[x] || 0) >= maxExp && !lock[x])) continue;
+        let ok = true; for (const ch of chosen) { let sh = (ch.lu[0] === lu[0]) ? 1 : 0; const fs = new Set(ch.lu.slice(1)); for (let k = 1; k < 6; k++) if (fs.has(lu[k])) sh++; if (6 - sh < uniq) { ok = false; break; } }
+        if (!ok) continue;
+        chosen.push({ lu, s: scores[i] }); cc[lu[0]] = (cc[lu[0]] || 0) + 1; lu.forEach(x => ex[x] = (ex[x] || 0) + 1);
+      }
+    };
+    const chosen = [], cc = {}, ex = {};
+    if (builder.struct === 'hedge') { pick(Math.ceil(N / 2), true, chosen, cc, ex); const half = {}; pick(N, false, chosen, half, ex); }
+    else pick(N, null, chosen, cc, ex);
+    builder.result = chosen.map(ch => ({ cpt: P[ch.lu[0]].name, flex: ch.lu.slice(1).map(x => P[x].name), proj: ch.s, sal: 1.5 * sal[ch.lu[0]] + ch.lu.slice(1).reduce((t, x) => t + sal[x], 0) }));
+    const ms = Math.round(performance.now() - t0);
+    st.textContent = `Forged ${chosen.length} of ${N} lineups · ${codes.length.toLocaleString('en-US')} legal lineups scored in ${ms} ms` + (chosen.length < N ? ' · loosen caps for more' : '');
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) { const sp = $('#sparks'); sp.innerHTML = Array.from({ length: 18 }, () => { const a = Math.random() * Math.PI * 2, r = 40 + Math.random() * 70; return `<b style="--dx:${(Math.cos(a) * r).toFixed(0)}px;--dy:${(Math.sin(a) * r - 20).toFixed(0)}px"></b>`; }).join(''); setTimeout(() => sp.innerHTML = '', 800); }
+    $('#bOut').hidden = false; exposure(builder.result, $('#bExpo')); $('#bGrid').innerHTML = builder.result.map((l, i) => luCard(l, i)).join('');
+  }
+
+  // record
+  function renderRecord() {
+    const B = (D.record && D.record.backtest) || []; if (!B.length) { $('#bars').innerHTML = '<p class="note">No backtest record in this data file.</p>'; return; }
+    const lo = Math.min(0, ...B.map(b => b.roi)), hi = Math.max(...B.map(b => b.roi)), span = hi - lo || 1, x = v => 100 * (v - lo) / span;
+    $('#bars').innerHTML = B.map(b => `<div class="barrow"><div class="lbl">${b.label}<small>median ${b.median > 0 ? '+' : ''}${b.median}% · ${b.games} games</small></div>
+      <div class="track"><div class="zero" style="left:${x(0)}%"></div><div class="fill ${b.label === 'Entered build' ? 'lead' : ''}" style="left:${Math.min(x(0), x(b.roi))}%;width:${Math.abs(x(b.roi) - x(0))}%"></div></div>
+      <div class="n mono">${b.roi > 0 ? '+' : ''}${b.roi}%</div></div>`).join('');
+    const Lv = (D.record && D.record.live) || [];
+    $('#live').innerHTML = Lv.length ? `<div class="tbl-wrap"><table><thead><tr><th>Slate</th><th>Set</th><th>Contest</th><th class="n">Lineups</th><th class="n">Capped ROI</th><th class="n">Cashed</th></tr></thead><tbody>${Lv.map(r => `<tr><td>${r.slate}</td><td>${r.selector}${r.entered ? ' <span class="tag">entered</span>' : ''}</td><td>${shortContest(r.contest)}</td><td class="n">${r.graded}</td><td class="n">${fmt(100 * r.roi_cap, 0)}%</td><td class="n">${fmt(100 * r.cash, 0)}%</td></tr>`).join('')}</tbody></table></div>`
+      : '<p class="note">No live slates graded yet. This game is live slate 1; results land here after the contest settles.</p>';
+  }
+})();
+</script>
