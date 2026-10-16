@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="252501bc7be1"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="189fe26c3788"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -956,7 +956,7 @@ td.lev { color: var(--steel); }
     ev: "Every lineup is played in 2,000 simulated games against a simulated field; the best average payouts win (FORGE's Showdown rules on). Takes a few seconds.", hyb0: 'FORGE Pick without the two fixes: captain can be anyone and cheap fillers are not marked down (unless you edited them).' };
   function setMethod(v) { if (v !== 'p51' && !(D && D.simpack)) v = 'p51'; builder.method = v; $$('#bMethod button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === v)));
     if (v === 'hyb0') $('#bNoCpt').checked = false; else if (v === 'hyb' || v === 'ev') $('#bNoCpt').checked = true;
-    $('#methodNote').textContent = (D && !D.simpack && v === 'p51' ? 'Simulation methods appear after FORGE builds this game. ' : '') + METHOD_NOTE[v]; $('#bStruct').closest('.field').style.opacity = v === 'p51' ? '' : '.45'; }
+    $('#methodNote').textContent = (D && !D.simpack && v === 'p51' ? 'Simulation methods appear after FORGE builds this game. ' : '') + METHOD_NOTE[v]; if (v !== builder.method_prev) setStruct(v === 'ev' ? 'any' : (v === 'p51' ? builder.struct : 'hedge')); builder.method_prev = v; }   // 2026-10-16: structure is editable for every method; each method starts on its own default
   $$('#bMethod button').forEach(b => b.addEventListener('click', () => { setMethod(b.dataset.v); markCustom(); }));
   $('#bOwn').addEventListener('input', () => { const v = parseInt($('#bOwn').value); $('#bOwnV').textContent = v === 0 ? 'off' : v < 0 ? `fade popular ${-v}%` : `play popular ${v}%`; });
   function setStruct(v) { builder.struct = v; $$('#bStruct button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === v))); }
@@ -1042,8 +1042,9 @@ td.lev { color: var(--steel); }
       $('#forgeBtn').disabled = true; let ev;
       try { ev = await simEV(P, proj, pos, tm, codes, scores, pool, st); } catch (e) { st.className = 'status err'; st.textContent = 'Simulation failed: ' + e.message; $('#forgeBtn').disabled = false; return; } finally { $('#forgeBtn').disabled = false; }
       const val = new Map(); pool.forEach((i, k) => val.set(i, ev[k])); const evOrder = [...pool].sort((a, b) => val.get(b) - val.get(a));
-      if (method === 'ev') pickFrom(evOrder, N, cc, val);
-      else { pickFrom(idx.filter(i => is51[i]), Math.ceil(N / 2), cc, val); const half = {}; pickFrom(evOrder, N, half, val); }
+      const stc = builder.struct, evo51 = evOrder.filter(i => is51[i]);   // structure: any = no split rule, 51 = every lineup 5-1, hedge = half 5-1 (the default for FORGE Pick)
+      if (method === 'ev') { if (stc === 'hedge') { pickFrom(evo51, Math.ceil(N / 2), cc, val); pickFrom(evOrder, N, {}, val); } else pickFrom(stc === '51' ? evo51 : evOrder, N, cc, val); }
+      else { if (stc !== 'any') pickFrom(idx.filter(i => is51[i]), Math.ceil(N / 2), cc, val); const half = {}; pickFrom(stc === '51' ? evo51 : evOrder, N, stc === 'any' ? cc : half, val); }
     }
     else if (builder.struct === 'hedge') { pick(Math.ceil(N / 2), true, chosen, cc, ex); const half = {}; pick(N, false, chosen, half, ex); }
     else pick(N, null, chosen, cc, ex);
