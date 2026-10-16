@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="30969531d51b"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="c5baea0072ab"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -1024,10 +1024,12 @@ td.lev { color: var(--steel); }
       }
     };
     const chosen = [], cc = {}, ex = {};
+    // 2026-10-18: FORGE Pick = the entered build HYB-M-SXP -> pitch cap: no player in more than ceil(N x max(projected own %, optimal %) / 100) lineups (min 1)
+    const PC = (method === 'hyb' && sim) ? P.map(p => { const own = (p.own_flex || 0) + (p.own_cpt || 0), opt = (p.opt_cpt || 0) + (p.opt_flex || 0); return Math.max(1, Math.ceil(N * Math.max(own, opt) / 100)); }) : null;
     const pickFrom = (order, want, ccx, val) => {     // same caps/uniqueness as pick(), in a given order (EV order for the simulation methods)
       for (const i of order) {
         if (chosen.length >= want) break; const code = codes[i], lu = [code & 31, (code >> 5) & 31, (code >> 10) & 31, (code >> 15) & 31, (code >> 20) & 31, (code >> 25) & 31];
-        if ((ccx[lu[0]] || 0) >= cap) continue; if (lu.some(x => (ex[x] || 0) >= maxExp && !lock[x])) continue;
+        if ((ccx[lu[0]] || 0) >= cap) continue; if (lu.some(x => (ex[x] || 0) >= maxExp && !lock[x])) continue; if (PC && lu.some(x => (ex[x] || 0) >= PC[x] && !lock[x])) continue;
         let ok = true; for (const ch of chosen) { let sh = (ch.lu[0] === lu[0]) ? 1 : 0; const fs = new Set(ch.lu.slice(1)); for (let k = 1; k < 6; k++) if (fs.has(lu[k])) sh++; if (6 - sh < uniq) { ok = false; break; } }
         if (!ok) continue; chosen.push({ lu, s: scores[i], rank: rankOf.get(i), ev: val ? val.get(i) : undefined }); ccx[lu[0]] = (ccx[lu[0]] || 0) + 1; lu.forEach(x => ex[x] = (ex[x] || 0) + 1);
       }
@@ -1049,7 +1051,7 @@ td.lev { color: var(--steel); }
     builder.result = chosen.map(ch => ({ cpt: P[ch.lu[0]].name, flex: ch.lu.slice(1).map(x => P[x].name), proj: ch.s, sal: 1.5 * sal[ch.lu[0]] + ch.lu.slice(1).reduce((t, x) => t + sal[x], 0),
       pct: 100 * (ch.rank + 1) / codes.length, own: ownSum(ch.lu), ev: ch.ev }));
     const ms = Math.round(performance.now() - t0);
-    st.className = 'status'; st.textContent = `Forged ${chosen.length} of ${N} lineups (${setInfo({ p51: 'P51-M-SX', hyb: 'HYB-M-SX', ev: 'EV-M', hyb0: 'HYB-M' }[method]).name}) · ${codes.length.toLocaleString('en-US')} legal lineups${sim ? ', ' + Math.min(codes.length, D.simpack.topn || 10000).toLocaleString('en-US') + ' simulated' : ''} in ${(ms / 1000).toFixed(1)} s` + (chosen.length < N ? ' · loosen caps for more' : '');
+    st.className = 'status'; st.textContent = `Forged ${chosen.length} of ${N} lineups (${setInfo({ p51: 'P51-M-SX', hyb: 'HYB-M-SXP', ev: 'EV-M', hyb0: 'HYB-M' }[method]).name}) · ${codes.length.toLocaleString('en-US')} legal lineups${sim ? ', ' + Math.min(codes.length, D.simpack.topn || 10000).toLocaleString('en-US') + ' simulated' : ''} in ${(ms / 1000).toFixed(1)} s` + (chosen.length < N ? ' · loosen caps for more' : '');
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) { const sp = $('#sparks'); sp.innerHTML = Array.from({ length: 18 }, () => { const a = Math.random() * Math.PI * 2, r = 40 + Math.random() * 70; return `<b style="--dx:${(Math.cos(a) * r).toFixed(0)}px;--dy:${(Math.sin(a) * r - 20).toFixed(0)}px"></b>`; }).join(''); setTimeout(() => sp.innerHTML = '', 800); }
     FLT.mine = mkF(); $('#bOut').hidden = false; renderMine();
     logBuild('showdown', { method, recipe: builder.recipe, n: N, cap, exp: maxExp, uniq, minSal, punt: maxPunt, noCpt, dst: dstRule, struct: builder.struct,
