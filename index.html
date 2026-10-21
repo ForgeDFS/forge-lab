@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="6180beff7477"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="a2212e874ebf"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -592,7 +592,7 @@ td.lev { color: var(--steel); }
     <p class="lede">Every slate we enter gets graded, losses included. Backtests replay 14 real 2026 Showdowns: each builder makes 20 lineups from pre-game data only, then gets graded against the real contest field. Capped ROI limits any one lineup to 10× its entry, so a single huge hit can't hide a bad method.</p>
     <div class="bars" id="bars"></div>
     <div class="facts">
-      <div class="fact"><b>The edge is construction</b>FORGE's lineups beat the field by about 11 points per lineup on average, but its sims don't pick the right captain more often than the crowd does.</div>
+      <div class="fact" id="factCash"><b>Measured against the cash line</b>What counts is clearing the cash line, not the field average. The live numbers are in "Our results" above.</div>
       <div class="fact"><b>Cheap players are overrated</b>The prop market projects $1,500-and-under players at about twice what they score. FORGE corrects for it.</div>
       <div class="fact"><b>Skip TE, K and DST captains</b>They almost never win. Removing them helped every builder we tested.</div>
       <div class="fact"><b>Cash games want a floor</b>For double-ups the best-projected lineup of any shape cleared the cash line in 86% of tested fields.</div>
@@ -1615,18 +1615,21 @@ td.lev { color: var(--steel); }
       tiles.push(`<div class="tile"><small>Our results · all weeks</small><b class="${T.net >= 0 ? 'gain' : 'loss'}">${usd2(T.net)}</b><span>${usd2(T.fees)} in, ${usd2(T.prizes)} back · ROI ${sgn(T.roi)}%${T.priced < T.entries ? ` · ${T.entries - T.priced} of ${T.entries} entries have no prize table yet` : ''}</span></div>`);
       if (W) tiles.push(`<div class="tile"><small>Week ${W.week}</small><b class="${W.net >= 0 ? 'gain' : 'loss'}">${usd2(W.net)}</b><span>${W.entries} entries · ${usd2(W.fees)} in, ${usd2(W.prizes)} back · ROI ${sgn(W.roi)}%</span></div>`);
     }
+    if (!O && REC && REC.ours_summary && REC.ours_summary.combined) { const c = REC.ours_summary.combined; tiles.push(`<div class="tile"><small>Our ROI · all weeks</small><b class="${c.roi >= 0 ? 'gain' : 'loss'}">${sgn(c.roi)}%</b><span>${c.entries} lineups in ${c.contests} contests · ${c.cashed} cashed</span></div>`); }
     if (K && K.n) tiles.push(`<div class="tile"><small>Kill switch</small><b class="${K.mean_diff >= 0 ? 'gain' : 'loss'}">${sgn(K.mean_diff)} pts</b><span>FORGE Pick vs its version before the player cap, per slate · ${K.n} of ${K.review_at} slates to the review · behind in ${K.behind} · really entered on ${K.entered_only_n}</span></div>`);
     else tiles.push(`<div class="tile"><small>Live slates graded</small><b>0</b><span>Review point: 6 slates</span></div>`);
     if (ent) tiles.push(`<div class="tile"><small>Backtest</small><b class="${ent.roi >= 0 ? 'gain' : 'loss'}">${sgn(ent.roi)}%</b><span>FORGE Pick capped ROI · ${ent.games} real 2026 Showdowns · median ${sgn(ent.median)}%</span></div>`);
     $('#recTiles').innerHTML = tiles.join('');
     // owner: our real contests, by slate
-    const K3 = O && O.by_kind, kc = ['showdown', 'classic', 'combined'], kn = { showdown: 'Showdown', classic: 'Classic', combined: 'Combined' };
+    const K3 = (O && O.by_kind) || (REC && REC.ours_summary), money = !!(O && O.by_kind), kc = ['showdown', 'classic', 'combined'], kn = { showdown: 'Showdown', classic: 'Classic', combined: 'Combined' };
+    const pts = v => v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + fmt(Math.abs(v), 1) + ' pts';
     const sumRow = (lbl, f) => `<tr><td><b>${lbl}</b></td>${kc.map(k => `<td class="n${k === 'combined' ? ' tot' : ''}">${f(K3[k])}</td>`).join('')}</tr>`;
     const sumTbl = K3 ? `<div class="tbl-wrap"><table class="ksum"><thead><tr><th></th>${kc.map(k => `<th class="n">${kn[k]}</th>`).join('')}</tr></thead><tbody>
-      ${sumRow('Slates', s => s.slates)}${sumRow('Lineups entered', s => s.entries)}${sumRow('Lineups cashed', s => `${s.cashed} <small class="dim">${s.cash_rate == null ? '' : fmt(s.cash_rate, 0) + '%'}${s.priced < s.entries ? ' of ' + s.priced + ' priced' : ''}</small>`)}
-      ${sumRow('In', s => usd2(s.fees))}${sumRow('Back', s => usd2(s.prizes))}${sumRow('Net', s => `<span class="${s.net >= 0 ? 'netpos' : 'netneg'}">${usd2(s.net)}</span>`)}${sumRow('ROI', s => s.roi == null ? '—' : sgn(s.roi) + '%')}${sumRow('Top 1% finishes', s => s.top1)}
-      </tbody></table></div><p class="note">Cashed and money count only entries with a prize table on file; lineups without one are in "Lineups entered" but not priced.</p>` : '';
-    $('#ourBox').innerHTML = (O && O.slates && O.slates.length) ? `<h3 class="subh">Our results</h3>${sumTbl}<h3 class="subh2">By slate</h3><p class="note">Owner view: real entries read from the contest standings.</p>
+      ${sumRow('Slates entered', s => s.slates)}${sumRow('Contests entered', s => s.contests)}${sumRow('Lineups entered', s => s.entries)}${sumRow('Lineups cashed', s => `${s.cashed} <small class="dim">${s.cash_rate == null ? '' : fmt(s.cash_rate, 0) + '%'}${s.priced < s.entries ? ' of ' + s.priced + ' priced' : ''}</small>`)}
+      ${sumRow('Slates in profit', s => `${s.slates_in_profit} of ${s.slates}`)}${money ? sumRow('In', s => usd2(s.fees)) + sumRow('Back', s => usd2(s.prizes)) + sumRow('Net', s => `<span class="${s.net >= 0 ? 'netpos' : 'netneg'}">${usd2(s.net)}</span>`) : ''}${sumRow('ROI', s => s.roi == null ? '—' : `<span class="${s.roi >= 0 ? 'netpos' : 'netneg'}">${sgn(s.roi)}%</span>`)}
+      ${sumRow('Average lineup vs the cash line', s => pts(s.vs_cash_avg))}${sumRow('Best lineup vs the cash line, per contest', s => pts(s.vs_cash_best))}${sumRow('Top 1% finishes', s => s.top1)}
+      </tbody></table></div><p class="note">Cash line = the score of the last paid place in each contest. Cashed, ROI and money count only entries with a prize table on file; lineups without one are in "Lineups entered" but not priced.</p>` : '';
+    $('#ourBox').innerHTML = (!(O && O.slates && O.slates.length) && sumTbl) ? `<h3 class="subh">Our results</h3>${sumTbl}` : (O && O.slates && O.slates.length) ? `<h3 class="subh">Our results</h3>${sumTbl}<h3 class="subh2">By slate</h3><p class="note">Owner view: real entries read from the contest standings.</p>
       <div class="tbl-wrap"><table><thead><tr><th>Slate</th><th class="n">Wk</th><th class="n">Entries</th><th class="n">In</th><th class="n">Back</th><th class="n">Net</th><th class="n">ROI</th><th class="n">Cashed</th><th>Best finish</th><th class="n">Top 1%</th></tr></thead><tbody>${O.slates.map(r => `<tr><td><b>${r.name}</b>${r.unpriced ? ` <small class="dim">${r.unpriced === r.entries ? 'no prize tables yet' : r.unpriced + ' not priced'}</small>` : ''}</td><td class="n">${r.week}</td><td class="n">${r.entries}</td><td class="n">${r.priced ? usd2(r.fees) : '—'}</td><td class="n">${r.priced ? usd2(r.prizes) : '—'}</td><td class="n ${!r.priced ? '' : r.net >= 0 ? 'netpos' : 'netneg'}">${r.priced ? usd2(r.net) : '—'}</td><td class="n">${r.roi == null ? '—' : sgn(r.roi) + '%'}</td><td class="n">${r.priced ? r.cashed + ' of ' + r.priced : '—'}</td><td>${ordn(r.best.rank)} of ${r.best.field.toLocaleString('en-US')} <small class="dim">${fmt(r.best.pts, 1)} pts</small></td><td class="n">${r.top1}</td></tr>`).join('')}</tbody></table></div>` : '';
     // live grades: entered build and its comparator up front, everything else folded
     const Lv = (REC && REC.live) || [], lead = new Set([K ? K.entered : 'HYB-M-SXP', K ? K.shadow : 'HYB-M-SX']), own = !!D.owner;
