@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="dcc9f399e786"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="783d736be80d"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -137,6 +137,9 @@ details.about[open] > summary, details.adv[open] > summary { margin-bottom: 8px;
 details.adv .field:first-of-type { margin-top: 4px; }
 .note.fine { font-size: 11px; opacity: .8; }
 .tab .badge[hidden] { display: none; }
+.pickrow { display: flex; gap: 10px; align-items: center; margin: 0 0 8px; } .pklab { font: 700 11.5px var(--f-display); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); min-width: 74px; }
+.pkchips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: thin; padding-bottom: 2px; min-width: 0; flex: 1; }
+#slatePicker { display: block; overflow: visible; } #slatePicker[hidden] { display: none; }
 .sports { display: flex; gap: 6px; margin: 0 0 10px; } .sports button { font: 700 14px var(--f-display); letter-spacing: .12em; padding: 7px 18px; border-radius: 99px; border: 1px solid var(--line); background: var(--plate); color: var(--muted); cursor: pointer; }
 .sports button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 body.nba nav.tabs, body.nba .panel, body.nba #rpBanner { display: none !important; } body.nba #nbaView { display: block !important; }
@@ -144,6 +147,7 @@ body.nba nav.tabs, body.nba .panel, body.nba #rpBanner { display: none !importan
 .nbaleaders .card { background: var(--plate); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; } .nbaleaders .card h4 { margin: 0 0 6px; font: 700 12.5px var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .nbaleaders ol { margin: 0; padding-left: 18px; font-size: 13.5px; } .nbaleaders li { display: flex; justify-content: space-between; gap: 8px; } .nbaleaders li small { color: var(--muted); }
 .nbaform { display: grid; gap: 8px; max-width: 760px; } .nbaform label { display: flex; gap: 8px; align-items: center; } .nbaform input[type=number] { width: 80px; }
+#nbaView.sd .clonly, #nbaView:not(.sd) .sdonly, #nbaView:not(.sd) .sdcol { display: none; }
 .nbaflag { border-left: 3px solid var(--steel); padding-left: 10px; }
 .rpbanner { margin: 0 0 12px; padding: 10px 14px; border: 1px solid var(--steel); border-radius: 10px; background: var(--plate); font-size: 13.5px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .rpbanner b { color: var(--steel); } .rpbanner .btn { margin-left: auto; }
@@ -411,14 +415,15 @@ td.lev { color: var(--steel); }
     <div class="nbaleaders" id="nbaLeaders"></div>
     <h3 class="subh">Players</h3>
     <div class="toolbar"><input type="search" id="nbaSearch" placeholder="Search players" aria-label="Search players"><select id="nbaGame" aria-label="Game"></select><span class="note" id="nbaCount"></span></div>
-    <div class="tbl-wrap"><table id="nbaTable"><thead><tr><th data-k="name">Player</th><th>Pos</th><th data-k="team">Team</th><th data-k="game">Game</th><th class="n" data-k="sal">Salary</th><th class="n" data-k="proj">Proj</th><th class="n" data-k="value">Value</th><th class="n" data-k="pts">PTS</th><th class="n" data-k="reb">REB</th><th class="n" data-k="ast">AST</th><th class="n" data-k="tpm">3PM</th><th class="n" data-k="stl">STL</th><th class="n" data-k="blk">BLK</th><th class="n" data-k="dd">DD%</th><th>Out</th></tr></thead><tbody></tbody></table></div>
-    <h3 class="subh">Builder · NBA Classic</h3>
+    <div class="tbl-wrap"><table id="nbaTable"><thead><tr><th data-k="name">Player</th><th>Pos</th><th data-k="team">Team</th><th data-k="game">Game</th><th class="n" data-k="sal">Salary</th><th class="n" data-k="proj">Proj</th><th class="n" data-k="value">Value</th><th class="n" data-k="pts">PTS</th><th class="n" data-k="reb">REB</th><th class="n" data-k="ast">AST</th><th class="n" data-k="tpm">3PM</th><th class="n" data-k="stl">STL</th><th class="n" data-k="blk">BLK</th><th class="n" data-k="dd">DD%</th><th class="n sdcol" data-k="cpt_sal">CPT $</th><th class="n sdcol" data-k="p_top">Top scorer</th><th>Out</th></tr></thead><tbody></tbody></table></div>
+    <h3 class="subh" id="nbaBTitle">Builder · NBA Classic</h3>
     <div class="nbaform">
       <label>Lineups <input type="number" id="nbaN" min="1" max="150" value="20"></label>
       <label>Min players different <input type="number" id="nbaUniq" min="1" max="6" value="2"></label>
       <label>Max exposure % <input type="number" id="nbaExp" min="10" max="100" value="100"></label>
-      <label class="check"><input type="checkbox" id="nbaStack" checked> Game stack: 3+ players from one of the 3 highest-total close games (spread 7 or less)</label>
-      <label class="check"><input type="checkbox" id="nbaBlow" checked> At most 1 player from likely blowouts (spread 9+)</label>
+      <label class="check sdonly"><input type="checkbox" id="nbaTop3" checked> FORGE Pick captains: FORGE's 3 most likely top DraftKings scorers, more lineups for the likeliest (FORGE's Showdown default)</label>
+      <label class="check clonly"><input type="checkbox" id="nbaStack" checked> Game stack: 3+ players from one of the 3 highest-total close games (spread 7 or less)</label>
+      <label class="check clonly"><input type="checkbox" id="nbaBlow" checked> At most 1 player from likely blowouts (spread 9+)</label>
       <p class="note">Both rules are FORGE's starting hypotheses for NBA (fast, close games score more; starters sit in blowouts). Untested until NBA contests are graded.</p>
       <div class="toolbar"><button type="button" class="btn primary" id="nbaRun">Forge NBA lineups</button><span class="status" id="nbaStatus" role="status"></span></div>
     </div>
@@ -702,13 +707,18 @@ td.lev { color: var(--steel); }
     return ENC ? dec(await r.json()) : r.json();
   }
   const kickLocal = s => new Date(s.kickoff_utc).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' });
-  function renderPicker() {
-    const el = $('#slatePicker'); const L = IDX.filter(x => (x.kind === 'showdown' || x.kind === 'classic') && active(x) && sportOf(x) === SPORT);   // 2026-10-21 (Drew): only upcoming and live slates up top; finished games live in Past contests
-    el.hidden = L.length < 2;
-    el.innerHTML = L.map(x => `<button type="button" class="slate-chip ${x.status}" data-id="${x.id}" aria-pressed="${x.id === CUR}"><b>${x.label}</b><span>${x.kind === 'classic' ? x.game : x.game.replace('@', ' @ ')}</span><small>${kickLocal(x)}${x.status === 'live' ? ' · locked' : x.status === 'complete' ? ' · final' : ''}</small></button>`).join('');
+  function renderPicker() {     // 2026-10-21 (Drew): per sport, a Classic row (main / early / late slates) and a Showdown row (every game DraftKings offers)
+    const el = $('#slatePicker'); const L = IDX.filter(x => active(x) && sportOf(x) === SPORT).sort((a, b) => new Date(a.kickoff_utc) - new Date(b.kickoff_utc));
+    const isSD = x => String(x.kind).includes('showdown'), C = L.filter(x => !isSD(x)), S = L.filter(isSD);
+    const chip = x => { const sd = isSD(x), nba = sportOf(x) === 'NBA';
+      const top = sd ? (x.game || '').replace('@', ' @ ') : (x.slate_name || (nba ? 'Classic' : 'Main slate')), mid = sd ? (nba ? 'Showdown' : (x.label || 'Showdown')) : (x.game || '');
+      return `<button type="button" class="slate-chip ${x.status}" data-id="${x.id}" aria-pressed="${x.id === CUR}"><b>${top}</b><span>${mid}</span><small>${kickLocal(x)}${x.status === 'live' ? ' · locked' : x.status === 'complete' ? ' · final' : ''}</small></button>`; };
+    el.hidden = !L.length;
+    el.innerHTML = (C.length ? `<div class="pickrow"><span class="pklab">Classic</span><div class="pkchips">${C.map(chip).join('')}</div></div>` : '') + (S.length ? `<div class="pickrow"><span class="pklab">Showdown</span><div class="pkchips">${S.map(chip).join('')}</div></div>` : '');
     $$('.slate-chip', el).forEach(b => b.onclick = () => loadSlate(b.dataset.id));
-    const on = el.querySelector('[aria-pressed="true"]'); if (on) el.scrollLeft = Math.max(0, on.offsetLeft - (el.clientWidth - on.offsetWidth) / 2);   // keep the picked game in view (one scrolling row)
+    const on = el.querySelector('[aria-pressed="true"]'); if (on) { const row = on.parentElement; row.scrollLeft = Math.max(0, on.offsetLeft - (row.clientWidth - on.offsetWidth) / 2); }
   }
+  function defaultSlateUnused() {}
   let SPORT = LS.get('forge_sport') || 'NFL';   // 2026-10-21 (Drew): NFL / NBA tabs up top
   const sportOf = x => (x && x.kind && String(x.kind).startsWith('nba')) ? 'NBA' : 'NFL';
   function renderSports() { $$('#sportPicker button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sport === SPORT))); }
@@ -1782,8 +1792,10 @@ td.lev { color: var(--steel); }
   const NB = { sort: 'proj', dir: -1, out: new Set(), result: [] };
   const NSLOT = ['PG', 'SG', 'SF', 'PF', 'C', 'G', 'F', 'UTIL'], NEL = { PG: ['PG'], SG: ['SG'], SF: ['SF'], PF: ['PF'], C: ['C'], G: ['PG', 'SG'], F: ['SF', 'PF'], UTIL: ['PG', 'SG', 'SF', 'PF', 'C'] };
   function initNBA(data, meta) {
-    const s = data.slate, P = data.players; NB.out.clear(); NB.result = []; $('#nbaOut').hidden = true; $('#nbaStatus').textContent = '';
-    $('#tAway').textContent = 'NBA'; $('#tAt').textContent = '·'; $('#tHome').textContent = s.games + ' games';
+    const s = data.slate, P = data.players, SD = s.kind === 'nba_showdown'; NB.out.clear(); NB.result = []; $('#nbaView').classList.toggle('sd', SD);
+    $('#nbaBTitle').textContent = SD ? 'Builder · NBA Showdown (Captain + 5 UTIL)' : 'Builder · NBA Classic'; $('#nbaOut').hidden = true; $('#nbaStatus').textContent = '';
+    if (SD) { const [a, h] = (s.game_list || [''])[0].split('@'); $('#tAway').textContent = a; $('#tAt').textContent = '@'; $('#tHome').textContent = h; }
+    else { $('#tAway').textContent = 'NBA'; $('#tAt').textContent = '·'; $('#tHome').textContent = s.games + ' games'; }
     $('#kick').textContent = 'First game ' + new Date(s.kickoff_utc).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' · data built ' + s.built_utc;
     $('#fresh').textContent = s.odds_file ? 'FanDuel props snapshot ' + s.odds_file.replace('.json', '') : '';
     $('#mSpread').textContent = Object.keys(data.game_lines || {}).length + '/' + s.games; $('#lSpread').textContent = 'Games with lines';
@@ -1792,7 +1804,7 @@ td.lev { color: var(--steel); }
     P.forEach(p => { p.value = p.proj == null ? null : p.proj / (p.sal / 1000); if (p.proj == null) NB.out.add(p.name); });
     const L = data.leaders || {}, pc = v => (100 * v).toFixed(v < 0.1 ? 1 : 0) + '%';
     const card = (k, lab, team) => L[k] ? `<div class="card"><h4>${lab}</h4><ol>${L[k].slice(0, 5).map(r => `<li><span>${team ? r.team : r.name} <small>${team ? '' : r.team + ' · '}${r.mean}</small></span><b>${pc(r.p_lead)}</b></li>`).join('')}</ol></div>` : '';
-    $('#nbaLeaders').innerHTML = card('pra', 'Points + rebounds + assists') + card('pts', 'Points') + card('reb', 'Rebounds') + card('ast', 'Assists') + card('tpm', 'Made threes') + card('stl', 'Steals') + card('blk', 'Blocks') + card('team_tpm', 'Team threes', true)
+    $('#nbaLeaders').innerHTML = (SD ? card('dk', 'Top DraftKings scorer (captain pool)') : '') + card('pra', 'Points + rebounds + assists') + card('pts', 'Points') + card('reb', 'Rebounds') + card('ast', 'Assists') + card('tpm', 'Made threes') + card('stl', 'Steals') + card('blk', 'Blocks') + card('team_tpm', 'Team threes', true)
       + '<p class="note" style="grid-column:1/-1">Chance to lead the whole slate in that stat, from 20,000 simulated nights. Number next to the name = average in the simulation. Team threes count only players with a threes line.</p>';
     const games = [...new Set(P.map(p => p.game))].sort(); $('#nbaGame').innerHTML = '<option value="">All games</option>' + games.map(g => { const gl = (data.game_lines || {})[g]; return `<option value="${g}">${g}${gl && gl.total ? ' · total ' + gl.total + ', home ' + (gl.home_spread > 0 ? '+' : '') + gl.home_spread : ''}</option>`; }).join('');
     $('#nbaSearch').oninput = renderNBATable; $('#nbaGame').onchange = renderNBATable;
@@ -1804,7 +1816,7 @@ td.lev { color: var(--steel); }
     const R = D.players.filter(p => (!q || p.name.toLowerCase().includes(q)) && (!g || p.game === g)).sort((a, b) => { const x = a[NB.sort], y = b[NB.sort]; if (x == null) return 1; if (y == null) return -1; return (x > y ? 1 : x < y ? -1 : 0) * NB.dir; });
     $('#nbaCount').textContent = `${R.length} players`;
     $('#nbaTable tbody').innerHTML = R.map(p => `<tr><td class="who"><b>${p.name}</b>${p.proj == null ? ' <small class="dim">no props</small>' : ''}</td><td><span class="pos">${p.pos}</span></td><td>${p.team}</td><td><small>${p.game}</small></td><td class="n">${money(p.sal)}</td><td class="n"><b>${fmt(p.proj)}</b></td><td class="n">${fmt(p.value, 2)}</td>
-      ${['pts', 'reb', 'ast', 'tpm', 'stl', 'blk'].map(k => `<td class="n">${fmt(p[k])}</td>`).join('')}<td class="n">${p.dd == null ? '—' : fmt(100 * p.dd, 0) + '%'}</td>
+      ${['pts', 'reb', 'ast', 'tpm', 'stl', 'blk'].map(k => `<td class="n">${fmt(p[k])}</td>`).join('')}<td class="n">${p.dd == null ? '—' : fmt(100 * p.dd, 0) + '%'}</td><td class="n sdcol">${p.cpt_sal ? money(p.cpt_sal) : '—'}</td><td class="n sdcol">${p.p_top == null ? '—' : fmt(100 * p.p_top, 1) + '%'}</td>
       <td><input type="checkbox" data-n="${p.name}" ${NB.out.has(p.name) ? 'checked' : ''} ${p.proj == null ? 'disabled' : ''} aria-label="Exclude ${p.name}"></td></tr>`).join('');
     $$('#nbaTable tbody input[type=checkbox]').forEach(cb => cb.onchange = () => { cb.checked ? NB.out.add(cb.dataset.n) : NB.out.delete(cb.dataset.n); });
   }
@@ -1812,6 +1824,7 @@ td.lev { color: var(--steel); }
     const st = $('#nbaStatus'), t0 = performance.now(); st.className = 'status'; st.textContent = 'Heating the forge…';
     let g; try { g = await glpk(); } catch (e) { st.className = 'status err'; st.textContent = 'The optimizer could not load: ' + e.message; return; }
     const N = Math.max(1, Math.min(150, parseInt($('#nbaN').value) || 20)), uniq = Math.max(1, Math.min(6, parseInt($('#nbaUniq').value) || 2)), capP = Math.max(1, Math.ceil(N * Math.min(100, Math.max(10, parseFloat($('#nbaExp').value) || 100)) / 100));
+    if (D.slate.kind === 'nba_showdown') return nbaShowdown(g, st, t0, N, uniq, capP);
     const P = D.players.map((p, i) => ({ ...p, i })).filter(p => p.proj != null && !NB.out.has(p.name)), GL = D.game_lines || {};
     const stackG = $('#nbaStack').checked ? Object.entries(GL).filter(([k, v]) => v.home_spread != null && Math.abs(v.home_spread) <= 7).sort((a, b) => (b[1].total || 0) - (a[1].total || 0)).slice(0, 3).map(x => x[0]) : [];
     const blowG = $('#nbaBlow').checked ? Object.entries(GL).filter(([k, v]) => v.home_spread != null && Math.abs(v.home_spread) >= 9).map(x => x[0]) : [];
@@ -1844,8 +1857,46 @@ td.lev { color: var(--steel); }
     $('#nbaOut').hidden = false;
     logBuild('nba_classic', { n: N, uniq, exp: capP, stack: stackG, blowout: blowG, outs: [...NB.out] }, chosen.map(c => ({ players: c.lu.map(p => p.name) })));
   });
+
+  async function nbaShowdown(g, st, t0, N, uniq, capP) {     // NBA Showdown: 1 CPT (1.5x points, CPT salary) + 5 UTIL, both teams; FORGE default captains = weighted top 3
+    const P = D.players.map((p, i) => ({ ...p, i })).filter(p => p.proj != null && !NB.out.has(p.name) && p.cpt_sal);
+    const teams = [...new Set(P.map(p => p.team))]; let pool = null, wcap = {};
+    if ($('#nbaTop3').checked) { const T3 = [...P].sort((a, b) => (b.p_top || 0) - (a.p_top || 0)).slice(0, 3); pool = new Set(T3.map(p => p.i));
+      const w = T3.map(p => p.p_top || 0), sw = w.reduce((a, b) => a + b, 0) || 1, wn = w.map(x => x / sw), c = wn.map(x => Math.max(1, Math.round(N * x)));
+      if (N < 3) { c.fill(0); [...wn.keys()].sort((a, b) => wn[b] - wn[a]).slice(0, N).forEach(j => c[j] = 1); }
+      while (c.reduce((a, b) => a + b, 0) > N) c[c.indexOf(Math.max(...c))]--;
+      while (c.reduce((a, b) => a + b, 0) < N) { let k = 0, best = -Infinity; wn.forEach((x, j) => { if (x - c[j] / N > best) { best = x - c[j] / N; k = j; } }); c[k]++; }
+      T3.forEach((p, j) => wcap[p.i] = c[j]); }
+    const B = (lo, hi) => lo === hi ? { type: g.GLP_FX, lb: lo, ub: hi } : hi == null ? { type: g.GLP_LO, lb: lo, ub: 0 } : lo == null ? { type: g.GLP_UP, lb: 0, ub: hi } : { type: g.GLP_DB, lb: lo, ub: hi };
+    const chosen = [], cnt = {}, ccnt = {};
+    for (let k = 0; k < N; k++) {
+      const sub = [], row = (name, vars, lo, hi) => { if (vars.length) sub.push({ name, vars, bnds: B(lo, hi) }); };
+      const cv = p => 'c' + p.i, uv = p => 'u' + p.i, okC = p => !pool || (pool.has(p.i) && (ccnt[p.i] || 0) < wcap[p.i]);
+      row('cpt', P.filter(okC).map(p => ({ name: cv(p), coef: 1 })), 1, 1); P.filter(p => !okC(p)).length && row('nocpt', P.filter(p => !okC(p)).map(p => ({ name: cv(p), coef: 1 })), null, 0);
+      row('util', P.map(p => ({ name: uv(p), coef: 1 })), 5, 5);
+      P.forEach(p => row('one' + p.i, [{ name: cv(p), coef: 1 }, { name: uv(p), coef: 1 }], null, (cnt[p.i] || 0) >= capP ? 0 : 1));
+      row('sal', P.flatMap(p => [{ name: cv(p), coef: p.cpt_sal }, { name: uv(p), coef: p.sal }]), null, 50000);
+      teams.forEach((tm, j) => row('tm' + j, P.filter(p => p.team === tm).flatMap(p => [{ name: cv(p), coef: 1 }, { name: uv(p), coef: 1 }]), 1, 5));
+      chosen.forEach((c, j) => row('u' + j, P.filter(p => c.ids.has(p.i)).flatMap(p => [{ name: cv(p), coef: 1 }, { name: uv(p), coef: 1 }]), null, 6 - uniq));
+      const lp = { name: 'nbasd', objective: { direction: g.GLP_MAX, name: 'obj', vars: P.flatMap(p => [{ name: cv(p), coef: 1.5 * p.proj }, { name: uv(p), coef: p.proj }]) }, subjectTo: sub, binaries: P.flatMap(p => [cv(p), uv(p)]) };
+      const r = await Promise.resolve(g.solve(lp, { msglev: g.GLP_MSG_OFF, presol: true }));
+      if (!r || !r.result || (r.result.status !== g.GLP_OPT && r.result.status !== g.GLP_FEAS)) break;
+      const cp = P.find(p => r.result.vars[cv(p)] > 0.5), ut = P.filter(p => r.result.vars[uv(p)] > 0.5); if (!cp || ut.length !== 5) break;
+      const lu = [cp, ...ut]; chosen.push({ lu, ids: new Set(lu.map(p => p.i)), s: 1.5 * cp.proj + ut.reduce((t, p) => t + p.proj, 0), sal: cp.cpt_sal + ut.reduce((t, p) => t + p.sal, 0) });
+      lu.forEach(p => cnt[p.i] = (cnt[p.i] || 0) + 1); ccnt[cp.i] = (ccnt[cp.i] || 0) + 1;
+    }
+    if (!chosen.length) { st.className = 'status err'; st.textContent = 'No legal lineup fits these rules.'; return; }
+    NB.result = chosen; st.textContent = `Forged ${chosen.length} of ${N} lineups in ${((performance.now() - t0) / 1000).toFixed(1)} s` + (pool ? ' · captains: ' + [...pool].map(i => D.players[i].name + ' ×' + wcap[i]).join(', ') : '');
+    const ex = {}; chosen.forEach(c => c.lu.forEach(p => ex[p.name] = (ex[p.name] || 0) + 1));
+    $('#nbaExpo').innerHTML = Object.entries(ex).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span class="chip">${k} <b>${Math.round(100 * v / chosen.length)}%</b></span>`).join('');
+    $('#nbaGrid').innerHTML = chosen.map((c, i) => `<article class="lu"><header><span>#${i + 1}</span><span><b>${fmt(c.s)}</b> pts · <b>${money(c.sal)}</b></span></header><ol>${c.lu.map((p, j) => `<li class="${j ? '' : 'cpt'}"><span>${j ? 'UTIL' : 'CPT'} ${p.name}</span><span class="p">${p.team} · ${money(j ? p.sal : p.cpt_sal)}</span></li>`).join('')}</ol></article>`).join('');
+    $('#nbaOut').hidden = false;
+    logBuild('nba_showdown', { n: N, uniq, exp: capP, top3: !!pool, cpt_caps: pool ? Object.fromEntries([...pool].map(i => [D.players[i].name, wcap[i]])) : null, outs: [...NB.out] }, chosen.map(c => ({ cpt: c.lu[0].name, flex: c.lu.slice(1).map(p => p.name) })));
+  }
   $('#nbaCsv').addEventListener('click', () => {
-    const rows = ['PG,SG,SF,PF,C,G,F,UTIL', ...NB.result.map(c => c.lu.map(p => `"${p.name} (${p.id})"`).join(','))].join('\n');
+    const sd = D.slate.kind === 'nba_showdown';
+    const rows = sd ? ['CPT,UTIL,UTIL,UTIL,UTIL,UTIL', ...NB.result.map(c => c.lu.map((p, j) => `"${p.name} (${j ? p.id : p.cpt_id})"`).join(','))].join('\n')
+                    : ['PG,SG,SF,PF,C,G,F,UTIL', ...NB.result.map(c => c.lu.map(p => `"${p.name} (${p.id})"`).join(','))].join('\n');
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([rows], { type: 'text/csv' })); a.download = `FORGE_NBA_${D.slate.id}.csv`; a.click();
   });
 })();
