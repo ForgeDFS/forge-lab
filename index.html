@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="ed5ae7a77bfc"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="6180beff7477"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -140,6 +140,7 @@ details.adv .field:first-of-type { margin-top: 4px; }
 .tab .badge { display: inline-block; min-width: 16px; margin-left: 5px; padding: 0 4px; border-radius: 8px; background: var(--gold); color: #1b1408; font-size: 10.5px; line-height: 16px; text-align: center; font-family: var(--f-data); vertical-align: 2px; }
 .netpos { color: var(--good, #3d9a6a); } .netneg { color: var(--bad, #c0533a); }
 .subh2 { font-size: 18px; margin: 18px 0 8px; }
+.ksum td.tot, .ksum th:last-child { font-weight: 700; } .ksum { min-width: 0; } .ksum td small { display: block; font-size: 10.5px; }
 /* overlay alert (2026-10-15) */
 .ovl { margin-top: 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--plate); padding: 10px 12px; }
 .ovl.hot { border-color: var(--gold); box-shadow: inset 3px 0 0 var(--gold); }
@@ -1619,8 +1620,14 @@ td.lev { color: var(--steel); }
     if (ent) tiles.push(`<div class="tile"><small>Backtest</small><b class="${ent.roi >= 0 ? 'gain' : 'loss'}">${sgn(ent.roi)}%</b><span>FORGE Pick capped ROI · ${ent.games} real 2026 Showdowns · median ${sgn(ent.median)}%</span></div>`);
     $('#recTiles').innerHTML = tiles.join('');
     // owner: our real contests, by slate
-    $('#ourBox').innerHTML = (O && O.slates && O.slates.length) ? `<h3 class="subh">Our contests</h3><p class="note">Owner view: real entries read from the contest standings. Entries without a prize table on file are counted but not priced.</p>
-      <div class="tbl-wrap"><table><thead><tr><th>Slate</th><th class="n">Wk</th><th class="n">Entries</th><th class="n">In</th><th class="n">Back</th><th class="n">Net</th><th class="n">ROI</th><th>Best finish</th><th class="n">Top 1%</th></tr></thead><tbody>${O.slates.map(r => `<tr><td><b>${r.name}</b>${r.unpriced ? ` <small class="dim">${r.unpriced === r.entries ? 'no prize tables yet' : r.unpriced + ' not priced'}</small>` : ''}</td><td class="n">${r.week}</td><td class="n">${r.entries}</td><td class="n">${r.priced ? usd2(r.fees) : '—'}</td><td class="n">${r.priced ? usd2(r.prizes) : '—'}</td><td class="n ${!r.priced ? '' : r.net >= 0 ? 'netpos' : 'netneg'}">${r.priced ? usd2(r.net) : '—'}</td><td class="n">${r.roi == null ? '—' : sgn(r.roi) + '%'}</td><td>${ordn(r.best.rank)} of ${r.best.field.toLocaleString('en-US')} <small class="dim">${fmt(r.best.pts, 1)} pts</small></td><td class="n">${r.top1}</td></tr>`).join('')}</tbody></table></div>` : '';
+    const K3 = O && O.by_kind, kc = ['showdown', 'classic', 'combined'], kn = { showdown: 'Showdown', classic: 'Classic', combined: 'Combined' };
+    const sumRow = (lbl, f) => `<tr><td><b>${lbl}</b></td>${kc.map(k => `<td class="n${k === 'combined' ? ' tot' : ''}">${f(K3[k])}</td>`).join('')}</tr>`;
+    const sumTbl = K3 ? `<div class="tbl-wrap"><table class="ksum"><thead><tr><th></th>${kc.map(k => `<th class="n">${kn[k]}</th>`).join('')}</tr></thead><tbody>
+      ${sumRow('Slates', s => s.slates)}${sumRow('Lineups entered', s => s.entries)}${sumRow('Lineups cashed', s => `${s.cashed} <small class="dim">${s.cash_rate == null ? '' : fmt(s.cash_rate, 0) + '%'}${s.priced < s.entries ? ' of ' + s.priced + ' priced' : ''}</small>`)}
+      ${sumRow('In', s => usd2(s.fees))}${sumRow('Back', s => usd2(s.prizes))}${sumRow('Net', s => `<span class="${s.net >= 0 ? 'netpos' : 'netneg'}">${usd2(s.net)}</span>`)}${sumRow('ROI', s => s.roi == null ? '—' : sgn(s.roi) + '%')}${sumRow('Top 1% finishes', s => s.top1)}
+      </tbody></table></div><p class="note">Cashed and money count only entries with a prize table on file; lineups without one are in "Lineups entered" but not priced.</p>` : '';
+    $('#ourBox').innerHTML = (O && O.slates && O.slates.length) ? `<h3 class="subh">Our results</h3>${sumTbl}<h3 class="subh2">By slate</h3><p class="note">Owner view: real entries read from the contest standings.</p>
+      <div class="tbl-wrap"><table><thead><tr><th>Slate</th><th class="n">Wk</th><th class="n">Entries</th><th class="n">In</th><th class="n">Back</th><th class="n">Net</th><th class="n">ROI</th><th class="n">Cashed</th><th>Best finish</th><th class="n">Top 1%</th></tr></thead><tbody>${O.slates.map(r => `<tr><td><b>${r.name}</b>${r.unpriced ? ` <small class="dim">${r.unpriced === r.entries ? 'no prize tables yet' : r.unpriced + ' not priced'}</small>` : ''}</td><td class="n">${r.week}</td><td class="n">${r.entries}</td><td class="n">${r.priced ? usd2(r.fees) : '—'}</td><td class="n">${r.priced ? usd2(r.prizes) : '—'}</td><td class="n ${!r.priced ? '' : r.net >= 0 ? 'netpos' : 'netneg'}">${r.priced ? usd2(r.net) : '—'}</td><td class="n">${r.roi == null ? '—' : sgn(r.roi) + '%'}</td><td class="n">${r.priced ? r.cashed + ' of ' + r.priced : '—'}</td><td>${ordn(r.best.rank)} of ${r.best.field.toLocaleString('en-US')} <small class="dim">${fmt(r.best.pts, 1)} pts</small></td><td class="n">${r.top1}</td></tr>`).join('')}</tbody></table></div>` : '';
     // live grades: entered build and its comparator up front, everything else folded
     const Lv = (REC && REC.live) || [], lead = new Set([K ? K.entered : 'HYB-M-SXP', K ? K.shadow : 'HYB-M-SX']), own = !!D.owner;
     const rowsMain = Lv.filter(r => lead.has(r.selector) || (own && r.selector === 'DREW-SET')), rowsMore = Lv.filter(r => !rowsMain.includes(r) && r.selector !== 'DREW-SET');
