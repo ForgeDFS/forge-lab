@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="8f4b05a25bbd"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="dcc9f399e786"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -535,15 +535,15 @@ td.lev { color: var(--steel); }
       <form class="controls" id="bform">
         <h3>Start from</h3>
         <div class="recipes" id="recipes">
-          <button type="button" class="recipe" data-r="gpp" aria-pressed="true"><b>Tournament · FORGE default</b><small>FORGE Pick: half top-projected 5-1 stacks, half simulation picks, any captain, cheap players adjusted. For 20-max and big GPPs.</small><span class="ev" id="evGpp"></span></button>
-          <button type="button" class="recipe" data-r="se" aria-pressed="false"><b>Single entry</b><small>The single best lineup under the same rules.</small><span class="ev">Best of 4 rules tested on 10 single-entry contests</span></button>
+          <button type="button" class="recipe" data-r="gpp" aria-pressed="true"><b>Tournament · FORGE default</b><small>FORGE Pick, exactly what FORGE enters: half top-projected 5-1 stacks, half simulation picks; captains = FORGE's 3 most likely top scorers, more lineups for the likeliest; FORGE's per-player cap; cheap players adjusted; ownership forecast normalized. For 20-max and big GPPs.</small><span class="ev" id="evGpp"></span></button>
+          <button type="button" class="recipe" data-r="se" aria-pressed="false"><b>Single entry</b><small>The top-projected 5-1 lineup. Not FORGE's committed single-entry process yet (single entry is being researched).</small><span class="ev">Earlier test: 10 single-entry contests, estimated payouts</span></button>
           <button type="button" class="recipe" data-r="cash" aria-pressed="false"><b>Cash · Double Up, 50/50</b><small>The highest projected lineup of any shape. Floor over ceiling.</small><span class="ev">Top 44% in 86% of 37 tested fields (upper bound)</span></button>
         </div>
         <div class="custom-note" id="customNote"></div>
         <h3>Rules</h3>
         <div class="field"><label for="bN">Lineups</label><input type="number" id="bN" min="1" max="150" value="20"></div>
         <div class="field"><label>Method</label><div class="seg segwrap" id="bMethod"><button type="button" data-v="hyb" aria-pressed="false">FORGE Pick</button><button type="button" data-v="p51" aria-pressed="true">Top Projected Stacks</button><button type="button" data-v="ev" aria-pressed="false">Simulation's Best Payout</button><button type="button" data-v="hyb0" aria-pressed="false">FORGE Pick – original</button></div><p class="note" id="methodNote"></p></div>
-        <div class="field"><label>Structure</label><div class="seg" id="bStruct"><button type="button" aria-pressed="false" data-v="any">Any split</button><button type="button" aria-pressed="true" data-v="51">5-1 only</button><button type="button" aria-pressed="false" data-v="hedge">Half 5-1</button></div></div>
+        <div class="field"><label>Structure</label><div class="seg" id="bStruct"><button type="button" aria-pressed="false" data-v="any">Any split</button><button type="button" aria-pressed="false" data-v="51">5-1 only</button><button type="button" aria-pressed="true" data-v="hedge">Half 5-1</button></div></div>
         <div class="field"><label for="bCap">Max lineups per captain</label><input type="number" id="bCap" min="1" max="150" value="6"></div>
         <div class="field"><label for="bExp">Max exposure per player (%)</label><input type="number" id="bExp" min="10" max="100" value="" placeholder="Auto"><p class="note" id="bExpNote">Auto = FORGE's per-player cap (FORGE Pick). Type a % to use your own flat cap instead.</p></div>
         <div class="field"><label for="bUniq">Min players different between lineups</label><input type="number" id="bUniq" min="1" max="4" value="1"></div>
@@ -556,7 +556,7 @@ td.lev { color: var(--steel); }
         <label class="check"><input type="checkbox" id="bTop3" checked> FORGE Pick captains: FORGE's 3 most likely top scorers, more lineups for the likeliest</label>
         <label class="check"><input type="checkbox" id="bNoCpt"> No TE, K or DST captain</label>
         <label class="check"><input type="checkbox" id="bDst" checked> No DST against your captain</label>
-        <label class="check mine"><input type="checkbox" id="bMine" checked> Make my lineups mine <span class="tag steel">untested</span></label>
+        <label class="check mine"><input type="checkbox" id="bMine"> Make my lineups mine <span class="tag steel">untested</span></label>
         <p class="note">Nudges every projection (typically within ±8%) in a pattern unique to this phone, so friends using FORGE don't build the same lineups and split a prize. It can cost a little projected score; turn it off to get FORGE's exact numbers.</p>
         <p class="note">The simulation methods run FORGE's own game simulation in your browser (2,000 simulated games against a simulated field of 3,000 lineups; the server build uses 8,000), using your projections. Backtests replay real 2026 contests; they aren't a promise.</p>
         </details>
@@ -1059,14 +1059,15 @@ td.lev { color: var(--steel); }
   $$('#bStruct button').forEach(b => b.addEventListener('click', () => { setStruct(b.dataset.v); markCustom(); }));
   // recipes: settings FORGE has tested (P51-M-SX for tournaments = PREREG_ROUND11 B1ax; single entry = P51 #1, Round 24; cash = best projected lineup of any shape, Round 24)
   const RECIPES = {
-    gpp: { n: 20, struct: '51', cap: 6, exp: 100, uniq: 1, minSal: 47000, punt: 1, noCpt: false, dst: true, method: 'hyb', label: 'Tournament · FORGE default' },
-    se: { n: 1, struct: '51', cap: 6, exp: 100, uniq: 1, minSal: 47000, punt: 1, noCpt: false, dst: true, label: 'Single entry' },
-    cash: { n: 1, struct: 'any', cap: 6, exp: 100, uniq: 1, minSal: 47000, punt: 1, noCpt: false, dst: true, label: 'Cash' } };
+    gpp: { n: 20, struct: 'hedge', cap: 6, exp: 100, uniq: 1, minSal: 47000, punt: 1, noCpt: false, dst: true, method: 'hyb', top3: true, label: 'Tournament · FORGE default' },   // = production HYB-M-SXPW (2026-10-21)
+    se: { n: 1, struct: '51', cap: 6, exp: 100, uniq: 1, minSal: 47000, punt: 1, noCpt: false, dst: true, top3: false, label: 'Single entry' },
+    cash: { n: 1, struct: 'any', cap: 6, exp: 100, uniq: 1, minSal: 47000, punt: 1, noCpt: false, dst: true, top3: false, label: 'Cash' } };
   let applying = false;
   function applyRecipe(k, quiet) {
     const r = RECIPES[k] || RECIPES.gpp; applying = true; builder.recipe = k in RECIPES ? k : 'gpp';
     $('#bN').value = r.n; setStruct(r.struct); $('#bCap').value = r.cap; $('#bExp').value = (r.method === 'hyb') ? '' : r.exp; $('#bUniq').value = r.uniq; $('#bMinSal').value = r.minSal; $('#bPunt').value = r.punt;
-    $('#bNoCpt').checked = r.noCpt; $('#bDst').checked = r.dst; setMethod(r.method || 'p51'); $('#bOwn').value = 0; $('#bOwnV').textContent = 'off'; applying = false;
+    $('#bNoCpt').checked = r.noCpt; $('#bDst').checked = r.dst; setMethod(r.method || 'p51'); $('#bOwn').value = 0; $('#bOwnV').textContent = 'off';
+    if ($('#bTop3')) $('#bTop3').checked = !!r.top3; if ($('#bMine')) $('#bMine').checked = false; $('#bSeed').value = 0; if ($('#bVar')) $('#bVar').value = 25; builder.cpt.clear(); applying = false;   // every recipe resets the extras: FORGE default = production build exactly
     $$('#recipes .recipe').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.r === builder.recipe))); $('#customNote').textContent = ''; LS.set('forge_recipe', builder.recipe);
   }
   function markCustom() { if (applying) return; $('#customNote').textContent = 'Custom: started from ' + RECIPES[builder.recipe].label + '. Click it again to reset the rules.'; }
