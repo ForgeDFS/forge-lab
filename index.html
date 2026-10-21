@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="a2212e874ebf"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="d4a78aa50bb7"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -499,7 +499,7 @@ td.lev { color: var(--steel); }
       <form class="controls" id="bform">
         <h3>Start from</h3>
         <div class="recipes" id="recipes">
-          <button type="button" class="recipe" data-r="gpp" aria-pressed="true"><b>Tournament · FORGE default</b><small>FORGE Pick: half top-projected 5-1 stacks, half simulation picks, no TE/K/DST captain, cheap players adjusted. For 20-max and big GPPs.</small><span class="ev" id="evGpp"></span></button>
+          <button type="button" class="recipe" data-r="gpp" aria-pressed="true"><b>Tournament · FORGE default</b><small>FORGE Pick: half top-projected 5-1 stacks, half simulation picks, any captain, cheap players adjusted. For 20-max and big GPPs.</small><span class="ev" id="evGpp"></span></button>
           <button type="button" class="recipe" data-r="se" aria-pressed="false"><b>Single entry</b><small>The single best lineup under the same rules.</small><span class="ev">Best of 4 rules tested on 10 single-entry contests</span></button>
           <button type="button" class="recipe" data-r="cash" aria-pressed="false"><b>Cash · Double Up, 50/50</b><small>The highest projected lineup of any shape. Floor over ceiling.</small><span class="ev">Top 44% in 86% of 37 tested fields (upper bound)</span></button>
         </div>
@@ -517,7 +517,7 @@ td.lev { color: var(--steel); }
         <div class="field"><label for="bPunt">Max FLEX at $1,000 or less</label><input type="number" id="bPunt" min="0" max="5" value="1"></div>
         <div class="field"><label for="bOwn">Ownership lean <small id="bOwnV" style="text-transform:none;letter-spacing:0">off</small> <span class="tag steel">untested</span></label><input type="range" id="bOwn" min="-100" max="100" step="10" value="0" aria-describedby="bOwnNote">
           <p class="note" id="bOwnNote">Left = fade popular players, right = play them more. Moves the projections every method uses (up to ±30% at the extremes, by how far a player's projected ownership is from the slate average). Untested lever: FORGE's tested settings keep it at 0, and a contrarian penalty did not beat the default on 14 backtested games.</p></div>
-        <label class="check"><input type="checkbox" id="bNoCpt" checked> No TE, K or DST captain</label>
+        <label class="check"><input type="checkbox" id="bNoCpt"> No TE, K or DST captain</label>
         <label class="check"><input type="checkbox" id="bDst" checked> No DST against your captain</label>
         <label class="check mine"><input type="checkbox" id="bMine" checked> Make my lineups mine <span class="tag steel">untested</span></label>
         <p class="note">Nudges every projection (typically within ±8%) in a pattern unique to this phone, so friends using FORGE don't build the same lineups and split a prize. It can cost a little projected score; turn it off to get FORGE's exact numbers.</p>
@@ -594,7 +594,6 @@ td.lev { color: var(--steel); }
     <div class="facts">
       <div class="fact" id="factCash"><b>Measured against the cash line</b>What counts is clearing the cash line, not the field average. The live numbers are in "Our results" above.</div>
       <div class="fact"><b>Cheap players are overrated</b>The prop market projects $1,500-and-under players at about twice what they score. FORGE corrects for it.</div>
-      <div class="fact"><b>Skip TE, K and DST captains</b>They almost never win. Removing them helped every builder we tested.</div>
       <div class="fact"><b>Cash games want a floor</b>For double-ups the best-projected lineup of any shape cleared the cash line in 86% of tested fields.</div>
     </div>
     </details>
@@ -995,7 +994,7 @@ td.lev { color: var(--steel); }
   const METHOD_NOTE = { p51: 'Highest-projected 5-1 stacks under your rules. Instant.', hyb: "FORGE's main method: half top-projected 5-1 stacks, half the best payers in simulated contests, with FORGE's per-player cap (Auto below). A few seconds.",
     ev: "Every lineup is played in 2,000 simulated games against a simulated field; the best average payouts win (FORGE's Showdown rules on). Takes a few seconds.", hyb0: 'FORGE Pick without the two fixes: captain can be anyone and cheap fillers are not marked down (unless you edited them).' };
   function setMethod(v) { if (v !== 'p51' && !(D && D.simpack)) v = 'p51'; builder.method = v; $$('#bMethod button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === v)));
-    if (v === 'hyb0') $('#bNoCpt').checked = false; else if (v === 'hyb' || v === 'ev') $('#bNoCpt').checked = true;
+    // 2026-10-21 PI decision: captain can be anyone by default; the box stays as an option
     $('#methodNote').textContent = (D && !D.simpack && v === 'p51' ? 'Simulation methods appear after FORGE builds this game. ' : '') + METHOD_NOTE[v]; if (v !== builder.method_prev) setStruct(v === 'ev' ? 'any' : (v === 'p51' ? builder.struct : 'hedge')); builder.method_prev = v; }   // 2026-10-16: structure is editable for every method; each method starts on its own default
   $$('#bMethod button').forEach(b => b.addEventListener('click', () => { setMethod(b.dataset.v); markCustom(); }));
   $('#bOwn').addEventListener('input', () => { const v = parseInt($('#bOwn').value); $('#bOwnV').textContent = v === 0 ? 'off' : v < 0 ? `fade popular ${-v}%` : `play popular ${v}%`; });
@@ -1003,9 +1002,9 @@ td.lev { color: var(--steel); }
   $$('#bStruct button').forEach(b => b.addEventListener('click', () => { setStruct(b.dataset.v); markCustom(); }));
   // recipes: settings FORGE has tested (P51-M-SX for tournaments = PREREG_ROUND11 B1ax; single entry = P51 #1, Round 24; cash = best projected lineup of any shape, Round 24)
   const RECIPES = {
-    gpp: { n: 20, struct: '51', cap: 6, exp: 100, uniq: 1, minSal: 47000, punt: 1, noCpt: true, dst: true, method: 'hyb', label: 'Tournament · FORGE default' },
-    se: { n: 1, struct: '51', cap: 6, exp: 100, uniq: 1, minSal: 47000, punt: 1, noCpt: true, dst: true, label: 'Single entry' },
-    cash: { n: 1, struct: 'any', cap: 6, exp: 100, uniq: 1, minSal: 47000, punt: 1, noCpt: true, dst: true, label: 'Cash' } };
+    gpp: { n: 20, struct: '51', cap: 6, exp: 100, uniq: 1, minSal: 47000, punt: 1, noCpt: false, dst: true, method: 'hyb', label: 'Tournament · FORGE default' },
+    se: { n: 1, struct: '51', cap: 6, exp: 100, uniq: 1, minSal: 47000, punt: 1, noCpt: false, dst: true, label: 'Single entry' },
+    cash: { n: 1, struct: 'any', cap: 6, exp: 100, uniq: 1, minSal: 47000, punt: 1, noCpt: false, dst: true, label: 'Cash' } };
   let applying = false;
   function applyRecipe(k, quiet) {
     const r = RECIPES[k] || RECIPES.gpp; applying = true; builder.recipe = k in RECIPES ? k : 'gpp';
