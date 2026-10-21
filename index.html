@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="ab6421c92d89"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="a35eda0ffaa2"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -525,7 +525,7 @@ td.lev { color: var(--steel); }
         <div class="field"><label for="bPunt">Max FLEX at $1,000 or less</label><input type="number" id="bPunt" min="0" max="5" value="1"></div>
         <div class="field"><label for="bOwn">Ownership lean <small id="bOwnV" style="text-transform:none;letter-spacing:0">off</small> <span class="tag steel">untested</span></label><input type="range" id="bOwn" min="-100" max="100" step="10" value="0" aria-describedby="bOwnNote">
           <p class="note" id="bOwnNote">Left = fade popular players, right = play them more. Moves the projections every method uses (up to ±30% at the extremes, by how far a player's projected ownership is from the slate average). Untested lever: FORGE's tested settings keep it at 0, and a contrarian penalty did not beat the default on 14 backtested games.</p></div>
-        <label class="check"><input type="checkbox" id="bTop3" checked> FORGE Pick captains: FORGE's 3 most likely top scorers</label>
+        <label class="check"><input type="checkbox" id="bTop3" checked> FORGE Pick captains: FORGE's 3 most likely top scorers, more lineups for the likeliest</label>
         <label class="check"><input type="checkbox" id="bNoCpt"> No TE, K or DST captain</label>
         <label class="check"><input type="checkbox" id="bDst" checked> No DST against your captain</label>
         <label class="check mine"><input type="checkbox" id="bMine" checked> Make my lineups mine <span class="tag steel">untested</span></label>
@@ -793,7 +793,8 @@ td.lev { color: var(--steel); }
 
   // ---------------------------------------------------------------- set names (2026-10-15, Drew: friendly names; internal code kept in grey for grading)
   const SETS = [
-    [/^HYB-M-SXPC$|^HYBMSXPC$|^FORGE build \(HYB-M-SXPC\)/, 'FORGE Pick', "Our main method and the set we enter (since 10/22): FORGE Pick with captains limited to FORGE's 3 most likely top scorers."],
+    [/^HYB-M-SXPW$|^HYBMSXPW$|^FORGE build \(HYB-M-SXPW\)/, 'FORGE Pick', "Our main method and the set we enter (since 10/22): FORGE Pick with captains limited to FORGE's 3 most likely top scorers, more lineups for the likeliest."],
+    [/^HYB-M-SXPC$|^HYBMSXPC$|^FORGE build \(HYB-M-SXPC\)/, 'FORGE Pick – equal captains', "FORGE Pick with FORGE's 3 most likely top scorers as captains, equal lineups each (the comparator for the entered build)."],
     [/^HYB-M-SXP$|^HYBMSXP$|^FORGE build \(HYB-M-SXP\)/, 'FORGE Pick – before the captain pool', "The entered method 10/18-10/21. Half are the top-projected 5-1 stacks, half the lineups that pay best across simulated contests, with FORGE's per-player cap. It keeps running as the comparator for the kill switch. Half are the top-projected 5-1 stacks, half the lineups that pay best across simulated contests, with FORGE's per-player cap: nobody in more lineups than the higher of his projected ownership or his optimal rate."],
     [/^HYB-M-SX$|^HYBMSX$|^FORGE build \(HYB-M-SX\)/, 'FORGE Pick – before the player cap', "FORGE Pick as entered until 10/18, without the per-player cap. It keeps running as the comparator for the kill switch."],
     [/^(Entered build)/, 'FORGE Pick', "Our main method and the set we enter. Half are the top-projected 5-1 stacks, half are the lineups that pay best across thousands of simulated contests. Cheap filler players are marked down and no TE, kicker or DST is captain."],
@@ -1053,7 +1054,15 @@ td.lev { color: var(--steel); }
     const cptPool = new Set(P.map((p, i) => builder.cpt.has(p.name) ? i : -1).filter(i => i >= 0));
     // 2026-10-21 (PI decision, Round 28 C3): FORGE Pick captains only FORGE's 3 most likely top scorers, up to ceil(N/3) lineups each (unless you pick your own CPT pool)
     const top3On = method === 'hyb' && $('#bTop3') && $('#bTop3').checked && !cptPool.size;
-    if (top3On) { [...P.keys()].sort((a, b) => (P[b].p_mvp || 0) - (P[a].p_mvp || 0)).slice(0, 3).forEach(i => cptPool.add(i)); cap = Math.max(cap, Math.ceil(N / 3)); }
+    // 2026-10-21 PI (Round 30): weighted -- lineups per captain proportional to FORGE's P(top scorer), at least 1, summing to N (production HYB-M-SXPW)
+    const wcap = {};
+    if (top3On) { const T3 = [...P.keys()].sort((a, b) => (P[b].p_mvp || 0) - (P[a].p_mvp || 0)).slice(0, 3); T3.forEach(i => cptPool.add(i));
+      const w = T3.map(i => P[i].p_mvp || 0), sw = w.reduce((a, b) => a + b, 0) || 1, wn = w.map(x => x / sw), c = wn.map(x => Math.max(1, Math.round(N * x)));
+      if (N < T3.length) c.forEach((_, j) => c[j] = 0), [...wn.keys()].sort((a, b) => wn[b] - wn[a]).slice(0, N).forEach(j => c[j] = 1);   // fewer lineups than captains: the likeliest
+      while (c.reduce((a, b) => a + b, 0) > N) c[c.indexOf(Math.max(...c))]--;
+      while (c.reduce((a, b) => a + b, 0) < N) { let k = 0, best = -Infinity; wn.forEach((x, j) => { if (x - c[j] / N > best) { best = x - c[j] / N; k = j; } }); c[k]++; }
+      T3.forEach((i, j) => wcap[i] = c[j]); }
+    const capOf = i => top3On ? (wcap[i] || 0) : cap;
     const out = P.map(p => builder.out.has(p.name)), lock = P.map(p => builder.lock.has(p.name)), nLock = lock.filter(Boolean).length;
     const codes = [], scores = [], is51 = [];
     for (let c = 0; c < n; c++) {
@@ -1079,7 +1088,7 @@ td.lev { color: var(--steel); }
         if (chosen.length >= want) break;
         if (need51 === true && !is51[i]) continue; if (need51 === false && is51[i]) continue;
         const code = codes[i], lu = [code & 31, (code >> 5) & 31, (code >> 10) & 31, (code >> 15) & 31, (code >> 20) & 31, (code >> 25) & 31];
-        if ((cc[lu[0]] || 0) >= cap) continue; if (lu.some(x => (ex[x] || 0) >= maxExp && !lock[x])) continue;
+        if ((cc[lu[0]] || 0) >= capOf(lu[0])) continue; if (lu.some(x => (ex[x] || 0) >= maxExp && !lock[x])) continue;
         let ok = true; for (const ch of chosen) { let sh = (ch.lu[0] === lu[0]) ? 1 : 0; const fs = new Set(ch.lu.slice(1)); for (let k = 1; k < 6; k++) if (fs.has(lu[k])) sh++; if (6 - sh < uniq) { ok = false; break; } }
         if (!ok) continue;
         chosen.push({ lu, s: scores[i], rank: rankOf.get(i) }); cc[lu[0]] = (cc[lu[0]] || 0) + 1; lu.forEach(x => ex[x] = (ex[x] || 0) + 1);
@@ -1091,7 +1100,7 @@ td.lev { color: var(--steel); }
     const pickFrom = (order, want, ccx, val, noPC) => {     // same caps/uniqueness as pick(), in a given order (EV order for the simulation methods)
       for (const i of order) {
         if (chosen.length >= want) break; const code = codes[i], lu = [code & 31, (code >> 5) & 31, (code >> 10) & 31, (code >> 15) & 31, (code >> 20) & 31, (code >> 25) & 31];
-        if ((ccx[lu[0]] || 0) >= cap) continue; if (lu.some(x => (ex[x] || 0) >= maxExp && !lock[x])) continue; if (PC && !noPC && lu.some(x => (ex[x] || 0) >= PC[x] && !lock[x])) continue;
+        if ((ccx[lu[0]] || 0) >= capOf(lu[0])) continue; if (lu.some(x => (ex[x] || 0) >= maxExp && !lock[x])) continue; if (PC && !noPC && lu.some(x => (ex[x] || 0) >= PC[x] && !lock[x])) continue;
         let ok = true; for (const ch of chosen) { let sh = (ch.lu[0] === lu[0]) ? 1 : 0; const fs = new Set(ch.lu.slice(1)); for (let k = 1; k < 6; k++) if (fs.has(lu[k])) sh++; if (6 - sh < uniq) { ok = false; break; } }
         if (!ok) continue; chosen.push({ lu, s: scores[i], rank: rankOf.get(i), ev: val ? val.get(i) : undefined }); ccx[lu[0]] = (ccx[lu[0]] || 0) + 1; lu.forEach(x => ex[x] = (ex[x] || 0) + 1);
       }
@@ -1111,7 +1120,7 @@ td.lev { color: var(--steel); }
       // 2026-10-21 (Drew, 20 of 45): same as production hybrid_select_pitch: when the pitch cap, the captain cap and the "different players" rule use up the candidates, fill the rest without the pitch cap (logged); never fewer lineups than asked unless the other rules truly leave none
       if (method === 'hyb' && PC && chosen.length < N) { const before = chosen.length, ccAll = {}; chosen.forEach(ch => ccAll[ch.lu[0]] = (ccAll[ch.lu[0]] || 0) + 1); pickFrom(stc === '51' ? evo51 : evOrder, N, ccAll, val, true); builder.relaxed = chosen.length - before; }
       if (chosen.length < N) { const why = { cap: 0, exp: 0, uniq: 0 }; for (const i of (stc === '51' ? evo51 : evOrder)) { const lu = lus(i); if (chosen.some(ch => ch.lu.every((x, k) => x === lu[k]))) continue;
-          if ((chosen.filter(ch => ch.lu[0] === lu[0]).length) >= cap) { why.cap++; continue; } if (lu.some(x => (ex[x] || 0) >= maxExp && !lock[x])) { why.exp++; continue; }
+          if ((chosen.filter(ch => ch.lu[0] === lu[0]).length) >= capOf(lu[0])) { why.cap++; continue; } if (lu.some(x => (ex[x] || 0) >= maxExp && !lock[x])) { why.exp++; continue; }
           why.uniq++; }
         builder.why = why; }
     }
@@ -1121,10 +1130,10 @@ td.lev { color: var(--steel); }
     builder.result = chosen.map(ch => ({ cpt: P[ch.lu[0]].name, flex: ch.lu.slice(1).map(x => P[x].name), proj: ch.s, sal: 1.5 * sal[ch.lu[0]] + ch.lu.slice(1).reduce((t, x) => t + sal[x], 0),
       pct: 100 * (ch.rank + 1) / codes.length, own: ownSum(ch.lu), ev: ch.ev }));
     const ms = Math.round(performance.now() - t0);
-    st.className = 'status'; st.textContent = `Forged ${chosen.length} of ${N} lineups (${setInfo({ p51: 'P51-M-SX', hyb: 'HYB-M-SXPC', ev: 'EV-M', hyb0: 'HYB-M' }[method]).name}) · ${codes.length.toLocaleString('en-US')} legal lineups${sim ? ', ' + (builder.poolN || Math.min(codes.length, D.simpack.topn || 10000)).toLocaleString('en-US') + ' simulated' : ''} in ${(ms / 1000).toFixed(1)} s` + (builder.relaxed ? ` · the last ${builder.relaxed === 1 ? 'lineup was' : builder.relaxed + ' lineups were'} filled without FORGE's per-player cap (the cap alone left too few)` : '') + (chosen.length < N ? ` · stopped at ${chosen.length}: of the ${(builder.why ? builder.why.cap + builder.why.exp + builder.why.uniq : 0).toLocaleString('en-US')} lineups left, ${builder.why ? builder.why.cap.toLocaleString('en-US') : 0} are blocked by the per-captain limit, ${builder.why ? builder.why.exp.toLocaleString('en-US') : 0} by the per-player exposure limit and ${builder.why ? builder.why.uniq.toLocaleString('en-US') : 0} by the min-players-different rule. With a high "min players different" only so many lineups can fit; lower it (or raise the captain limit) to get more` : '');
+    st.className = 'status'; st.textContent = `Forged ${chosen.length} of ${N} lineups (${setInfo({ p51: 'P51-M-SX', hyb: 'HYB-M-SXPW', ev: 'EV-M', hyb0: 'HYB-M' }[method]).name}) · ${codes.length.toLocaleString('en-US')} legal lineups${sim ? ', ' + (builder.poolN || Math.min(codes.length, D.simpack.topn || 10000)).toLocaleString('en-US') + ' simulated' : ''} in ${(ms / 1000).toFixed(1)} s` + (builder.relaxed ? ` · the last ${builder.relaxed === 1 ? 'lineup was' : builder.relaxed + ' lineups were'} filled without FORGE's per-player cap (the cap alone left too few)` : '') + (chosen.length < N ? ` · stopped at ${chosen.length}: of the ${(builder.why ? builder.why.cap + builder.why.exp + builder.why.uniq : 0).toLocaleString('en-US')} lineups left, ${builder.why ? builder.why.cap.toLocaleString('en-US') : 0} are blocked by the per-captain limit, ${builder.why ? builder.why.exp.toLocaleString('en-US') : 0} by the per-player exposure limit and ${builder.why ? builder.why.uniq.toLocaleString('en-US') : 0} by the min-players-different rule. With a high "min players different" only so many lineups can fit; lower it (or raise the captain limit) to get more` : '');
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) { const sp = $('#sparks'); sp.innerHTML = Array.from({ length: 18 }, () => { const a = Math.random() * Math.PI * 2, r = 40 + Math.random() * 70; return `<b style="--dx:${(Math.cos(a) * r).toFixed(0)}px;--dy:${(Math.sin(a) * r - 20).toFixed(0)}px"></b>`; }).join(''); setTimeout(() => sp.innerHTML = '', 800); }
     FLT.mine = mkF(); $('#bOut').hidden = false; renderMine();
-    logBuild('showdown', { method, top3: !!top3On, seed: Math.max(0, Math.floor(+$('#bSeed').value) || 0), got: chosen.length, pitch_relaxed: builder.relaxed || 0, short_why: builder.why || null, var_pct: (Math.floor(+$('#bSeed').value) > 0) ? (parseFloat($('#bVar').value) || 25) : null, recipe: builder.recipe, n: N, cap, exp: maxExp, uniq, minSal, punt: maxPunt, noCpt, dst: dstRule, struct: builder.struct,
+    logBuild('showdown', { method, top3: !!top3On, cpt_caps: top3On ? Object.fromEntries(Object.entries(wcap).map(([i, k]) => [P[i].name, k])) : null, seed: Math.max(0, Math.floor(+$('#bSeed').value) || 0), got: chosen.length, pitch_relaxed: builder.relaxed || 0, short_why: builder.why || null, var_pct: (Math.floor(+$('#bSeed').value) > 0) ? (parseFloat($('#bVar').value) || 25) : null, recipe: builder.recipe, n: N, cap, exp: maxExp, uniq, minSal, punt: maxPunt, noCpt, dst: dstRule, struct: builder.struct,
       own_lean: parseInt($('#bOwn').value) || 0, mine: $('#bMine').checked, locks: [...builder.lock], outs: [...builder.out], cpt_pool: [...builder.cpt],
       edits: Object.fromEntries(P.filter(p => builder.proj[p.name] != null && Math.abs(builder.proj[p.name] - p.proj) > 0.005).map(p => [p.name, builder.proj[p.name]])) },
       builder.result.map(l => ({ cpt: l.cpt, flex: l.flex })));
