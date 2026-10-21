@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="2bc6192b3780"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="b5ed79051d26"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -488,6 +488,7 @@ td.lev { color: var(--steel); }
         <div class="field"><label>Structure</label><div class="seg" id="bStruct"><button type="button" aria-pressed="false" data-v="any">Any split</button><button type="button" aria-pressed="true" data-v="51">5-1 only</button><button type="button" aria-pressed="false" data-v="hedge">Half 5-1</button></div></div>
         <div class="field"><label for="bCap">Max lineups per captain</label><input type="number" id="bCap" min="1" max="150" value="6"></div>
         <div class="field"><label for="bExp">Max exposure per player (%)</label><input type="number" id="bExp" min="10" max="100" value="" placeholder="Auto"><p class="note" id="bExpNote">Auto = FORGE's per-player cap (FORGE Pick). Type a % to use your own flat cap instead.</p></div>
+        <div class="field"><label for="bSeed">Variation (seed)</label><input type="number" id="bSeed" min="0" max="999999" value="0"><label for="bVar" style="margin-top:8px">Share of simulated games used when varying (%)</label><input type="number" id="bVar" min="1" max="100" value="25"><p class="note">Seed 0 = FORGE's exact simulation: the same settings give the same lineups every time. Any other seed scores the lineups on a random sample of the simulated games (the share above), so each seed gives a somewhat different set. A smaller share varies more.</p></div>
         <div class="field"><label for="bUniq">Min players different between lineups</label><input type="number" id="bUniq" min="1" max="4" value="1"></div>
         <div class="field"><label for="bMinSal">Min salary used</label><input type="number" id="bMinSal" min="40000" max="50000" step="100" value="47000"></div>
         <div class="field"><label for="bPunt">Max FLEX at $1,000 or less</label><input type="number" id="bPunt" min="0" max="5" value="1"></div>
@@ -813,7 +814,7 @@ td.lev { color: var(--steel); }
     return true;
   };
   const fr = Math.fround, sc6 = (c, a, b, d, e, f) => fr(fr(1.5 * c) + fr(fr(fr(fr(a + b) + d) + e) + f));   // float32, same order as numpy: 1.5*cpt + ((((f0+f1)+f2)+f3)+f4)
-  async function simEV(P, proj, pos, tm, codes, scores, cand, st) {     // -> Float64Array of mean capped payout multiple for each candidate index in `cand`
+  async function simEV(P, proj, pos, tm, codes, scores, cand, st, seed, varPct) {     // -> Float64Array of mean capped payout multiple for each candidate index in `cand`
     const pk = D.simpack, G = getPack(), W = pk.W, FIELD = pk.FIELD, n = P.length, step = pk.curve_step, CV = G.curve, NC = CV.length, cap = pk.cap;
     const pi = P.map(p => pk.names.indexOf(p.name)); if (pi.some(i => i < 0)) throw new Error('simulation pack does not match this slate');
     const S = new Float32Array(n * W);
@@ -822,11 +823,12 @@ td.lev { color: var(--steel); }
     const okF = []; for (let f = 0; f < FIELD; f++) { let ok = true; for (let k = 0; k < 6; k++) if (F[f * 6 + k] < 0) ok = false; if (ok) okF.push(f); }
     const m = cand.length, L = new Int32Array(m * 6); for (let i = 0; i < m; i++) { const code = codes[cand[i]]; L[i * 6] = code & 31; const fl = [1, 2, 3, 4, 5].map(k => (code >> (5 * k)) & 31).sort((x, y) => pi[x] - pi[y]); for (let k = 0; k < 5; k++) L[i * 6 + 1 + k] = fl[k]; }   // FLEX summed in FORGE's player order (float32 sums depend on order)
     const acc = new Float64Array(m), accU = new Float64Array(m), nCash = new Float64Array(m), nTop = new Float64Array(m), nWin = new Float64Array(m), NF = okF.length, col = new Float32Array(NF), CH = 100;
+    let Wn = W, wi = null; if (seed > 0) { Wn = Math.max(200, Math.min(W, Math.round(W * Math.max(1, Math.min(100, varPct || 25)) / 100))); let a_ = (seed * 2654435761) >>> 0; const rnd = () => { a_ = (a_ + 0x6D2B79F5) >>> 0; let t = a_; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; wi = new Uint32Array(Wn); for (let w = 0; w < Wn; w++) wi[w] = Math.floor(rnd() * W); }   // variation seed: re-draw the W simulated games (with replacement); 0 = FORGE's exact worlds
     const i99 = Math.min(NF - 1, Math.floor(0.99 * NF)); let sumCash = 0, sumFirst = 0, cashIdx = -1;
     for (let k = NC - 1; k >= 0; k--) if (CV[k] > 0) { cashIdx = k; break; }
-    for (let w0 = 0; w0 < W; w0 += CH) {
-      const w1 = Math.min(W, w0 + CH);
-      for (let w = w0; w < w1; w++) {
+    for (let w0 = 0; w0 < Wn; w0 += CH) {
+      const w1 = Math.min(Wn, w0 + CH);
+      for (let w0_ = w0; w0_ < w1; w0_++) { const w = wi ? wi[w0_] : w0_;
         for (let t = 0; t < NF; t++) { const f = okF[t] * 6; col[t] = sc6(S[F[f] * W + w], S[F[f + 1] * W + w], S[F[f + 2] * W + w], S[F[f + 3] * W + w], S[F[f + 4] * W + w], S[F[f + 5] * W + w]); }
         col.sort(); sumFirst += col[NF - 1]; if (cashIdx >= 0) sumCash += col[Math.max(0, Math.min(NF - 1, Math.ceil(NF - cashIdx * step * (NF + 1))))];
         for (let i = 0; i < m; i++) { const b = i * 6, x = sc6(S[L[b] * W + w], S[L[b + 1] * W + w], S[L[b + 2] * W + w], S[L[b + 3] * W + w], S[L[b + 4] * W + w], S[L[b + 5] * W + w]);
@@ -835,10 +837,10 @@ td.lev { color: var(--steel); }
           const pos_ = ((NF - lo) / (NF + 1)) / step, i0 = Math.floor(pos_); if (i0 >= NC) continue; const c0 = CV[i0], c1 = i0 + 1 < NC ? CV[i0 + 1] : 0, mu = c0 + (c1 - c0) * (pos_ - i0);
           if (mu > 0) nCash[i]++; acc[i] += Math.min(mu, cap); accU[i] += mu; }
       }
-      st.textContent = `Simulating… ${Math.round(100 * w1 / W)}% of ${W.toLocaleString('en-US')} games`; await new Promise(r => setTimeout(r, 0));
+      st.textContent = `Simulating… ${Math.round(100 * w1 / Wn)}% of ${Wn.toLocaleString('en-US')} games`; await new Promise(r => setTimeout(r, 0));
     }
-    for (let i = 0; i < m; i++) acc[i] /= W;
-    acc.stats = { evU: accU.map(v => v / W), cash: nCash.map(v => v / W), top1: nTop.map(v => v / W), win: nWin.map(v => v / W), cashLine: sumCash / W, first: sumFirst / W }; return acc;
+    for (let i = 0; i < m; i++) acc[i] /= Wn;
+    acc.stats = { evU: accU.map(v => v / Wn), cash: nCash.map(v => v / Wn), top1: nTop.map(v => v / Wn), win: nWin.map(v => v / Wn), cashLine: sumCash / Wn, first: sumFirst / Wn }; return acc;
   }
 
   // ownership lean (2026-10-15, Drew): user lever, OFF by default (Hard Rule 7: untested; PREREG_ROUND18 uniqueness penalty did not beat the default on 14 games)
@@ -1023,13 +1025,13 @@ td.lev { color: var(--steel); }
         chosen.push({ lu, s: scores[i], rank: rankOf.get(i) }); cc[lu[0]] = (cc[lu[0]] || 0) + 1; lu.forEach(x => ex[x] = (ex[x] || 0) + 1);
       }
     };
-    const chosen = [], cc = {}, ex = {};
+    const chosen = [], cc = {}, ex = {}; builder.relaxed = 0; builder.why = null;
     // 2026-10-18: FORGE Pick = the entered build HYB-M-SXP -> pitch cap: no player in more than ceil(N x max(projected own %, optimal %) / 100) lineups (min 1)
     const PC = (method === 'hyb' && sim && !$('#bExp').value.trim()) ? P.map(p => { const own = (p.own_flex || 0) + (p.own_cpt || 0), opt = (p.opt_cpt || 0) + (p.opt_flex || 0); return Math.max(1, Math.ceil(N * Math.max(own, opt) / 100)); }) : null;
-    const pickFrom = (order, want, ccx, val) => {     // same caps/uniqueness as pick(), in a given order (EV order for the simulation methods)
+    const pickFrom = (order, want, ccx, val, noPC) => {     // same caps/uniqueness as pick(), in a given order (EV order for the simulation methods)
       for (const i of order) {
         if (chosen.length >= want) break; const code = codes[i], lu = [code & 31, (code >> 5) & 31, (code >> 10) & 31, (code >> 15) & 31, (code >> 20) & 31, (code >> 25) & 31];
-        if ((ccx[lu[0]] || 0) >= cap) continue; if (lu.some(x => (ex[x] || 0) >= maxExp && !lock[x])) continue; if (PC && lu.some(x => (ex[x] || 0) >= PC[x] && !lock[x])) continue;
+        if ((ccx[lu[0]] || 0) >= cap) continue; if (lu.some(x => (ex[x] || 0) >= maxExp && !lock[x])) continue; if (PC && !noPC && lu.some(x => (ex[x] || 0) >= PC[x] && !lock[x])) continue;
         let ok = true; for (const ch of chosen) { let sh = (ch.lu[0] === lu[0]) ? 1 : 0; const fs = new Set(ch.lu.slice(1)); for (let k = 1; k < 6; k++) if (fs.has(lu[k])) sh++; if (6 - sh < uniq) { ok = false; break; } }
         if (!ok) continue; chosen.push({ lu, s: scores[i], rank: rankOf.get(i), ev: val ? val.get(i) : undefined }); ccx[lu[0]] = (ccx[lu[0]] || 0) + 1; lu.forEach(x => ex[x] = (ex[x] || 0) + 1);
       }
@@ -1040,11 +1042,17 @@ td.lev { color: var(--steel); }
       const pool = idx.filter(i => RULES_SD(lus(i), pos, tm, teamHasQb)).slice(0, D.simpack.topn || 10000);
       if (!pool.length) { st.className = 'status err'; st.textContent = "No lineup passes FORGE's Showdown rules under these settings. Loosen a lock or the salary floor."; return; }
       $('#forgeBtn').disabled = true; let ev;
-      try { ev = await simEV(P, proj, pos, tm, codes, scores, pool, st); } catch (e) { st.className = 'status err'; st.textContent = 'Simulation failed: ' + e.message; $('#forgeBtn').disabled = false; return; } finally { $('#forgeBtn').disabled = false; }
+      try { ev = await simEV(P, proj, pos, tm, codes, scores, pool, st, Math.max(0, Math.floor(+$('#bSeed').value) || 0), parseFloat($('#bVar').value)); } catch (e) { st.className = 'status err'; st.textContent = 'Simulation failed: ' + e.message; $('#forgeBtn').disabled = false; return; } finally { $('#forgeBtn').disabled = false; }
       const val = new Map(); pool.forEach((i, k) => val.set(i, ev[k])); const evOrder = [...pool].sort((a, b) => val.get(b) - val.get(a));
       const stc = builder.struct, evo51 = evOrder.filter(i => is51[i]);   // structure: any = no split rule, 51 = every lineup 5-1, hedge = half 5-1 (the default for FORGE Pick)
       if (method === 'ev') { if (stc === 'hedge') { pickFrom(evo51, Math.ceil(N / 2), cc, val); pickFrom(evOrder, N, {}, val); } else pickFrom(stc === '51' ? evo51 : evOrder, N, cc, val); }
       else { if (stc !== 'any') pickFrom(idx.filter(i => is51[i]), Math.ceil(N / 2), cc, val); const half = {}; pickFrom(stc === '51' ? evo51 : evOrder, N, stc === 'any' ? cc : half, val); }
+      // 2026-10-21 (Drew, 20 of 45): same as production hybrid_select_pitch: when the pitch cap, the captain cap and the "different players" rule use up the candidates, fill the rest without the pitch cap (logged); never fewer lineups than asked unless the other rules truly leave none
+      if (method === 'hyb' && PC && chosen.length < N) { const before = chosen.length, ccAll = {}; chosen.forEach(ch => ccAll[ch.lu[0]] = (ccAll[ch.lu[0]] || 0) + 1); pickFrom(stc === '51' ? evo51 : evOrder, N, ccAll, val, true); builder.relaxed = chosen.length - before; }
+      if (chosen.length < N) { const why = { cap: 0, exp: 0, uniq: 0 }; for (const i of (stc === '51' ? evo51 : evOrder)) { const lu = lus(i); if (chosen.some(ch => ch.lu.every((x, k) => x === lu[k]))) continue;
+          if ((chosen.filter(ch => ch.lu[0] === lu[0]).length) >= cap) { why.cap++; continue; } if (lu.some(x => (ex[x] || 0) >= maxExp && !lock[x])) { why.exp++; continue; }
+          why.uniq++; }
+        builder.why = why; }
     }
     else if (builder.struct === 'hedge') { pick(Math.ceil(N / 2), true, chosen, cc, ex); const half = {}; pick(N, false, chosen, half, ex); }
     else pick(N, null, chosen, cc, ex);
@@ -1052,10 +1060,10 @@ td.lev { color: var(--steel); }
     builder.result = chosen.map(ch => ({ cpt: P[ch.lu[0]].name, flex: ch.lu.slice(1).map(x => P[x].name), proj: ch.s, sal: 1.5 * sal[ch.lu[0]] + ch.lu.slice(1).reduce((t, x) => t + sal[x], 0),
       pct: 100 * (ch.rank + 1) / codes.length, own: ownSum(ch.lu), ev: ch.ev }));
     const ms = Math.round(performance.now() - t0);
-    st.className = 'status'; st.textContent = `Forged ${chosen.length} of ${N} lineups (${setInfo({ p51: 'P51-M-SX', hyb: 'HYB-M-SXP', ev: 'EV-M', hyb0: 'HYB-M' }[method]).name}) · ${codes.length.toLocaleString('en-US')} legal lineups${sim ? ', ' + Math.min(codes.length, D.simpack.topn || 10000).toLocaleString('en-US') + ' simulated' : ''} in ${(ms / 1000).toFixed(1)} s` + (chosen.length < N ? ' · loosen caps for more' : '');
+    st.className = 'status'; st.textContent = `Forged ${chosen.length} of ${N} lineups (${setInfo({ p51: 'P51-M-SX', hyb: 'HYB-M-SXP', ev: 'EV-M', hyb0: 'HYB-M' }[method]).name}) · ${codes.length.toLocaleString('en-US')} legal lineups${sim ? ', ' + Math.min(codes.length, D.simpack.topn || 10000).toLocaleString('en-US') + ' simulated' : ''} in ${(ms / 1000).toFixed(1)} s` + (builder.relaxed ? ` · the last ${builder.relaxed} lineups were filled without FORGE's per-player cap (the cap alone left too few)` : '') + (chosen.length < N ? ` · stopped at ${chosen.length}: of the ${(builder.why ? builder.why.cap + builder.why.exp + builder.why.uniq : 0).toLocaleString('en-US')} lineups left, ${builder.why ? builder.why.cap.toLocaleString('en-US') : 0} are blocked by the per-captain limit, ${builder.why ? builder.why.exp.toLocaleString('en-US') : 0} by the per-player exposure limit and ${builder.why ? builder.why.uniq.toLocaleString('en-US') : 0} by the min-players-different rule. With a high "min players different" only so many lineups can fit; lower it (or raise the captain limit) to get more` : '');
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) { const sp = $('#sparks'); sp.innerHTML = Array.from({ length: 18 }, () => { const a = Math.random() * Math.PI * 2, r = 40 + Math.random() * 70; return `<b style="--dx:${(Math.cos(a) * r).toFixed(0)}px;--dy:${(Math.sin(a) * r - 20).toFixed(0)}px"></b>`; }).join(''); setTimeout(() => sp.innerHTML = '', 800); }
     FLT.mine = mkF(); $('#bOut').hidden = false; renderMine();
-    logBuild('showdown', { method, recipe: builder.recipe, n: N, cap, exp: maxExp, uniq, minSal, punt: maxPunt, noCpt, dst: dstRule, struct: builder.struct,
+    logBuild('showdown', { method, seed: Math.max(0, Math.floor(+$('#bSeed').value) || 0), got: chosen.length, pitch_relaxed: builder.relaxed || 0, short_why: builder.why || null, var_pct: (Math.floor(+$('#bSeed').value) > 0) ? (parseFloat($('#bVar').value) || 25) : null, recipe: builder.recipe, n: N, cap, exp: maxExp, uniq, minSal, punt: maxPunt, noCpt, dst: dstRule, struct: builder.struct,
       own_lean: parseInt($('#bOwn').value) || 0, mine: $('#bMine').checked, locks: [...builder.lock], outs: [...builder.out], cpt_pool: [...builder.cpt],
       edits: Object.fromEntries(P.filter(p => builder.proj[p.name] != null && Math.abs(builder.proj[p.name] - p.proj) > 0.005).map(p => [p.name, builder.proj[p.name]])) },
       builder.result.map(l => ({ cpt: l.cpt, flex: l.flex })));
