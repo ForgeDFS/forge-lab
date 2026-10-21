@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="d63ea946a964"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="2bc6192b3780"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -850,7 +850,7 @@ td.lev { color: var(--steel); }
   function logBuild(kind, settings, lineups) {
     try {
       const rec = { v: 1, kind, slate: D.slate.id || D.slate.game, device: anonId(), owner: !!D.owner, ts: new Date().toISOString(), page: (document.querySelector('meta[name="forge-version"]') || {}).content || null,
-        status: (IDX.find(x => x.id === CUR) || {}).status || null, settings, lineups };
+        status: (IDX.find(x => x.id === CUR) || {}).status || null, data_built: (D.slate || {}).built_utc || null, settings, lineups };
       let q = []; try { q = JSON.parse(LS.get('forge_outbox') || '[]'); } catch (e) {}
       q.push(rec); LS.set('forge_outbox', JSON.stringify(q.slice(-60))); flushInbox();
     } catch (e) { /* logging never blocks a build */ }
@@ -1372,7 +1372,7 @@ td.lev { color: var(--steel); }
       const src = lineupsFor(kind); if (!src.gpp || !src.gpp.length) return say(`<div class="err">${DKSRC === 'mine' ? 'Build your lineups in the Builder first.' : 'FORGE has no lineups for this game yet. Try the Builder, then pick "My Builder lineups".'}</div>`);
       const perContest = {}; entries.forEach(r => perContest[r[1].trim()] = (perContest[r[1].trim()] || 0) + 1);
       if (DKSRC === 'mine' && Object.keys(perContest).some(c => !CASHRX.test(c) && (SERX.test(c) || perContest[c] === 1))) src.gpp = src.gpp.slice(1);   // FORGE rule: no lineup repeated across contests (single entry keeps #1)
-      let gp = 0; const used = {}, out = [], errs = [], plan = {}, skipped = [];
+      let gp = 0; const used = {}, out = [], errs = [], plan = {}, skipped = [], expo = [];
       const status = {}; D.players.forEach(p => status[p.name] = p.status || '');
       for (const r of entries) {
         const c = r[1].trim(); used[c] = used[c] || 0; let lu, why;
@@ -1388,13 +1388,14 @@ td.lev { color: var(--steel); }
         const sal = ids.reduce((t, e) => t + e.sal, 0); if (sal > 50000) { errs.push(`${c}: lineup over the cap ($${sal})`); continue; }
         if (new Set(names).size !== nS) { errs.push(`${c}: a player appears twice`); continue; }
         const outP = names.filter(n => /^(OUT|IR|D)$/.test(status[n] || '')); if (outP.length) { errs.push(`${c}: ${outP.join(', ')} is ruled out`); continue; }
-        out.push([r[0], r[1], r[2], r[3], ...ids.map(e => e.nid)]); (plan[c] = plan[c] || { n: 0, why }).n++;
+        out.push([r[0], r[1], r[2], r[3], ...ids.map(e => e.nid)]); (plan[c] = plan[c] || { n: 0, why }).n++; expo.push({ entry: r[0], contest: c, names, why });
       }
       for (const c of Object.keys(perContest)) { if (CASHRX.test(c)) continue; const ls = out.filter(o => o[1].trim() === c).map(o => isSD ? o[4] + '|' + o.slice(5).sort().join(',') : o.slice(4).sort().join(',')); if (ls.length !== new Set(ls).size) errs.push(`${c}: the same lineup would be entered twice. Build more lineups.`); }
       if (!out.length && skipped.length) return say(`<div class="err">Not filled: your ${DKSRC === 'mine' ? 'Builder made' : 'FORGE set has'} ${src.gpp.length} lineups but the selected entries need ${skipped.length}${DKSRC === 'mine' ? '. In the Builder set Lineups higher and press Forge, or untick contests above' : '. Untick contests above or switch to "My Builder lineups"'}.</div>`);
       if (errs.length) return say('<div class="err">Not filled. Fix this first:</div><ul>' + errs.slice(0, 8).map(e => `<li>${e}</li>`).join('') + '</ul>');
       const csv = [hdr.slice(0, 4 + nS).map(csvCell).join(','), ...out.map(r => r.map(x => csvCell(String(x))).join(','))].join('\r\n') + '\r\n';
       const fname = `DKEntries_FORGE_${(D.slate.kind === 'classic' ? 'classic' : D.slate.away + D.slate.home)}.csv`;
+      logBuild('export', { fname, source: DKSRC, skipped: skipped.length, contests: Object.fromEntries(Object.entries(plan).map(([c, v]) => [c, v.n])) }, expo);   // (2026-10-21, Drew) what was actually put into which contest
       say(`<div class="ok">✓ ${out.length} entries filled and checked against DraftKings' player list.</div>${skipped.length ? `<p class="note"><b>${skipped.length} selected entries have no lineup yet</b> (you built ${src.gpp.length}). They are left out of the file and stay as they are on DraftKings. Build more lineups, or untick them above.</p>` : ''}
         <div class="tbl-wrap"><table><thead><tr><th>Contest</th><th class="n">Entries</th><th>Lineups used</th></tr></thead><tbody>${Object.entries(plan).map(([c, v]) => `<tr><td>${shortContest(c)}</td><td class="n">${v.n}</td><td>${v.why}</td></tr>`).join('')}</tbody></table></div>
         <div class="toolbar"><button class="btn primary" type="button" id="dkDl">Download filled file</button><button class="btn small" type="button" id="dkCopy">Copy instead</button></div>
