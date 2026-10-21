@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="a35eda0ffaa2"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="8f4b05a25bbd"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -137,6 +137,14 @@ details.about[open] > summary, details.adv[open] > summary { margin-bottom: 8px;
 details.adv .field:first-of-type { margin-top: 4px; }
 .note.fine { font-size: 11px; opacity: .8; }
 .tab .badge[hidden] { display: none; }
+.sports { display: flex; gap: 6px; margin: 0 0 10px; } .sports button { font: 700 14px var(--f-display); letter-spacing: .12em; padding: 7px 18px; border-radius: 99px; border: 1px solid var(--line); background: var(--plate); color: var(--muted); cursor: pointer; }
+.sports button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+body.nba nav.tabs, body.nba .panel, body.nba #rpBanner { display: none !important; } body.nba #nbaView { display: block !important; }
+.nbaleaders { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; margin-bottom: 18px; }
+.nbaleaders .card { background: var(--plate); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; } .nbaleaders .card h4 { margin: 0 0 6px; font: 700 12.5px var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.nbaleaders ol { margin: 0; padding-left: 18px; font-size: 13.5px; } .nbaleaders li { display: flex; justify-content: space-between; gap: 8px; } .nbaleaders li small { color: var(--muted); }
+.nbaform { display: grid; gap: 8px; max-width: 760px; } .nbaform label { display: flex; gap: 8px; align-items: center; } .nbaform input[type=number] { width: 80px; }
+.nbaflag { border-left: 3px solid var(--steel); padding-left: 10px; }
 .rpbanner { margin: 0 0 12px; padding: 10px 14px; border: 1px solid var(--steel); border-radius: 10px; background: var(--plate); font-size: 13.5px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .rpbanner b { color: var(--steel); } .rpbanner .btn { margin-left: auto; }
 .graded { margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--line); font-size: 12.5px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
@@ -383,6 +391,7 @@ td.lev { color: var(--steel); }
   </div>
 
   <div class="newver" id="newVer" hidden>A newer FORGE is ready. <button type="button" class="btn small primary" id="newVerBtn">Refresh now</button></div>
+  <nav class="sports" id="sportPicker" aria-label="Sport"><button type="button" data-sport="NFL" aria-pressed="true">NFL</button><button type="button" data-sport="NBA" aria-pressed="false">NBA</button></nav>
   <nav class="slates" id="slatePicker" aria-label="Games" hidden></nav>
   <section class="plate" aria-label="Game"><div class="glow" aria-hidden="true"></div>
     <div>
@@ -396,6 +405,25 @@ td.lev { color: var(--steel); }
     </div>
   </section>
 
+  <section id="nbaView" hidden>
+    <p class="note nbaflag"><b>NBA v0 · unproven.</b> Projections come from tonight's FanDuel player props turned into DraftKings points; the chances come from 20,000 simulated nights with players treated as independent. No NBA backtest yet. Turnovers are estimated (10% of points + assists) because FanDuel does not price them.</p>
+    <h3 class="subh">Who leads the slate tonight</h3>
+    <div class="nbaleaders" id="nbaLeaders"></div>
+    <h3 class="subh">Players</h3>
+    <div class="toolbar"><input type="search" id="nbaSearch" placeholder="Search players" aria-label="Search players"><select id="nbaGame" aria-label="Game"></select><span class="note" id="nbaCount"></span></div>
+    <div class="tbl-wrap"><table id="nbaTable"><thead><tr><th data-k="name">Player</th><th>Pos</th><th data-k="team">Team</th><th data-k="game">Game</th><th class="n" data-k="sal">Salary</th><th class="n" data-k="proj">Proj</th><th class="n" data-k="value">Value</th><th class="n" data-k="pts">PTS</th><th class="n" data-k="reb">REB</th><th class="n" data-k="ast">AST</th><th class="n" data-k="tpm">3PM</th><th class="n" data-k="stl">STL</th><th class="n" data-k="blk">BLK</th><th class="n" data-k="dd">DD%</th><th>Out</th></tr></thead><tbody></tbody></table></div>
+    <h3 class="subh">Builder · NBA Classic</h3>
+    <div class="nbaform">
+      <label>Lineups <input type="number" id="nbaN" min="1" max="150" value="20"></label>
+      <label>Min players different <input type="number" id="nbaUniq" min="1" max="6" value="2"></label>
+      <label>Max exposure % <input type="number" id="nbaExp" min="10" max="100" value="100"></label>
+      <label class="check"><input type="checkbox" id="nbaStack" checked> Game stack: 3+ players from one of the 3 highest-total close games (spread 7 or less)</label>
+      <label class="check"><input type="checkbox" id="nbaBlow" checked> At most 1 player from likely blowouts (spread 9+)</label>
+      <p class="note">Both rules are FORGE's starting hypotheses for NBA (fast, close games score more; starters sit in blowouts). Untested until NBA contests are graded.</p>
+      <div class="toolbar"><button type="button" class="btn primary" id="nbaRun">Forge NBA lineups</button><span class="status" id="nbaStatus" role="status"></span></div>
+    </div>
+    <div id="nbaOut" hidden><div class="toolbar"><h3 style="font-size:22px">Fresh off the anvil</h3><button type="button" class="btn small" id="nbaCsv">Download for DraftKings</button></div><div class="expo" id="nbaExpo"></div><div class="grid" id="nbaGrid"></div></div>
+  </section>
   <div class="rpbanner" id="rpBanner" hidden></div>
   <nav class="tabs" role="tablist" aria-label="Sections">
     <button class="tab" role="tab" id="tab-players" aria-selected="true" data-p="players"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-4 3.5-6 7-6s6.2 2 7 6"/></svg><span class="kicker">The ore</span><span class="tlong">Players</span><span class="tshort">Players</span></button>
@@ -675,14 +703,19 @@ td.lev { color: var(--steel); }
   }
   const kickLocal = s => new Date(s.kickoff_utc).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' });
   function renderPicker() {
-    const el = $('#slatePicker'); const L = IDX.filter(x => (x.kind === 'showdown' || x.kind === 'classic') && active(x));   // 2026-10-21 (Drew): only upcoming and live slates up top; finished games live in Past contests
+    const el = $('#slatePicker'); const L = IDX.filter(x => (x.kind === 'showdown' || x.kind === 'classic') && active(x) && sportOf(x) === SPORT);   // 2026-10-21 (Drew): only upcoming and live slates up top; finished games live in Past contests
     el.hidden = L.length < 2;
     el.innerHTML = L.map(x => `<button type="button" class="slate-chip ${x.status}" data-id="${x.id}" aria-pressed="${x.id === CUR}"><b>${x.label}</b><span>${x.kind === 'classic' ? x.game : x.game.replace('@', ' @ ')}</span><small>${kickLocal(x)}${x.status === 'live' ? ' · locked' : x.status === 'complete' ? ' · final' : ''}</small></button>`).join('');
     $$('.slate-chip', el).forEach(b => b.onclick = () => loadSlate(b.dataset.id));
     const on = el.querySelector('[aria-pressed="true"]'); if (on) el.scrollLeft = Math.max(0, on.offsetLeft - (el.clientWidth - on.offsetWidth) / 2);   // keep the picked game in view (one scrolling row)
   }
+  let SPORT = LS.get('forge_sport') || 'NFL';   // 2026-10-21 (Drew): NFL / NBA tabs up top
+  const sportOf = x => (x && x.kind && String(x.kind).startsWith('nba')) ? 'NBA' : 'NFL';
+  function renderSports() { $$('#sportPicker button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sport === SPORT))); }
+  $$('#sportPicker button').forEach(b => b.onclick = () => { if (SPORT === b.dataset.sport) return; SPORT = b.dataset.sport; LS.set('forge_sport', SPORT); renderSports();
+    const d = defaultSlate(); if (d && sportOf(d) === SPORT) loadSlate(d.id); else { renderPicker(); document.body.classList.toggle('nba', SPORT === 'NBA'); $('#nbaView').hidden = SPORT !== 'NBA'; if (SPORT === 'NBA') $('#nbaLeaders').innerHTML = '<p class="note">No NBA slate published yet.</p>'; } });
   function active(x) { if (x.status === 'complete') return false; return Date.now() < new Date(x.kickoff_utc).getTime() + (x.kind === 'classic' ? 12 : 4.5) * 3600e3; }   // live window: Showdown 4.5 h after kickoff, Classic main slate 12 h
-  function defaultSlate() { const up = IDX.filter(active); return (up[0] || IDX[IDX.length - 1]); }
+  function defaultSlate() { const S = IDX.filter(x => sportOf(x) === SPORT), up = S.filter(active); return (up[0] || S[S.length - 1] || IDX[IDX.length - 1]); }
   async function loadSlate(id) {
     CUR = id; renderPicker(); $('#statusText').textContent = 'Loading';
     try { const d = await getJSON(id); const ob = await ownerBuilds(id); if (ob) { d.builds = ob; d.owner = true; } else d.builds = d.builds || {};
@@ -691,7 +724,8 @@ td.lev { color: var(--steel); }
   async function start() {
     IDX = (await getJSON('index')).slates || []; if (!IDX.length) throw new Error('no slates published');
     const want = LS.get('forge_slate'), w = IDX.find(x => x.id === want), dflt = defaultSlate();
-    await loadSlate((w && active(w)) ? w.id : dflt.id);
+    if (w && active(w)) { SPORT = sportOf(w); LS.set('forge_sport', SPORT); } renderSports();
+    await loadSlate((w && active(w)) ? w.id : defaultSlate().id);
     pickupShared(); loadOverlays(); setTimeout(flushInbox, 3000); setInterval(() => { if (!document.hidden) loadOverlays(); }, 5 * 60e3);
   }
   // overlay alert: guaranteed contests running under their prize pool (tools/overlay_scan.py, every 10 min before NFL locks). FORGE never enters contests.
@@ -734,7 +768,9 @@ td.lev { color: var(--steel); }
     .catch(() => { ENC = false; start().catch(fail); });
 
   function init(data, meta) {
-    meta = meta || {}; const isC = data.slate && data.slate.kind === 'classic'; document.body.classList.toggle('classic', isC);
+    meta = meta || {}; const isNBA = sportOf(data.slate); document.body.classList.toggle('nba', isNBA === 'NBA'); $('#nbaView').hidden = isNBA !== 'NBA';
+    if (isNBA === 'NBA') { D = data; return initNBA(data, meta); }
+    const isC = data.slate && data.slate.kind === 'classic'; document.body.classList.toggle('classic', isC);
     setTimeout(() => { if (typeof DKFILE !== 'undefined' && DKFILE) fillDK(DKFILE); renderManual(); emFill(); }, 0);   // re-check a loaded entries file against the newly picked game
     if (isC) { D = data; return initClassic(data, meta); }
     $('#tAt').textContent = '@'; $('#lSpread').textContent = 'Spread'; $('#lTotal').textContent = 'Total';
@@ -1740,5 +1776,76 @@ td.lev { color: var(--steel); }
       <div class="tbl-wrap"><table><thead><tr><th class="n">Place</th><th>Captain</th><th>Flex</th><th class="n">Points</th><th class="n">Entries</th></tr></thead><tbody>${c.top20.map(t => `<tr><td class="n">${ordinal(t.rank)}</td><td><b>${t.cpt}</b></td><td>${t.flex.join(', ')}</td><td class="n">${fmt(t.pts, 2)}</td><td class="n">${t.entries}</td></tr>`).join('')}</tbody></table></div>`;
   }
   $('#tab-past').addEventListener('click', renderPast);
+
+  // ---------------------------------------------------------------- NBA v0 (2026-10-21): projections from props, leaderboards, Classic builder (GLPK)
+  const NB = { sort: 'proj', dir: -1, out: new Set(), result: [] };
+  const NSLOT = ['PG', 'SG', 'SF', 'PF', 'C', 'G', 'F', 'UTIL'], NEL = { PG: ['PG'], SG: ['SG'], SF: ['SF'], PF: ['PF'], C: ['C'], G: ['PG', 'SG'], F: ['SF', 'PF'], UTIL: ['PG', 'SG', 'SF', 'PF', 'C'] };
+  function initNBA(data, meta) {
+    const s = data.slate, P = data.players; NB.out.clear(); NB.result = []; $('#nbaOut').hidden = true; $('#nbaStatus').textContent = '';
+    $('#tAway').textContent = 'NBA'; $('#tAt').textContent = '·'; $('#tHome').textContent = s.games + ' games';
+    $('#kick').textContent = 'First game ' + new Date(s.kickoff_utc).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' · data built ' + s.built_utc;
+    $('#fresh').textContent = s.odds_file ? 'FanDuel props snapshot ' + s.odds_file.replace('.json', '') : '';
+    $('#mSpread').textContent = Object.keys(data.game_lines || {}).length + '/' + s.games; $('#lSpread').textContent = 'Games with lines';
+    $('#mTotal').textContent = P.filter(p => p.proj != null).length; $('#lTotal').textContent = 'Projected players'; $('#mWeek').textContent = '—';
+    $('#statusPill').className = 'pill hot'; $('#statusText').textContent = (meta.status === 'live') ? 'Locked · games on' : 'NBA v0 · unproven';
+    P.forEach(p => { p.value = p.proj == null ? null : p.proj / (p.sal / 1000); if (p.proj == null) NB.out.add(p.name); });
+    const L = data.leaders || {}, pc = v => (100 * v).toFixed(v < 0.1 ? 1 : 0) + '%';
+    const card = (k, lab, team) => L[k] ? `<div class="card"><h4>${lab}</h4><ol>${L[k].slice(0, 5).map(r => `<li><span>${team ? r.team : r.name} <small>${team ? '' : r.team + ' · '}${r.mean}</small></span><b>${pc(r.p_lead)}</b></li>`).join('')}</ol></div>` : '';
+    $('#nbaLeaders').innerHTML = card('pra', 'Points + rebounds + assists') + card('pts', 'Points') + card('reb', 'Rebounds') + card('ast', 'Assists') + card('tpm', 'Made threes') + card('stl', 'Steals') + card('blk', 'Blocks') + card('team_tpm', 'Team threes', true)
+      + '<p class="note" style="grid-column:1/-1">Chance to lead the whole slate in that stat, from 20,000 simulated nights. Number next to the name = average in the simulation. Team threes count only players with a threes line.</p>';
+    const games = [...new Set(P.map(p => p.game))].sort(); $('#nbaGame').innerHTML = '<option value="">All games</option>' + games.map(g => { const gl = (data.game_lines || {})[g]; return `<option value="${g}">${g}${gl && gl.total ? ' · total ' + gl.total + ', home ' + (gl.home_spread > 0 ? '+' : '') + gl.home_spread : ''}</option>`; }).join('');
+    $('#nbaSearch').oninput = renderNBATable; $('#nbaGame').onchange = renderNBATable;
+    $$('#nbaTable th[data-k]').forEach(th => th.onclick = () => { const k = th.dataset.k; NB.dir = NB.sort === k ? -NB.dir : -1; NB.sort = k; renderNBATable(); });
+    renderNBATable();
+  }
+  function renderNBATable() {
+    const q = ($('#nbaSearch').value || '').toLowerCase(), g = $('#nbaGame').value;
+    const R = D.players.filter(p => (!q || p.name.toLowerCase().includes(q)) && (!g || p.game === g)).sort((a, b) => { const x = a[NB.sort], y = b[NB.sort]; if (x == null) return 1; if (y == null) return -1; return (x > y ? 1 : x < y ? -1 : 0) * NB.dir; });
+    $('#nbaCount').textContent = `${R.length} players`;
+    $('#nbaTable tbody').innerHTML = R.map(p => `<tr><td class="who"><b>${p.name}</b>${p.proj == null ? ' <small class="dim">no props</small>' : ''}</td><td><span class="pos">${p.pos}</span></td><td>${p.team}</td><td><small>${p.game}</small></td><td class="n">${money(p.sal)}</td><td class="n"><b>${fmt(p.proj)}</b></td><td class="n">${fmt(p.value, 2)}</td>
+      ${['pts', 'reb', 'ast', 'tpm', 'stl', 'blk'].map(k => `<td class="n">${fmt(p[k])}</td>`).join('')}<td class="n">${p.dd == null ? '—' : fmt(100 * p.dd, 0) + '%'}</td>
+      <td><input type="checkbox" data-n="${p.name}" ${NB.out.has(p.name) ? 'checked' : ''} ${p.proj == null ? 'disabled' : ''} aria-label="Exclude ${p.name}"></td></tr>`).join('');
+    $$('#nbaTable tbody input[type=checkbox]').forEach(cb => cb.onchange = () => { cb.checked ? NB.out.add(cb.dataset.n) : NB.out.delete(cb.dataset.n); });
+  }
+  $('#nbaRun').addEventListener('click', async () => {
+    const st = $('#nbaStatus'), t0 = performance.now(); st.className = 'status'; st.textContent = 'Heating the forge…';
+    let g; try { g = await glpk(); } catch (e) { st.className = 'status err'; st.textContent = 'The optimizer could not load: ' + e.message; return; }
+    const N = Math.max(1, Math.min(150, parseInt($('#nbaN').value) || 20)), uniq = Math.max(1, Math.min(6, parseInt($('#nbaUniq').value) || 2)), capP = Math.max(1, Math.ceil(N * Math.min(100, Math.max(10, parseFloat($('#nbaExp').value) || 100)) / 100));
+    const P = D.players.map((p, i) => ({ ...p, i })).filter(p => p.proj != null && !NB.out.has(p.name)), GL = D.game_lines || {};
+    const stackG = $('#nbaStack').checked ? Object.entries(GL).filter(([k, v]) => v.home_spread != null && Math.abs(v.home_spread) <= 7).sort((a, b) => (b[1].total || 0) - (a[1].total || 0)).slice(0, 3).map(x => x[0]) : [];
+    const blowG = $('#nbaBlow').checked ? Object.entries(GL).filter(([k, v]) => v.home_spread != null && Math.abs(v.home_spread) >= 9).map(x => x[0]) : [];
+    const games = [...new Set(P.map(p => p.game))], xv = (p, s) => `x${p.i}_${s}`, el = (p, s) => NEL[s].some(z => p.pos.split('/').includes(z));
+    const B = (lo, hi) => lo === hi ? { type: g.GLP_FX, lb: lo, ub: hi } : hi == null ? { type: g.GLP_LO, lb: lo, ub: 0 } : lo == null ? { type: g.GLP_UP, lb: 0, ub: hi } : { type: g.GLP_DB, lb: lo, ub: hi };
+    const chosen = [], cnt = {};
+    for (let k = 0; k < N; k++) {
+      const V = [], sub = [], row = (name, vars, lo, hi) => { if (vars.length) sub.push({ name, vars, bnds: B(lo, hi) }); };
+      P.forEach(p => NSLOT.forEach(s => { if (el(p, s)) V.push({ p, s, name: xv(p, s) }); }));
+      NSLOT.forEach(s => row('s' + s, V.filter(v => v.s === s).map(v => ({ name: v.name, coef: 1 })), 1, 1));
+      P.forEach(p => { const vs = V.filter(v => v.p === p).map(v => ({ name: v.name, coef: 1 })); row('p' + p.i, vs, null, (cnt[p.i] || 0) >= capP ? 0 : 1); });
+      row('sal', V.map(v => ({ name: v.name, coef: v.p.sal })), null, 50000);
+      games.forEach((gm, j) => row('gx' + j, V.filter(v => v.p.game === gm).map(v => ({ name: v.name, coef: 1 })), null, blowG.includes(gm) ? 1 : 7));   // DK: 2+ games
+      const yv = stackG.map((gm, j) => 'y' + j);
+      stackG.forEach((gm, j) => row('st' + j, [...V.filter(v => v.p.game === gm).map(v => ({ name: v.name, coef: 1 })), { name: 'y' + j, coef: -3 }], 0, null));
+      if (yv.length) row('sty', yv.map(y => ({ name: y, coef: 1 })), 1, null);
+      chosen.forEach((c, j) => row('u' + j, V.filter(v => c.ids.has(v.p.i)).map(v => ({ name: v.name, coef: 1 })), null, 8 - uniq));
+      const lp = { name: 'nba', objective: { direction: g.GLP_MAX, name: 'obj', vars: V.map(v => ({ name: v.name, coef: v.p.proj })) }, subjectTo: sub, binaries: [...V.map(v => v.name), ...yv] };
+      const r = await Promise.resolve(g.solve(lp, { msglev: g.GLP_MSG_OFF, presol: true }));
+      if (!r || !r.result || (r.result.status !== g.GLP_OPT && r.result.status !== g.GLP_FEAS)) break;
+      const pick = V.filter(v => r.result.vars[v.name] > 0.5); if (pick.length !== 8) break;
+      const lu = NSLOT.map(s => pick.find(v => v.s === s).p); chosen.push({ lu, ids: new Set(lu.map(p => p.i)), s: lu.reduce((t, p) => t + p.proj, 0) }); lu.forEach(p => cnt[p.i] = (cnt[p.i] || 0) + 1);
+      if (k % 5 === 4) st.textContent = `Forging… ${k + 1} of ${N}`;
+    }
+    if (!chosen.length) { st.className = 'status err'; st.textContent = 'No legal lineup fits these rules.'; return; }
+    NB.result = chosen; st.textContent = `Forged ${chosen.length} of ${N} lineups in ${((performance.now() - t0) / 1000).toFixed(1)} s` + (stackG.length ? ' · stack games: ' + stackG.join(', ') : '');
+    const ex = {}; chosen.forEach(c => c.lu.forEach(p => ex[p.name] = (ex[p.name] || 0) + 1));
+    $('#nbaExpo').innerHTML = Object.entries(ex).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span class="chip">${k} <b>${Math.round(100 * v / chosen.length)}%</b></span>`).join('');
+    $('#nbaGrid').innerHTML = chosen.map((c, i) => `<article class="lu"><header><span>#${i + 1}</span><span><b>${fmt(c.s)}</b> pts · <b>${money(c.lu.reduce((t, p) => t + p.sal, 0))}</b></span></header><ol>${c.lu.map((p, j) => `<li><span>${NSLOT[j]} ${p.name}</span><span class="p">${p.team} · ${p.game}</span></li>`).join('')}</ol></article>`).join('');
+    $('#nbaOut').hidden = false;
+    logBuild('nba_classic', { n: N, uniq, exp: capP, stack: stackG, blowout: blowG, outs: [...NB.out] }, chosen.map(c => ({ players: c.lu.map(p => p.name) })));
+  });
+  $('#nbaCsv').addEventListener('click', () => {
+    const rows = ['PG,SG,SF,PF,C,G,F,UTIL', ...NB.result.map(c => c.lu.map(p => `"${p.name} (${p.id})"`).join(','))].join('\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([rows], { type: 'text/csv' })); a.download = `FORGE_NBA_${D.slate.id}.csv`; a.click();
+  });
 })();
 </script>
