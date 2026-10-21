@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="b0c0e235a721"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="ab6421c92d89"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -137,6 +137,11 @@ details.about[open] > summary, details.adv[open] > summary { margin-bottom: 8px;
 details.adv .field:first-of-type { margin-top: 4px; }
 .note.fine { font-size: 11px; opacity: .8; }
 .tab .badge[hidden] { display: none; }
+.rpbanner { margin: 0 0 12px; padding: 10px 14px; border: 1px solid var(--steel); border-radius: 10px; background: var(--plate); font-size: 13.5px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.rpbanner b { color: var(--steel); } .rpbanner .btn { margin-left: auto; }
+.graded { margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--line); font-size: 12.5px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.graded .win { color: var(--good); font-weight: 700; } .graded .dim { color: var(--muted); }
+.pastrow button { white-space: nowrap; } .pastrow.on td { background: var(--plate); }
 .tab .badge { display: inline-block; min-width: 16px; margin-left: 5px; padding: 0 4px; border-radius: 8px; background: var(--gold); color: #1b1408; font-size: 10.5px; line-height: 16px; text-align: center; font-family: var(--f-data); vertical-align: 2px; }
 .netpos { color: var(--good, #3d9a6a); } .netneg { color: var(--bad, #c0533a); }
 .subh2 { font-size: 18px; margin: 18px 0 8px; }
@@ -391,6 +396,7 @@ td.lev { color: var(--steel); }
     </div>
   </section>
 
+  <div class="rpbanner" id="rpBanner" hidden></div>
   <nav class="tabs" role="tablist" aria-label="Sections">
     <button class="tab" role="tab" id="tab-players" aria-selected="true" data-p="players"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-4 3.5-6 7-6s6.2 2 7 6"/></svg><span class="kicker">The ore</span><span class="tlong">Players</span><span class="tshort">Players</span></button>
     <button class="tab" role="tab" id="tab-lineups" aria-selected="false" data-p="lineups"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><span class="kicker">Forged</span><span class="tlong">Lineups</span><span class="tshort">Lineups</span></button>
@@ -398,6 +404,7 @@ td.lev { color: var(--steel); }
     <button class="tab" role="tab" id="tab-dk" aria-selected="false" data-p="dk"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7 9l5-5 5 5M5 15v4h14v-4"/></svg><span class="kicker">Out of the fire</span><span class="tlong">To DraftKings</span><span class="tshort">DraftKings</span></button>
     <button class="tab" role="tab" id="tab-alerts" aria-selected="false" data-p="alerts"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg><span class="kicker">Hot iron</span><span class="tlong">Alerts<b class="badge" id="ovlBadge" hidden></b></span><span class="tshort">Alerts<b class="badge" id="ovlBadgeS" hidden></b></span></button>
     <button class="tab" role="tab" id="tab-record" aria-selected="false" data-p="record"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span class="kicker">Proof of steel</span><span class="tlong">Record</span><span class="tshort">Record</span></button>
+    <button class="tab" role="tab" id="tab-past" aria-selected="false" data-p="past"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4"/><path d="M12 8v4l3 2"/></svg><span class="kicker">Cooled steel</span><span class="tlong">Past contests</span><span class="tshort">Past</span></button>
     <button class="tab" role="tab" id="tab-how" aria-selected="false" data-p="how"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/></svg><span class="kicker">The process</span><span class="tlong">How it works</span><span class="tshort">How</span></button>
   </nav>
 
@@ -443,6 +450,7 @@ td.lev { color: var(--steel); }
     <div class="flt" id="fltForge"></div>
     <div class="note" id="expoHead">Exposure</div>
     <div class="expo" id="expo"></div>
+    <div id="luGrade"></div>
     <div class="grid" id="luGrid"></div>
     </div>
   </section>
@@ -536,6 +544,7 @@ td.lev { color: var(--steel); }
           <div class="flt" id="fltMine"></div>
           <div class="expo" id="bExpo"></div>
           <details class="bdown" id="bBreak"><summary>Breakdown: captains, flex, team splits</summary><div id="bBreakBody"></div></details>
+          <div id="bGrade"></div>
           <div class="grid" id="bGrid"></div>
         </div>
         <section class="tester" id="tester" hidden>
@@ -586,7 +595,7 @@ td.lev { color: var(--steel); }
     <div class="tiles" id="recTiles"></div>
     <div id="ourBox"></div>
     <h3 class="subh">Live: FORGE builds on real contests</h3>
-    <p class="note" id="liveNote">Each set graded on the real contest results. Capped ROI counts any one lineup at most 10&times; its entry, so one huge hit can't hide a bad method.</p>
+    <p class="note" id="liveNote">Each set graded on the real contest results. ROI counts every prize in full; "Capped" counts any one lineup at most 10&times; its entry, shown only as a check on how much one big hit carries.</p>
     <div id="live"></div>
     <div id="entSum"></div>
     <details class="about" style="margin-top:18px"><summary>Backtest: 14 real 2026 Showdowns</summary>
@@ -598,6 +607,13 @@ td.lev { color: var(--steel); }
       <div class="fact"><b>Cash games want a floor</b>For double-ups the best-projected lineup of any shape cleared the cash line in 86% of tested fields.</div>
     </div>
     </details>
+  </section>
+
+  <section class="panel" id="p-past" hidden>
+    <h3 class="subh">Past contests</h3>
+    <p class="lede">Every finished Showdown with FORGE's pre-game data: the projections, ownership forecast and simulated games it had before kickoff. Pick one, build in the Builder with any settings, and every lineup is graded against the real contest: actual points, finishing place, prize and the cash line.</p>
+    <div id="pastList"><p class="note">Loading past contests…</p></div>
+    <div id="pastTop"></div>
   </section>
 
   <section class="panel" id="p-how" hidden>
@@ -659,13 +675,14 @@ td.lev { color: var(--steel); }
   }
   const kickLocal = s => new Date(s.kickoff_utc).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' });
   function renderPicker() {
-    const el = $('#slatePicker'); const L = IDX.filter(x => x.kind === 'showdown' || x.kind === 'classic');
+    const el = $('#slatePicker'); const L = IDX.filter(x => (x.kind === 'showdown' || x.kind === 'classic') && active(x));   // 2026-10-21 (Drew): only upcoming and live slates up top; finished games live in Past contests
     el.hidden = L.length < 2;
     el.innerHTML = L.map(x => `<button type="button" class="slate-chip ${x.status}" data-id="${x.id}" aria-pressed="${x.id === CUR}"><b>${x.label}</b><span>${x.kind === 'classic' ? x.game : x.game.replace('@', ' @ ')}</span><small>${kickLocal(x)}${x.status === 'live' ? ' · locked' : x.status === 'complete' ? ' · final' : ''}</small></button>`).join('');
     $$('.slate-chip', el).forEach(b => b.onclick = () => loadSlate(b.dataset.id));
     const on = el.querySelector('[aria-pressed="true"]'); if (on) el.scrollLeft = Math.max(0, on.offsetLeft - (el.clientWidth - on.offsetWidth) / 2);   // keep the picked game in view (one scrolling row)
   }
-  function defaultSlate() { const now = Date.now(); const up = IDX.filter(x => new Date(x.kickoff_utc).getTime() > now - 4 * 3600e3); return (up[0] || IDX[IDX.length - 1]); }
+  function active(x) { if (x.status === 'complete') return false; return Date.now() < new Date(x.kickoff_utc).getTime() + (x.kind === 'classic' ? 12 : 4.5) * 3600e3; }   // live window: Showdown 4.5 h after kickoff, Classic main slate 12 h
+  function defaultSlate() { const up = IDX.filter(active); return (up[0] || IDX[IDX.length - 1]); }
   async function loadSlate(id) {
     CUR = id; renderPicker(); $('#statusText').textContent = 'Loading';
     try { const d = await getJSON(id); const ob = await ownerBuilds(id); if (ob) { d.builds = ob; d.owner = true; } else d.builds = d.builds || {};
@@ -674,7 +691,7 @@ td.lev { color: var(--steel); }
   async function start() {
     IDX = (await getJSON('index')).slates || []; if (!IDX.length) throw new Error('no slates published');
     const want = LS.get('forge_slate'), w = IDX.find(x => x.id === want), dflt = defaultSlate();
-    await loadSlate((w && (w.status === 'preliminary' || w.status === 'final' || w.status === 'scheduled')) ? w.id : dflt.id);
+    await loadSlate((w && active(w)) ? w.id : dflt.id);
     pickupShared(); loadOverlays(); setTimeout(flushInbox, 3000); setInterval(() => { if (!document.hidden) loadOverlays(); }, 5 * 60e3);
   }
   // overlay alert: guaranteed contests running under their prize pool (tools/overlay_scan.py, every 10 min before NFL locks). FORGE never enters contests.
@@ -740,6 +757,7 @@ td.lev { color: var(--steel); }
     if (!LS.get('forge_start_seen')) $('#startCard').hidden = false;
     const g = (D.record && D.record.backtest || []).find(b => b.name === 'H1ax');   // the gpp recipe uses method 'hyb' = the entered build (FORGE Pick)
     $('#evGpp').textContent = g ? `Backtest, ${g.games} real contests: ${g.roi > 0 ? '+' : ''}${g.roi}% capped ROI (median ${g.median > 0 ? '+' : ''}${g.median}%)` : '';
+    renderBanner(); renderPastTop(); renderPast();
     renderPlayers(); initLineups(); renderBuilderTable(); renderRecord(); applyRecipe(LS.get('forge_recipe') || 'gpp', true); initTester();
     const t = LS.get('forge_tab'); if (t && $('#p-' + t)) show(t);
   }
@@ -891,7 +909,7 @@ td.lev { color: var(--steel); }
   function logBuild(kind, settings, lineups) {
     try {
       const rec = { v: 1, kind, slate: D.slate.id || D.slate.game, device: anonId(), owner: !!D.owner, ts: new Date().toISOString(), page: (document.querySelector('meta[name="forge-version"]') || {}).content || null,
-        status: (IDX.find(x => x.id === CUR) || {}).status || null, data_built: (D.slate || {}).built_utc || null, settings, lineups };
+        status: (IDX.find(x => x.id === CUR) || {}).status || null, data_built: (D.slate || {}).built_utc || null, replay: !!(D.slate || {}).replay, settings, lineups };
       let q = []; try { q = JSON.parse(LS.get('forge_outbox') || '[]'); } catch (e) {}
       q.push(rec); LS.set('forge_outbox', JSON.stringify(q.slice(-60))); flushInbox();
     } catch (e) { /* logging never blocks a build */ }
@@ -930,7 +948,7 @@ td.lev { color: var(--steel); }
   // FORGE lineups
   function initLineups() {
     const bs = Object.keys(D.builds || {}).filter(k => D.builds[k].length); renderPrivate();
-    $('#forgeSets').hidden = !bs.length; if (!bs.length) { $('#buildSel').innerHTML = ''; $('#luGrid').innerHTML = ''; return; } $('#buildSel').innerHTML = bs.map(b => `<option value="${b}">${setLabel(b)}</option>`).join(''); resetFlt();
+    $('#forgeSets').hidden = !bs.length; if (!bs.length) { $('#buildSel').innerHTML = ''; $('#luGrid').innerHTML = ''; $('#luGrade').innerHTML = ''; return; } $('#buildSel').innerHTML = bs.map(b => `<option value="${b}">${setLabel(b)}</option>`).join(''); resetFlt();
     $('#buildSel').onchange = fillContests; $('#contestSel').onchange = renderForge; fillContests();
   }
   function fillContests() {
@@ -943,7 +961,7 @@ td.lev { color: var(--steel); }
     const forged = l.forged ? ' forged' : '';
     return `<article class="lu${forged}"><header><span>#${i + 1}${l.contest ? ' · ' + shortContest(l.contest) : ''}</span><span><b>${fmt(l.proj)}</b> pts · <b>${money(l.sal)}</b></span></header><ol>
       <li class="cpt"><span><svg class="ico" aria-hidden="true"><use href="#i-flame"/></svg>CPT ${l.cpt}</span><span class="p">${pp(l.cpt).pos || ''} ${pp(l.cpt).team || ''}</span></li>
-      ${l.flex.map(n => `<li><span>${n}</span><span class="p">${pp(n).pos || ''} ${pp(n).team || ''}</span></li>`).join('')}</ol>${badges(l)}${D && D.simpack ? `<button type="button" class="btn small testlu" data-cpt="${l.cpt}" data-flex="${l.flex.join('|')}">Test</button>` : ''}</article>`;
+      ${l.flex.map(n => `<li><span>${n}</span><span class="p">${pp(n).pos || ''} ${pp(n).team || ''}</span></li>`).join('')}</ol>${badges(l)}${gradeLine(l)}${D && D.simpack ? `<button type="button" class="btn small testlu" data-cpt="${l.cpt}" data-flex="${l.flex.join('|')}">Test</button>` : ''}</article>`;
   }
   function badges(l) {
     const b = [];
@@ -960,7 +978,7 @@ td.lev { color: var(--steel); }
   }
   function forgeShown() { return applyFlt(currentForge(), FLT.forge); }
   function renderForge() { const all = currentForge(); fltBar($('#fltForge'), 'forge', all, renderForge); const L = applyFlt(all, FLT.forge).map(l => ({ ...l, forged: /^(Entered|FORGE build)/.test($('#buildSel').value) }));
-    $('#expoHead').textContent = `Exposure across ${L.length} lineups`; exposure(L, $('#expo')); $('#luGrid').innerHTML = L.length ? L.map(luCard).join('') : '<p class="note">No lineup in this set matches the filter.</p>'; }
+    $('#expoHead').textContent = `Exposure across ${L.length} lineups`; exposure(L, $('#expo')); renderGrade(L, $('#luGrade'), renderForge); $('#luGrid').innerHTML = L.length ? L.map(luCard).join('') : '<p class="note">No lineup in this set matches the filter.</p>'; }
 
   // copy
   function dkCSV(L) {
@@ -1156,7 +1174,7 @@ td.lev { color: var(--steel); }
       <div class="tbl-wrap"><table class="sumt"><thead><tr><th>Player</th><th class="n">Captain</th><th class="n">Flex</th><th class="n">Total</th><th class="n">Field</th><th class="n">Opt rate</th></tr></thead><tbody>${names.map(r => `<tr><td><b>${r.nm}</b> <small class="dim">${r.p.pos || ''} ${r.p.team || ''}</small></td><td class="n">${pc(r.c)}</td><td class="n">${pc(r.f)}</td><td class="n"><b>${pc(r.c + r.f)}</b></td><td class="n">${r.p.own_flex == null ? '—' : fmt(r.p.own_flex + (r.p.own_cpt || 0), 0) + '%'}</td><td class="n">${r.p.opt_cpt == null ? '—' : fmt(r.p.opt_cpt + r.p.opt_flex, 0) + '%'}</td></tr>`).join('')}</tbody></table></div>
       <p class="note">Field = projected ownership (captain + flex). Opt rate = how often the player is in the best lineup of a simulated game (captain + flex).</p>`;
   }
-  function renderMine() { fltBar($('#fltMine'), 'mine', builder.result, renderMine); const L = mineShown(); exposure(L, $('#bExpo')); $('#bBreakBody').innerHTML = breakdown(L); renderPrivate(); $('#bGrid').innerHTML = L.length ? L.map((l, i) => luCard(l, i)).join('') : '<p class="note">No lineup matches the filter.</p>'; }
+  function renderMine() { fltBar($('#fltMine'), 'mine', builder.result, renderMine); const L = mineShown(); exposure(L, $('#bExpo')); $('#bBreakBody').innerHTML = breakdown(L); renderPrivate(); $('#bGrid').innerHTML = L.length ? L.map((l, i) => luCard(l, i)).join('') : '<p class="note">No lineup matches the filter.</p>'; renderGrade(L, $('#bGrade'), renderMine); }
 
 
   // ---------------------------------------------------------------- Classic (2026-10-15): projections, QB environment, in-browser optimizer (GLPK, WebAssembly)
@@ -1638,11 +1656,80 @@ td.lev { color: var(--steel); }
     // live grades: entered build and its comparator up front, everything else folded
     const Lv = (REC && REC.live) || [], lead = new Set([K ? K.entered : 'HYB-M-SXP', K ? K.shadow : 'HYB-M-SX']), own = !!D.owner;
     const rowsMain = Lv.filter(r => lead.has(r.selector) || (own && r.selector === 'DREW-SET')), rowsMore = Lv.filter(r => !rowsMain.includes(r) && r.selector !== 'DREW-SET');
-    const tr = r => `<tr><td>W${r.week} ${r.slate}</td><td>${selName(r.selector)}${r.entered ? ' <span class="tag">entered</span>' : (r.selector === 'DREW-SET' ? ' <span class="tag">entered</span>' : ' <span class="tag steel">paper</span>')}</td><td class="n">${r.contests}</td><td class="n">${r.lineups}</td><td class="n">${r.roi_cap == null ? '—' : sgn(Math.round(100 * r.roi_cap) || 0) + '%'}</td><td class="n">${r.cash == null ? '—' : fmt(100 * r.cash, 0) + '%'}</td><td class="n">${r.top1}</td><td class="n">${fmt(r.best, 1)}</td></tr>`;
-    const tbl = R => `<div class="tbl-wrap"><table><thead><tr><th>Slate</th><th>Set</th><th class="n">Contests</th><th class="n">Lineups</th><th class="n">Capped ROI</th><th class="n">Cashed</th><th class="n">Top 1%</th><th class="n">Best</th></tr></thead><tbody>${R.map(tr).join('')}</tbody></table></div>`;
+    const tr = r => `<tr><td>W${r.week} ${r.slate}</td><td>${selName(r.selector)}${r.entered ? ' <span class="tag">entered</span>' : (r.selector === 'DREW-SET' ? ' <span class="tag">entered</span>' : ' <span class="tag steel">paper</span>')}</td><td class="n">${r.contests}</td><td class="n">${r.lineups}</td><td class="n">${r.roi == null ? '—' : sgn(Math.round(100 * r.roi) || 0) + '%'}</td><td class="n dim">${r.roi_cap == null ? '—' : sgn(Math.round(100 * r.roi_cap) || 0) + '%'}</td><td class="n">${r.cash == null ? '—' : fmt(100 * r.cash, 0) + '%'}</td><td class="n">${r.top1}</td><td class="n">${fmt(r.best, 1)}</td></tr>`;
+    const tbl = R => `<div class="tbl-wrap"><table><thead><tr><th>Slate</th><th>Set</th><th class="n">Contests</th><th class="n">Lineups</th><th class="n">ROI</th><th class="n" title="Each lineup counted at most 10x its entry">Capped</th><th class="n">Cashed</th><th class="n">Top 1%</th><th class="n">Best</th></tr></thead><tbody>${R.map(tr).join('')}</tbody></table></div>`;
     $('#live').innerHTML = Lv.length ? tbl(rowsMain) + (rowsMore.length ? `<details class="about"><summary>All other FORGE builds (${rowsMore.length} rows, not entered)</summary>${tbl(rowsMore)}</details>` : '')
       + `<p class="note">"Paper" = FORGE built it but the lineups we entered were different; graded anyway so every method keeps a record.${REC && REC.updated_utc ? ' Updated ' + REC.updated_utc.replace('T', ' ') + ' UTC.' : ''}</p>`
       : '<p class="note">No live slates graded yet.</p>';
   }
+
+  // ---------------------------------------------------------------- Past contests (2026-10-21, Drew: "run these new default settings and see what 20 lineups it would have produced")
+  // tools/replay_export.py: FORGE's pre-game data + the real result. Grading: actual DK points; place = 1 + entries that scored more; tied entries split
+  // the prizes of the places they share (DraftKings rule); prize from the contest's own table; ROI only when the entry fee is on record.
+  let RPX = null, RPC = null; const GR = {};
+  function u16(b) { const s = atob(b), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return new Uint16Array(u.buffer); }
+  function u32(b) { const s = atob(b), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return new Uint32Array(u.buffer); }
+  function gContest() { const R = D && D.result; if (!R) return null; const id = (RPC && R.contests.some(c => c.cid === RPC)) ? RPC : R.default_contest; const c = R.contests.find(x => x.cid === id) || R.contests[0];
+    if (!GR[c.cid]) { const p = u16(c.pts), n = u32(c.cnt), above = new Float64Array(p.length); let s = 0; for (let i = 0; i < p.length; i++) { above[i] = s; s += n[i]; } GR[c.cid] = { p, n, above }; } return c; }
+  function prizeAt(c, place) { if (!c.payout) return null; for (const [lo, hi, pr] of c.payout) if (place >= lo && place <= hi) return pr; return 0; }
+  function gradeOne(l) {
+    const R = D && D.result, c = gContest(); if (!c) return null; const a = R.actual, names = [l.cpt, ...l.flex];
+    if (names.some(n => a[n] == null)) return { c, unknown: names.filter(n => a[n] == null) };
+    const pts = Math.round((1.5 * a[l.cpt] + l.flex.reduce((t, n) => t + a[n], 0)) * 100) / 100, k = Math.round(pts * 100), G = GR[c.cid];
+    let lo = 0, hi = G.p.length; while (lo < hi) { const m = (lo + hi) >> 1; if (G.p[m] > k) lo = m + 1; else hi = m; }   // scores stored high -> low
+    const greater = lo < G.p.length ? G.above[lo] : c.entries, equal = (lo < G.p.length && G.p[lo] === k) ? G.n[lo] : 0, place = greater + 1;
+    let prize = null; if (c.payout) { let t = 0; for (let r = place; r <= place + equal; r++) t += prizeAt(c, r); prize = t / (equal + 1); }
+    return { c, pts, place, of: c.entries, tied: equal, prize, vsCash: c.cash_line == null ? null : pts - c.cash_line };
+  }
+  function ordinal(n) { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n.toLocaleString('en-US') + (s[(v - 20) % 10] || s[v] || s[0]); }
+  function gradeLine(l) {
+    const g = gradeOne(l); if (!g) return ''; if (g.unknown) return `<div class="graded"><span class="dim">Actual points missing for ${g.unknown.join(', ')}</span></div>`;
+    const top = 100 * g.place / g.of;
+    return `<div class="graded"><span><b>${fmt(g.pts, 2)}</b> actual pts</span><span class="${g.place === 1 ? 'win' : ''}">${g.place === 1 ? 'WON · ' : ''}${ordinal(g.place)} of ${g.of.toLocaleString('en-US')}${top <= 1 ? ' · top ' + (top < 0.1 ? top.toFixed(2) : top.toFixed(1)) + '%' : ''}</span>${g.prize == null ? '<span class="dim">no prize table</span>' : `<span class="${g.prize > 0 ? 'win' : 'dim'}">${g.prize > 0 ? usd2(g.prize) : 'no cash'}</span>`}${g.vsCash == null ? '' : `<span class="dim">${g.vsCash >= 0 ? '+' : '−'}${fmt(Math.abs(g.vsCash), 1)} vs cash line</span>`}</div>`;
+  }
+  function renderGrade(L, el, rerender) {
+    if (!el) return; const R = D && D.result; if (!R || !L.length) { el.innerHTML = ''; return; }
+    const c = gContest(), G = L.map(gradeOne).filter(g => g && !g.unknown), n = G.length, cashed = G.filter(g => g.prize > 0).length;
+    const prizes = c.payout ? G.reduce((t, g) => t + g.prize, 0) : null, fees = c.fee != null ? n * c.fee : null, roi = (prizes != null && fees) ? 100 * (prizes - fees) / fees : null;
+    const best = G.reduce((b, g) => g.place < b.place ? g : b, G[0] || { place: Infinity }), wins = G.filter(g => g.place === 1).length, t1 = G.filter(g => g.place <= c.entries / 100).length;
+    const avgCash = c.cash_line == null || !n ? null : G.reduce((t, g) => t + g.vsCash, 0) / n;
+    const opts = R.contests.map(x => `<option value="${x.cid}" ${x.cid === c.cid ? 'selected' : ''}>${shortContest(x.name)} · ${x.entries.toLocaleString('en-US')} entries${x.fee != null ? ' · $' + x.fee.toFixed(2) : ''}</option>`).join('');
+    const tile = (k, v, s, cls) => `<div class="tile"><small>${k}</small><b class="${cls || ''}">${v}</b><span>${s}</span></div>`;
+    el.innerHTML = `<h3 class="subh" style="margin-top:14px">Graded against the real contest</h3>
+      <div class="toolbar"><label class="note" for="gContest">Contest</label><select id="gContest">${opts}</select></div>
+      <div class="tiles">${tile('Cashed', `${cashed} of ${n}`, c.payout ? `paid places: top ${(c.payout[c.payout.length - 1][1]).toLocaleString('en-US')} of ${c.entries.toLocaleString('en-US')}` : 'no prize table on record for this contest', '')}
+      ${tile('ROI', roi == null ? '—' : sgn(Math.round(roi)) + '%', roi == null ? (c.payout ? 'entry fee not on record; prizes ' + usd2(prizes) : 'needs the prize table') : `${usd2(fees)} in, ${usd2(prizes)} back · every prize counted in full`, roi == null ? '' : roi >= 0 ? 'gain' : 'loss')}
+      ${tile('Best finish', best.place === Infinity ? '—' : ordinal(best.place), best.place === Infinity ? '' : `${fmt(best.pts, 2)} pts · winner scored ${fmt(c.top_score, 2)}`, best.place === 1 ? 'gain' : '')}
+      ${tile('Wins · top 1%', `${wins} · ${t1}`, `of ${n} lineups`, wins ? 'gain' : '')}
+      ${tile('Vs cash line', avgCash == null ? '—' : (avgCash >= 0 ? '+' : '−') + fmt(Math.abs(avgCash), 1), c.cash_line == null ? 'no prize table' : `average lineup · cash line ${fmt(c.cash_line, 2)} pts`, avgCash == null ? '' : avgCash >= 0 ? 'gain' : 'loss')}</div>
+      ${L.length - n ? `<p class="note">${L.length - n} lineup(s) not graded: a player's actual points are missing.</p>` : ''}
+      <p class="note">Graded from FORGE's pre-game data against the real final standings. Your lineups weren't in the real contest, so places are where they would have finished. The Builder simulates 2,000 games in your browser; the lineups FORGE entered used far more, so its exact 20 can differ.</p>`;
+    $('#gContest', el).onchange = e => { RPC = e.target.value; renderPastTop(); renderBanner(); if (builder.result && builder.result.length) renderMine(); if (D.builds && D.builds[($('#buildSel') || {}).value]) renderForge(); };
+  }
+  function renderBanner() {
+    const b = $('#rpBanner'), s = D && D.slate; if (!b) return; if (!(s && s.replay)) { b.hidden = true; return; }
+    const c = gContest(); b.hidden = false;
+    b.innerHTML = `<span><b>Past contest · Week ${s.week} ${s.away} @ ${s.home}</b> · FORGE's pre-game data · every lineup graded against the real result${c ? ` (winner scored ${fmt(c.top_score, 2)})` : ''}</span><button type="button" class="btn small" id="rpBack">Back to this week</button>`;
+    $('#rpBack').onclick = () => loadSlate(defaultSlate().id);
+  }
+  async function loadReplay(id, go) {
+    CUR = id; RPC = null; renderPicker(); $('#statusText').textContent = 'Loading';
+    try { const d = await getJSON(id); const ob = await ownerBuilds(id); if (ob) { d.builds = ob; d.owner = true; } else d.builds = d.builds || {};
+      document.body.classList.toggle('owner', !!ob); init(d, { status: 'complete' }); renderOwnerLink(); renderPast(); if (go) show(go); } catch (e) { fail(e); }
+  }
+  async function renderPast() {
+    const el = $('#pastList'); if (!el) return;
+    if (!RPX) { try { RPX = (await getJSON('replays')).replays || []; } catch (e) { el.innerHTML = '<p class="note">No past contests published yet.</p>'; return; } }
+    if (!RPX.length) { el.innerHTML = '<p class="note">No past contests published yet.</p>'; return; }
+    const R = [...RPX].sort((a, b) => b.week - a.week || a.game.localeCompare(b.game));
+    el.innerHTML = `<div class="tbl-wrap"><table><thead><tr><th>Week</th><th>Game</th><th>Contest graded by default</th><th class="n">Winning score</th><th class="n">Cash line</th><th></th></tr></thead><tbody>${R.map(r => `<tr class="pastrow ${r.id === CUR ? 'on' : ''}"><td>W${r.week}</td><td><b>${r.game.replace('@', ' @ ')}</b>${r.forge_builds ? ' <small class="dim">FORGE lineups on file</small>' : ''}</td><td>${shortContest(r.default.name)} <small class="dim">${r.default.entries.toLocaleString('en-US')} entries${r.contests > 1 ? ` · ${r.contests} contests` : ''}</small></td><td class="n">${fmt(r.winner.pts, 2)}</td><td class="n">${r.cash_line == null ? '—' : fmt(r.cash_line, 2)}</td><td><button type="button" class="btn small" data-rp="${r.id}">${r.id === CUR ? 'Open Builder' : 'Replay'}</button></td></tr>`).join('')}</tbody></table></div>`;
+    $$('[data-rp]', el).forEach(b => b.onclick = () => b.dataset.rp === CUR ? show('builder') : loadReplay(b.dataset.rp, 'builder'));
+  }
+  function renderPastTop() {
+    const el = $('#pastTop'); if (!el) return; const R = D && D.result; if (!R) { el.innerHTML = ''; return; } const c = gContest(), s = D.slate;
+    el.innerHTML = `<h3 class="subh" style="margin-top:18px">Actual top 20 · Week ${s.week} ${s.away} @ ${s.home}</h3><p class="note">${shortContest(c.name)} · ${c.entries.toLocaleString('en-US')} entries · distinct lineups in finishing order (entries = how many people played that exact lineup).</p>
+      <div class="tbl-wrap"><table><thead><tr><th class="n">Place</th><th>Captain</th><th>Flex</th><th class="n">Points</th><th class="n">Entries</th></tr></thead><tbody>${c.top20.map(t => `<tr><td class="n">${ordinal(t.rank)}</td><td><b>${t.cpt}</b></td><td>${t.flex.join(', ')}</td><td class="n">${fmt(t.pts, 2)}</td><td class="n">${t.entries}</td></tr>`).join('')}</tbody></table></div>`;
+  }
+  $('#tab-past').addEventListener('click', renderPast);
 })();
 </script>
