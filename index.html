@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="ddec80856979"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="ed5ae7a77bfc"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -126,6 +126,20 @@ input[type="number"] { width: 84px; font-family: var(--f-data); }
 .flt select, .flt input { font-size: 13px; max-width: 170px; } .flt input { width: 76px; }
 .flt .chip { cursor: pointer; } .flt .chip.inc { border: 1px solid var(--good, #5a9); } .flt .chip.exc { border: 1px solid var(--bad); text-decoration: line-through; } .flt .chip.cpt { border: 1px solid var(--ember); }
 .flt .count { font-family: var(--f-data); font-size: 12px; color: var(--muted); }
+/* 2026-10-21 cleanup: tables scroll on their own; collapsibles; alerts badge */
+.tbl-wrap { max-height: min(70vh, 760px); overflow: auto; overscroll-behavior: contain; }
+.tbl-wrap thead th { position: sticky; top: 0; z-index: 2; background: var(--plate); box-shadow: inset 0 -1px 0 var(--line); }
+.tbl-wrap thead th:first-child { z-index: 3; }
+details.about, details.adv { margin: 10px 0 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--plate); padding: 8px 12px; }
+details.about > summary, details.adv > summary { cursor: pointer; font-weight: 600; font-size: 13.5px; list-style-position: outside; }
+details.about > summary small, details.adv > summary small { display: block; font-weight: 400; color: var(--muted); font-size: 11.5px; }
+details.about[open] > summary, details.adv[open] > summary { margin-bottom: 8px; }
+details.adv .field:first-of-type { margin-top: 4px; }
+.note.fine { font-size: 11px; opacity: .8; }
+.tab .badge[hidden] { display: none; }
+.tab .badge { display: inline-block; min-width: 16px; margin-left: 5px; padding: 0 4px; border-radius: 8px; background: var(--gold); color: #1b1408; font-size: 10.5px; line-height: 16px; text-align: center; font-family: var(--f-data); vertical-align: 2px; }
+.netpos { color: var(--good, #3d9a6a); } .netneg { color: var(--bad, #c0533a); }
+.subh2 { font-size: 18px; margin: 18px 0 8px; }
 /* overlay alert (2026-10-15) */
 .ovl { margin-top: 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--plate); padding: 10px 12px; }
 .ovl.hot { border-color: var(--gold); box-shadow: inset 3px 0 0 var(--gold); }
@@ -205,18 +219,19 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 .slate-chip { flex: 0 0 auto; display: grid; gap: 1px; text-align: left; border: 1px solid var(--line); background: var(--plate); color: var(--fg); border-radius: 6px; padding: 7px 12px; cursor: pointer; min-width: 128px; }
 /* 2026-10-15: on phones nothing hides off the right edge -- tabs and game chips wrap onto rows instead of scrolling sideways */
 @media (max-width: 640px) {
-  .slates { flex-wrap: wrap; overflow-x: visible; }
-  .slate-chip { flex: 1 1 calc(33% - 8px); min-width: 0; padding: 6px 8px; }
+  .slates { flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity; }
+  .slate-chip { flex: 0 0 auto; min-width: 116px; max-width: 170px; padding: 6px 10px; scroll-snap-align: center; }
   .slate-chip b, .slate-chip span, .slate-chip small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .slate-chip span { font-size: 15px; } .slate-chip b { font-size: 10px; letter-spacing: .08em; } .slate-chip small { font-size: 10.5px; }
-  .bar { flex-wrap: nowrap; } .bar .row { flex-wrap: nowrap; gap: 6px; } .rtxt { display: none; } #kick { display: none; }
-  .pill { font-size: 11px; letter-spacing: .04em; white-space: nowrap; } #refreshBtn { margin-right: 0; padding: 4px 9px; }
+  .panel .tiles { grid-template-columns: 1fr 1fr; gap: 8px; } .panel .tile { padding: 10px 11px; } .panel .tile b { font-size: 19px; white-space: nowrap; } .tile span { font-size: 11px; line-height: 1.35; } .tile small { font-size: 10px; }
+  .bar { flex-wrap: nowrap; min-width: 0; } .bar .row { flex-wrap: nowrap; gap: 6px; min-width: 0; flex: 0 1 auto; } .mark { flex: 0 0 auto; } #statusPill { min-width: 0; max-width: 44vw; overflow: hidden; } #statusText { overflow: hidden; text-overflow: ellipsis; } .rtxt { display: none; } #kick { display: none; }
+  .pill { font-size: 11px; letter-spacing: .04em; white-space: nowrap; max-width: 54vw; overflow: hidden; text-overflow: ellipsis; } #refreshBtn { margin-right: 0; padding: 4px 9px; }
 }
 /* 2026-10-15 redesign: phones get a bottom tab bar (icons + short labels) and a compact game plate */
 .tab .tico, .tab .tshort { display: none; }
 @media (max-width: 640px) {
   body { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
-  .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; margin: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; overflow: visible;
+  .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; margin: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0; overflow: visible;
     background: var(--plate); border-top: 1px solid var(--line); border-bottom: 0; padding: 4px 2px calc(4px + env(safe-area-inset-bottom, 0px)); }
   .tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 54px; padding: 4px 1px; border-bottom: 0;
     font-family: var(--f-body); font-weight: 500; font-size: 10.5px; letter-spacing: 0; text-transform: none; white-space: nowrap; }
@@ -363,7 +378,6 @@ td.lev { color: var(--steel); }
 
   <div class="newver" id="newVer" hidden>A newer FORGE is ready. <button type="button" class="btn small primary" id="newVerBtn">Refresh now</button></div>
   <nav class="slates" id="slatePicker" aria-label="Games" hidden></nav>
-  <section class="ovl" id="ovl" hidden aria-live="polite"></section>
   <section class="plate" aria-label="Game"><div class="glow" aria-hidden="true"></div>
     <div>
       <div class="matchup"><div class="team" id="tAway">—</div><div class="at" id="tAt">@</div><div class="team" id="tHome">—</div></div>
@@ -381,6 +395,7 @@ td.lev { color: var(--steel); }
     <button class="tab" role="tab" id="tab-lineups" aria-selected="false" data-p="lineups"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><span class="kicker">Forged</span><span class="tlong">Lineups</span><span class="tshort">Lineups</span></button>
     <button class="tab" role="tab" id="tab-builder" aria-selected="false" data-p="builder"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4l6 6-3 3-6-6zM11 7l-7 7 3 3 7-7M4 20h8"/></svg><span class="kicker">The anvil</span><span class="tlong">Builder</span><span class="tshort">Build</span></button>
     <button class="tab" role="tab" id="tab-dk" aria-selected="false" data-p="dk"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7 9l5-5 5 5M5 15v4h14v-4"/></svg><span class="kicker">Out of the fire</span><span class="tlong">To DraftKings</span><span class="tshort">DraftKings</span></button>
+    <button class="tab" role="tab" id="tab-alerts" aria-selected="false" data-p="alerts"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg><span class="kicker">Hot iron</span><span class="tlong">Alerts<b class="badge" id="ovlBadge" hidden></b></span><span class="tshort">Alerts<b class="badge" id="ovlBadgeS" hidden></b></span></button>
     <button class="tab" role="tab" id="tab-record" aria-selected="false" data-p="record"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span class="kicker">Proof of steel</span><span class="tlong">Record</span><span class="tshort">Record</span></button>
     <button class="tab" role="tab" id="tab-how" aria-selected="false" data-p="how"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/></svg><span class="kicker">The process</span><span class="tlong">How it works</span><span class="tshort">How</span></button>
   </nav>
@@ -391,15 +406,19 @@ td.lev { color: var(--steel); }
       <li><b>Lineups</b> keeps FORGE's own entries private, so nobody duplicates them. After lock it shows how we played the slate: captain and flex percentages and who we faded.</li>
       <li><b>Builder</b> starts on FORGE's best-tested settings. Pick your contest type, tweak anything, press Forge, then copy or download for DraftKings.</li></ol></div>
     <div class="cl-only">
+      <details class="about"><summary>About these numbers</summary>
       <p class="lede">Classic main slate: 9 players, $50,000. Projections come from DraftKings and FanDuel player props converted to DraftKings points. Players without enough prop lines get a salary-based number and are tagged. Games with no lines yet have no projections.</p>
+      </details>
       <div class="qbenv" id="qbEnv"></div>
       <div class="toolbar"><div class="seg" id="cPos"></div><input type="search" id="cSearch" placeholder="Search players" aria-label="Search players"></div>
       <div class="tbl-wrap"><table id="ctable"><thead><tr><th>Player</th><th>Pos</th><th class="n sort" data-k="sal">Salary</th><th class="n sort" data-k="proj">Proj</th><th class="n sort" data-k="value">Pts / $1K</th><th>DK lines</th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="sd-only">
+    <details class="about"><summary>About these numbers</summary>
     <p class="lede">Projections come from the betting markets: DraftKings and FanDuel player props, converted to DraftKings Showdown points. Very cheap players get pulled toward what players at their price actually score. <b>Top scorer</b> is the chance, across 100,000 simulated games, that the player is the game's highest scorer, which makes him the ideal captain.</p>
     <div class="legend"><span><svg class="ico flame" aria-hidden="true"><use href="#i-flame"/></svg> Hottest captains: top 3 top-scorer chances</span><span><svg class="ico ingot" aria-hidden="true"><use href="#i-ingot"/></svg> Gold value: top 3 points per $1K (5+ point projections)</span></div>
     <p class="note" id="simLegend" hidden>From 2,000 simulated games (the same ones the Builder uses). <b>Floor / Ceil</b>: his 15th and 85th percentile score. <b>Opt CPT / Opt FLX</b>: how often he is in the single best legal lineup of a simulated game, as captain or flex. <b>Lev</b> (leverage) <span class="tag steel">untested</span>: optimal rate minus projected ownership (captain + flex, in points of %); positive = the best lineups use him more than the field will.</p>
+    </details>
     <div class="seg pcols" id="pcols" role="group" aria-label="Columns"><button type="button" data-v="proj" aria-pressed="true">Projections</button><button type="button" data-v="own" aria-pressed="false">Ownership</button><button type="button" data-v="sim" aria-pressed="false">Simulation</button></div>
     <div class="tbl-wrap"><table id="ptable"><thead><tr>
       <th>Player</th><th class="gc g-proj">Pos</th><th class="n sort gc g-proj" data-k="sal">Salary</th><th class="n sort" data-k="proj">Proj</th><th class="n sort gc g-proj" data-k="value" title="Projected points per $1,000 of salary">Pts/$1K</th>
@@ -441,10 +460,11 @@ td.lev { color: var(--steel); }
         <div class="custom-note" id="cCustomNote"></div>
         <h3>Rules</h3>
         <div class="field"><label for="cN">Lineups</label><input type="number" id="cN" min="1" max="50" value="20"></div>
-        <div class="field"><label for="cMinSal">Min salary used</label><input type="number" id="cMinSal" min="40000" max="50000" step="100" value="49500"></div>
-        <div class="field"><label for="cGames">Max games in a lineup</label><input type="number" id="cGames" min="2" max="9" value="6"></div>
         <div class="field"><label for="cUniq">Min players different between lineups</label><input type="number" id="cUniq" min="1" max="6" value="3"></div>
         <div class="field"><label for="cExp">Max exposure per player (%)</label><input type="number" id="cExp" min="5" max="100" value="50"></div>
+        <details class="adv" id="cAdv"><summary>More settings <small>salary floor, games, DST, stacking rules</small></summary>
+        <div class="field"><label for="cMinSal">Min salary used</label><input type="number" id="cMinSal" min="40000" max="50000" step="100" value="49500"></div>
+        <div class="field"><label for="cGames">Max games in a lineup</label><input type="number" id="cGames" min="2" max="9" value="6"></div>
         <div class="field"><label for="cDstCap">Max lineups per DST</label><input type="number" id="cDstCap" min="1" max="50" value="7"></div>
         <label class="check"><input type="checkbox" id="cStack" checked> QB + at least one of his WR/TE</label>
         <label class="check"><input type="checkbox" id="cBring"> Bring-back: a player from the QB's opponent</label>
@@ -455,9 +475,10 @@ td.lev { color: var(--steel); }
         <label class="check"><input type="checkbox" id="cNoQ" checked> Skip questionable (Q) players</label>
         <label class="check mine"><input type="checkbox" id="cMine" checked> Make my lineups mine <span class="tag steel">untested</span></label>
         <p class="note">Nudges every projection (typically within ±8%) in a pattern unique to this phone, so friends using FORGE don't build the same lineups and split a prize. It can cost a little projected score; turn it off to get FORGE's exact numbers.</p>
-        <p class="note">FORGE keeps a copy of the lineups you build here (no names or accounts, just an anonymous phone ID) and grades them after the game to improve its methods.</p>
+        </details>
         <button type="submit" class="btn primary" id="cForgeBtn"><svg class="ico" aria-hidden="true"><use href="#i-hammer"/></svg>Forge lineups</button>
         <div class="status" id="cStatus" role="status"></div>
+        <p class="note fine">FORGE keeps a copy of the lineups you build here (no names or accounts, just an anonymous phone ID) and grades them after the game to improve its methods.</p>
       </form>
       <div style="min-width:0">
         <div class="toolbar"><div class="seg" id="cbPos"></div><input type="search" id="cbSearch" placeholder="Search players" aria-label="Search players"><button class="btn small" id="cReset" type="button">Reset</button><span class="note">Lock = in every lineup. Out = never used.</span></div>
@@ -488,8 +509,9 @@ td.lev { color: var(--steel); }
         <div class="field"><label>Structure</label><div class="seg" id="bStruct"><button type="button" aria-pressed="false" data-v="any">Any split</button><button type="button" aria-pressed="true" data-v="51">5-1 only</button><button type="button" aria-pressed="false" data-v="hedge">Half 5-1</button></div></div>
         <div class="field"><label for="bCap">Max lineups per captain</label><input type="number" id="bCap" min="1" max="150" value="6"></div>
         <div class="field"><label for="bExp">Max exposure per player (%)</label><input type="number" id="bExp" min="10" max="100" value="" placeholder="Auto"><p class="note" id="bExpNote">Auto = FORGE's per-player cap (FORGE Pick). Type a % to use your own flat cap instead.</p></div>
-        <div class="field"><label for="bSeed">Variation (seed)</label><input type="number" id="bSeed" min="0" max="999999" value="0"><label for="bVar" style="margin-top:8px">Share of simulated games used when varying (%)</label><input type="number" id="bVar" min="1" max="100" value="25"><p class="note">Seed 0 = FORGE's exact simulation: the same settings give the same lineups every time. Any other seed scores the lineups on a random sample of the simulated games (the share above), so each seed gives a somewhat different set. A smaller share varies more.</p></div>
         <div class="field"><label for="bUniq">Min players different between lineups</label><input type="number" id="bUniq" min="1" max="4" value="1"></div>
+        <details class="adv" id="bAdv"><summary>More settings <small>variation, salary floor, ownership lean, captain rules</small></summary>
+        <div class="field"><label for="bSeed">Variation (seed)</label><input type="number" id="bSeed" min="0" max="999999" value="0"><label for="bVar" style="margin-top:8px">Share of simulated games used when varying (%)</label><input type="number" id="bVar" min="1" max="100" value="25"><p class="note">Seed 0 = FORGE's exact simulation: the same settings give the same lineups every time. Any other seed scores the lineups on a random sample of the simulated games (the share above), so each seed gives a somewhat different set. A smaller share varies more.</p></div>
         <div class="field"><label for="bMinSal">Min salary used</label><input type="number" id="bMinSal" min="40000" max="50000" step="100" value="47000"></div>
         <div class="field"><label for="bPunt">Max FLEX at $1,000 or less</label><input type="number" id="bPunt" min="0" max="5" value="1"></div>
         <div class="field"><label for="bOwn">Ownership lean <small id="bOwnV" style="text-transform:none;letter-spacing:0">off</small> <span class="tag steel">untested</span></label><input type="range" id="bOwn" min="-100" max="100" step="10" value="0" aria-describedby="bOwnNote">
@@ -498,10 +520,11 @@ td.lev { color: var(--steel); }
         <label class="check"><input type="checkbox" id="bDst" checked> No DST against your captain</label>
         <label class="check mine"><input type="checkbox" id="bMine" checked> Make my lineups mine <span class="tag steel">untested</span></label>
         <p class="note">Nudges every projection (typically within ±8%) in a pattern unique to this phone, so friends using FORGE don't build the same lineups and split a prize. It can cost a little projected score; turn it off to get FORGE's exact numbers.</p>
-        <p class="note">FORGE keeps a copy of the lineups you build here (no names or accounts, just an anonymous phone ID) and grades them after the game to improve its methods.</p>
+        <p class="note">The simulation methods run FORGE's own game simulation in your browser (2,000 simulated games against a simulated field of 3,000 lineups; the server build uses 8,000), using your projections. Backtests replay real 2026 contests; they aren't a promise.</p>
+        </details>
         <button type="submit" class="btn primary" id="forgeBtn"><svg class="ico" aria-hidden="true"><use href="#i-hammer"/></svg>Forge lineups<span class="sparks" id="sparks"></span></button>
         <div class="status" id="bStatus" role="status"></div>
-        <p class="note">The simulation methods run FORGE's own game simulation in your browser (2,000 simulated games against a simulated field of 3,000 lineups; the server build uses 8,000), using your projections. Backtests replay real 2026 contests; they aren't a promise.</p>
+        <p class="note fine">FORGE keeps a copy of the lineups you build here (no names or accounts, just an anonymous phone ID) and grades them after the game to improve its methods.</p>
       </form>
       <div style="min-width:0">
         <div class="toolbar"><button class="btn small" id="resetProj" type="button">Reset projections</button><span class="note">CPT pool = only these can captain (none ticked = anyone). Lock = in every lineup. Out = never used.</span></div>
@@ -551,20 +574,29 @@ td.lev { color: var(--steel); }
       <div class="grid" id="dkManual"></div></details>
   </section>
 
+  <section class="panel" id="p-alerts" hidden>
+    <h3 class="subh">Overlay alerts</h3>
+    <p class="lede">Guaranteed DraftKings contests on real NFL games that are running under their prize pool, checked every 10 minutes before NFL locks. FORGE never enters contests for you.</p>
+    <section class="ovl" id="ovl" aria-live="polite"><p class="note">No overlay check loaded yet.</p></section>
+  </section>
+
   <section class="panel" id="p-record" hidden>
     <div class="tiles" id="recTiles"></div>
-    <p class="lede">Every slate we enter gets graded, losses included. Backtests replay 14 real 2026 Showdowns: each builder makes 20 lineups from pre-game data only, then gets graded against the real contest field. Capped ROI limits any one lineup to 10× its entry, so a single huge hit can't hide a bad method.</p>
-    <h3 style="font-size:22px;margin-bottom:10px">Backtest, capped ROI</h3>
-    <div class="bars" id="bars"></div>
-    <h3 style="font-size:22px;margin:22px 0 10px">Live slates</h3>
+    <div id="ourBox"></div>
+    <h3 class="subh">Live: FORGE builds on real contests</h3>
+    <p class="note" id="liveNote">Each set graded on the real contest results. Capped ROI counts any one lineup at most 10&times; its entry, so one huge hit can't hide a bad method.</p>
     <div id="live"></div>
     <div id="entSum"></div>
+    <details class="about" style="margin-top:18px"><summary>Backtest: 14 real 2026 Showdowns</summary>
+    <p class="lede">Every slate we enter gets graded, losses included. Backtests replay 14 real 2026 Showdowns: each builder makes 20 lineups from pre-game data only, then gets graded against the real contest field. Capped ROI limits any one lineup to 10× its entry, so a single huge hit can't hide a bad method.</p>
+    <div class="bars" id="bars"></div>
     <div class="facts">
       <div class="fact"><b>The edge is construction</b>FORGE's lineups beat the field by about 11 points per lineup on average, but its sims don't pick the right captain more often than the crowd does.</div>
       <div class="fact"><b>Cheap players are overrated</b>The prop market projects $1,500-and-under players at about twice what they score. FORGE corrects for it.</div>
       <div class="fact"><b>Skip TE, K and DST captains</b>They almost never win. Removing them helped every builder we tested.</div>
       <div class="fact"><b>Cash games want a floor</b>For double-ups the best-projected lineup of any shape cleared the cash line in 86% of tested fields.</div>
     </div>
+    </details>
   </section>
 
   <section class="panel" id="p-how" hidden>
@@ -630,6 +662,7 @@ td.lev { color: var(--steel); }
     el.hidden = L.length < 2;
     el.innerHTML = L.map(x => `<button type="button" class="slate-chip ${x.status}" data-id="${x.id}" aria-pressed="${x.id === CUR}"><b>${x.label}</b><span>${x.kind === 'classic' ? x.game : x.game.replace('@', ' @ ')}</span><small>${kickLocal(x)}${x.status === 'live' ? ' · locked' : x.status === 'complete' ? ' · final' : ''}</small></button>`).join('');
     $$('.slate-chip', el).forEach(b => b.onclick = () => loadSlate(b.dataset.id));
+    const on = el.querySelector('[aria-pressed="true"]'); if (on) el.scrollLeft = Math.max(0, on.offsetLeft - (el.clientWidth - on.offsetWidth) / 2);   // keep the picked game in view (one scrolling row)
   }
   function defaultSlate() { const now = Date.now(); const up = IDX.filter(x => new Date(x.kickoff_utc).getTime() > now - 4 * 3600e3); return (up[0] || IDX[IDX.length - 1]); }
   async function loadSlate(id) {
@@ -648,7 +681,9 @@ td.lev { color: var(--steel); }
     let O; try { O = await getJSON('overlays'); } catch (e) { return; }
     const el = $('#ovl'), ago = Math.round((Date.now() - new Date(O.checked_utc).getTime()) / 60e3), ALL = (O.overlays || []).map(o => ({ ...o, mins: Math.round((new Date(o.locks_utc).getTime() - Date.now()) / 60e3) })).filter(o => o.mins > 0);
     const isMad = o => o.madden || /madden/i.test(o.name), L = ALL.filter(o => !isMad(o)), M = ALL.filter(isMad);   // Madden Stream = DK contests on simulated video-game NFL games (FORGE has no projections for them)
-    if (ago > 240 && !ALL.length) { el.hidden = true; return; }
+    const setB = n => ['#ovlBadge', '#ovlBadgeS'].forEach(s => { const b = $(s); if (b) { b.hidden = !n; b.textContent = n; } });
+    if (ago > 240 && !ALL.length) { setB(0); el.classList.remove('hot'); el.innerHTML = '<p class="note">No overlay check in the last 4 hours. Checks run every 10 minutes in the hours before NFL locks.</p>'; return; }
+    setB(L.length);
     el.hidden = false; el.classList.toggle('hot', L.length > 0); el.classList.toggle('quiet', !L.length); const usd = v => '$' + (v >= 100 ? Math.round(v).toLocaleString('en-US') : v.toFixed(2));
     const lock = m => m < 60 ? `locks in ${m} min` : `locks in ${Math.floor(m / 60)} h ${m % 60} min`;
     const row = o => `<div class="row"><span class="nm">${o.name}</span><span class="val">${o.value_per_dollar.toFixed(2)}x</span>
@@ -739,7 +774,9 @@ td.lev { color: var(--steel); }
 
   // ---------------------------------------------------------------- set names (2026-10-15, Drew: friendly names; internal code kept in grey for grading)
   const SETS = [
-    [/^(Entered build|FORGE build \(HYB-M-SX\)|HYB-M-SX$|HYBMSX)/, 'FORGE Pick', "Our main method and the set we enter. Half are the top-projected 5-1 stacks, half are the lineups that pay best across thousands of simulated contests. Cheap filler players are marked down and no TE, kicker or DST is captain."],
+    [/^HYB-M-SXP$|^HYBMSXP$|^FORGE build \(HYB-M-SXP\)/, 'FORGE Pick', "Our main method and the set we enter (since 10/18). Half are the top-projected 5-1 stacks, half the lineups that pay best across simulated contests, with FORGE's per-player cap: nobody in more lineups than the higher of his projected ownership or his optimal rate."],
+    [/^HYB-M-SX$|^HYBMSX$|^FORGE build \(HYB-M-SX\)/, 'FORGE Pick – before the player cap', "FORGE Pick as entered until 10/18, without the per-player cap. It keeps running as the comparator for the kill switch."],
+    [/^(Entered build)/, 'FORGE Pick', "Our main method and the set we enter. Half are the top-projected 5-1 stacks, half are the lineups that pay best across thousands of simulated contests. Cheap filler players are marked down and no TE, kicker or DST is captain."],
     [/^HYB-M$/, 'FORGE Pick – original version', "The same blend before two fixes (cheap-filler markdown, no TE/K/DST captain). It keeps running so the fixes are graded against it."],
     [/^P51-M-SX$/, 'Top Projected Stacks', "Simplest method: the highest-projected lineups with 5 players from one team and 1 from the other, with the same filler and captain fixes. Best cash rate in our backtests; this is what the Builder used before."],
     [/^P51-M$/, 'Top Projected Stacks – original', "Top-projected 5-1 stacks without the filler and captain fixes."],
@@ -954,7 +991,7 @@ td.lev { color: var(--steel); }
     }));
   }
   $('#resetProj').addEventListener('click', () => { D.players.forEach(p => builder.proj[p.name] = p.proj); builder.lock.clear(); builder.out.clear(); builder.cpt.clear(); renderBuilderTable(); applyRecipe(builder.recipe, true); });
-  const METHOD_NOTE = { p51: 'Highest-projected 5-1 stacks under your rules. Instant.', hyb: "FORGE's main method: half top-projected 5-1 stacks, half the lineups that pay best in simulated contests (FORGE's Showdown rules on). Plus FORGE's exposure cap, per player: no one appears in more lineups than the higher of his projected ownership or his optimal rate. Shown as Auto in the max-exposure box; type a % there to replace it with your own flat cap. Takes a few seconds.",
+  const METHOD_NOTE = { p51: 'Highest-projected 5-1 stacks under your rules. Instant.', hyb: "FORGE's main method: half top-projected 5-1 stacks, half the best payers in simulated contests, with FORGE's per-player cap (Auto below). A few seconds.",
     ev: "Every lineup is played in 2,000 simulated games against a simulated field; the best average payouts win (FORGE's Showdown rules on). Takes a few seconds.", hyb0: 'FORGE Pick without the two fixes: captain can be anyone and cheap fillers are not marked down (unless you edited them).' };
   function setMethod(v) { if (v !== 'p51' && !(D && D.simpack)) v = 'p51'; builder.method = v; $$('#bMethod button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === v)));
     if (v === 'hyb0') $('#bNoCpt').checked = false; else if (v === 'hyb' || v === 'ev') $('#bNoCpt').checked = true;
@@ -1552,20 +1589,46 @@ td.lev { color: var(--steel); }
     const rs = $('#entSum'); if (rs) rs.innerHTML = S ? '<h3 style="font-size:22px;margin:22px 0 10px">How we played this slate</h3>' + sumHTML(S) : '';
   }
   // record
-  function renderRecord() {
-    const B = (D.record && D.record.backtest) || []; if (!B.length) { $('#bars').innerHTML = '<p class="note">No backtest record in this data file.</p>'; return; }
-    const lo = Math.min(0, ...B.map(b => b.roi)), hi = Math.max(...B.map(b => b.roi)), span = hi - lo || 1, x = v => 100 * (v - lo) / span;
-    $('#bars').innerHTML = B.map(b => `<div class="barrow"><div class="lbl">${b.label === 'Entered build' ? 'FORGE Pick (entered)' : setInfo(b.label.replace(/ \(old default\)/, '')).name}<small>median ${b.median > 0 ? '+' : ''}${b.median}% · ${b.games} games</small></div>
+  let REC = null, OREC = null;   // 2026-10-21: one current record for every slate (data/record*.enc.json, tools/site_record.py)
+  async function loadRecord(force) {
+    if (REC && !force && (OREC || !OPW)) return;
+    try { REC = await getJSON('record'); } catch (e) { REC = null; }
+    OREC = null; if (OPW && ENC) { try { const r = await fetch('data/record.owner.enc.json', { cache: 'no-cache' }); if (r.ok) OREC = await odec(await r.json()); } catch (e) { OREC = null; } }
+  }
+  const usd2 = v => v == null ? '—' : (v < 0 ? '−$' : '$') + Math.abs(v).toFixed(2);
+  const sgn = v => v == null ? '—' : (v > 0 ? '+' : '') + v;
+  const ordn = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th'));
+  const selName = s => s === 'DREW-SET' ? "Drew's own set" : setInfo(s).name;
+  async function renderRecord() {
+    const B = (D.record && D.record.backtest) || [];
+    if (B.length) {
+      const lo = Math.min(0, ...B.map(b => b.roi)), hi = Math.max(...B.map(b => b.roi)), span = hi - lo || 1, x = v => 100 * (v - lo) / span;
+      $('#bars').innerHTML = B.map(b => `<div class="barrow"><div class="lbl">${b.label === 'Entered build' ? 'FORGE Pick (entered)' : setInfo(b.label.replace(/ \(old default\)/, '')).name}<small>median ${b.median > 0 ? '+' : ''}${b.median}% · ${b.games} games</small></div>
       <div class="track"><div class="zero" style="left:${x(0)}%"></div><div class="fill ${b.label === 'Entered build' ? 'lead' : ''}" style="left:${Math.min(x(0), x(b.roi))}%;width:${Math.abs(x(b.roi) - x(0))}%"></div></div>
       <div class="n mono">${b.roi > 0 ? '+' : ''}${b.roi}%</div></div>`).join('');
-    const Lv = (D.record && D.record.live) || [], ent = B.find(b => b.label === 'Entered build'), LE = Lv.filter(r => r.entered), nS = new Set(LE.map(r => r.slate)).size;
-    const lroi = LE.length ? LE.reduce((a, r) => a + (+r.roi_cap || 0), 0) / LE.length : null, sg = v => (v > 0 ? '+' : '') + v;
-    $('#recTiles').innerHTML = `<div class="tile"><small>Live capped ROI</small><b class="${lroi == null ? '' : lroi >= 0 ? 'gain' : 'loss'}">${lroi == null ? '—' : sg(fmt(100 * lroi, 1)) + '%'}</b><span>${lroi == null ? 'First result after tonight' : 'entered build, average per contest'}</span></div>
-      <div class="tile"><small>Live slates graded</small><b>${nS}</b><span>Review point: 6 slates</span></div>
-      ${ent ? `<div class="tile"><small>Backtest capped ROI</small><b class="${ent.roi >= 0 ? 'gain' : 'loss'}">${sg(ent.roi)}%</b><span>${ent.games} real 2026 Showdowns · median ${sg(ent.median)}%</span></div>` : ''}
-      <div class="tile"><small>Kill switch</small><b class="gain">Armed</b><span>Rules fixed before any result</span></div>`;
-    $('#live').innerHTML = Lv.length ? `<div class="tbl-wrap"><table><thead><tr><th>Slate</th><th>Set</th><th>Contest</th><th class="n">Lineups</th><th class="n">Capped ROI</th><th class="n">Cashed</th></tr></thead><tbody>${Lv.map(r => `<tr><td>${r.slate}</td><td>${setInfo(r.selector).name}${r.entered ? ' <span class="tag">entered</span>' : ''}</td><td>${shortContest(r.contest)}</td><td class="n">${r.graded}</td><td class="n">${fmt(100 * r.roi_cap, 0)}%</td><td class="n">${fmt(100 * r.cash, 0)}%</td></tr>`).join('')}</tbody></table></div>`
-      : '<p class="note">No live slates graded yet. This game is live slate 1; results land here after the contest settles.</p>';
+    } else $('#bars').innerHTML = '<p class="note">No backtest record in this data file.</p>';
+    await loadRecord();
+    const ent = B.find(b => b.label === 'Entered build'), K = REC && REC.killswitch, O = OREC && OREC.ours, tiles = [];
+    if (O && O.total) {
+      const T = O.total, W = (O.weeks || [])[0];
+      tiles.push(`<div class="tile"><small>Our results · all weeks</small><b class="${T.net >= 0 ? 'gain' : 'loss'}">${usd2(T.net)}</b><span>${usd2(T.fees)} in, ${usd2(T.prizes)} back · ROI ${sgn(T.roi)}%${T.priced < T.entries ? ` · ${T.entries - T.priced} of ${T.entries} entries have no prize table yet` : ''}</span></div>`);
+      if (W) tiles.push(`<div class="tile"><small>Week ${W.week}</small><b class="${W.net >= 0 ? 'gain' : 'loss'}">${usd2(W.net)}</b><span>${W.entries} entries · ${usd2(W.fees)} in, ${usd2(W.prizes)} back · ROI ${sgn(W.roi)}%</span></div>`);
+    }
+    if (K && K.n) tiles.push(`<div class="tile"><small>Kill switch</small><b class="${K.mean_diff >= 0 ? 'gain' : 'loss'}">${sgn(K.mean_diff)} pts</b><span>FORGE Pick vs its version before the player cap, per slate · ${K.n} of ${K.review_at} slates to the review · behind in ${K.behind} · really entered on ${K.entered_only_n}</span></div>`);
+    else tiles.push(`<div class="tile"><small>Live slates graded</small><b>0</b><span>Review point: 6 slates</span></div>`);
+    if (ent) tiles.push(`<div class="tile"><small>Backtest</small><b class="${ent.roi >= 0 ? 'gain' : 'loss'}">${sgn(ent.roi)}%</b><span>FORGE Pick capped ROI · ${ent.games} real 2026 Showdowns · median ${sgn(ent.median)}%</span></div>`);
+    $('#recTiles').innerHTML = tiles.join('');
+    // owner: our real contests, by slate
+    $('#ourBox').innerHTML = (O && O.slates && O.slates.length) ? `<h3 class="subh">Our contests</h3><p class="note">Owner view: real entries read from the contest standings. Entries without a prize table on file are counted but not priced.</p>
+      <div class="tbl-wrap"><table><thead><tr><th>Slate</th><th class="n">Wk</th><th class="n">Entries</th><th class="n">In</th><th class="n">Back</th><th class="n">Net</th><th class="n">ROI</th><th>Best finish</th><th class="n">Top 1%</th></tr></thead><tbody>${O.slates.map(r => `<tr><td><b>${r.name}</b>${r.unpriced ? ` <small class="dim">${r.unpriced === r.entries ? 'no prize tables yet' : r.unpriced + ' not priced'}</small>` : ''}</td><td class="n">${r.week}</td><td class="n">${r.entries}</td><td class="n">${r.priced ? usd2(r.fees) : '—'}</td><td class="n">${r.priced ? usd2(r.prizes) : '—'}</td><td class="n ${!r.priced ? '' : r.net >= 0 ? 'netpos' : 'netneg'}">${r.priced ? usd2(r.net) : '—'}</td><td class="n">${r.roi == null ? '—' : sgn(r.roi) + '%'}</td><td>${ordn(r.best.rank)} of ${r.best.field.toLocaleString('en-US')} <small class="dim">${fmt(r.best.pts, 1)} pts</small></td><td class="n">${r.top1}</td></tr>`).join('')}</tbody></table></div>` : '';
+    // live grades: entered build and its comparator up front, everything else folded
+    const Lv = (REC && REC.live) || [], lead = new Set([K ? K.entered : 'HYB-M-SXP', K ? K.shadow : 'HYB-M-SX']), own = !!D.owner;
+    const rowsMain = Lv.filter(r => lead.has(r.selector) || (own && r.selector === 'DREW-SET')), rowsMore = Lv.filter(r => !rowsMain.includes(r) && r.selector !== 'DREW-SET');
+    const tr = r => `<tr><td>W${r.week} ${r.slate}</td><td>${selName(r.selector)}${r.entered ? ' <span class="tag">entered</span>' : (r.selector === 'DREW-SET' ? ' <span class="tag">entered</span>' : ' <span class="tag steel">paper</span>')}</td><td class="n">${r.contests}</td><td class="n">${r.lineups}</td><td class="n">${r.roi_cap == null ? '—' : sgn(Math.round(100 * r.roi_cap) || 0) + '%'}</td><td class="n">${r.cash == null ? '—' : fmt(100 * r.cash, 0) + '%'}</td><td class="n">${r.top1}</td><td class="n">${fmt(r.best, 1)}</td></tr>`;
+    const tbl = R => `<div class="tbl-wrap"><table><thead><tr><th>Slate</th><th>Set</th><th class="n">Contests</th><th class="n">Lineups</th><th class="n">Capped ROI</th><th class="n">Cashed</th><th class="n">Top 1%</th><th class="n">Best</th></tr></thead><tbody>${R.map(tr).join('')}</tbody></table></div>`;
+    $('#live').innerHTML = Lv.length ? tbl(rowsMain) + (rowsMore.length ? `<details class="about"><summary>All other FORGE builds (${rowsMore.length} rows, not entered)</summary>${tbl(rowsMore)}</details>` : '')
+      + `<p class="note">"Paper" = FORGE built it but the lineups we entered were different; graded anyway so every method keeps a record.${REC && REC.updated_utc ? ' Updated ' + REC.updated_utc.replace('T', ' ') + ' UTC.' : ''}</p>`
+      : '<p class="note">No live slates graded yet.</p>';
   }
 })();
 </script>
