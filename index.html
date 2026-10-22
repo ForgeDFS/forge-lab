@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="ad72bc2be8b5"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="907eb088975a"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -608,9 +608,9 @@ td.lev { color: var(--steel); }
       <label>Min players different <input type="number" id="nbaUniq" min="1" max="6" value="2"></label>
       <label>Max exposure % <input type="number" id="nbaExp" min="10" max="100" value="100"></label>
       <label class="check sdonly"><input type="checkbox" id="nbaTop3" checked> FORGE Pick captains: FORGE's 3 most likely top DraftKings scorers, more lineups for the likeliest (FORGE's Showdown default)</label>
-      <label class="check clonly"><input type="checkbox" id="nbaStack" checked> Game stack: 3+ players from one of the 3 highest-total close games (spread 7 or less)</label>
-      <label class="check clonly"><input type="checkbox" id="nbaBlow" checked> At most 1 player from likely blowouts (spread 9+)</label>
-      <p class="note">Both rules are FORGE's starting hypotheses for NBA (fast, close games score more; starters sit in blowouts). Untested until NBA contests are graded.</p>
+      <label class="check clonly"><input type="checkbox" id="nbaStack"> Game stack: 3+ players from one of the 3 highest-total close games (spread 7 or less)</label>
+      <label class="check clonly"><input type="checkbox" id="nbaBlow"> At most 1 player from likely blowouts (spread 9+)</label>
+      <p class="note">Both rules start off (FORGE's NBA default since 10/22: highest projection, no forced stack). On the only graded night so far (10/21 main slate) projection-only lineups returned +335% vs +45% with the forced stack. One night is thin: all four rules are graded every night.</p>
       <div class="toolbar"><button type="button" class="btn primary" id="nbaRun">Forge NBA lineups</button><span class="status" id="nbaStatus" role="status"></span></div>
     </div>
     <div id="nbaOut" hidden><div class="toolbar"><h3 style="font-size:22px">Fresh off the anvil</h3><button type="button" class="btn small" id="nbaCsv">Download for DraftKings</button></div><div class="expo" id="nbaExpo"></div><div class="grid" id="nbaGrid"></div></div>
