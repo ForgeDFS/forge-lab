@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="d6bb759d5614"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="ad72bc2be8b5"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -143,6 +143,7 @@ details.adv .field:first-of-type { margin-top: 4px; }
 .sports { display: flex; gap: 6px; margin: 0 0 10px; } .sports button { font: 700 14px var(--f-display); letter-spacing: .12em; padding: 7px 18px; border-radius: 99px; border: 1px solid var(--line); background: var(--plate); color: var(--muted); cursor: pointer; }
 .sports button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 body.nba .cl-only, body.nba .sd-only, body.nba .nfl-only, body.nba #rpBanner, body:not(.nba) .nba-only { display: none !important; }
+small.warn { color: #d9a441; }
 .nbaleaders { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; margin-bottom: 18px; }
 .nbaleaders .card { background: var(--plate); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; } .nbaleaders .card h4 { margin: 0 0 6px; font: 700 12.5px var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .nbaleaders ol { margin: 0; padding-left: 18px; font-size: 13.5px; } .nbaleaders li { display: flex; justify-content: space-between; gap: 8px; } .nbaleaders li small { color: var(--muted); }
@@ -1989,7 +1990,7 @@ td.lev { color: var(--steel); }
     const q = ($('#nbaSearch').value || '').toLowerCase(), g = $('#nbaGame').value;
     const R = D.players.filter(p => (!q || p.name.toLowerCase().includes(q)) && (!g || p.game === g)).sort((a, b) => { const x = a[NB.sort], y = b[NB.sort]; if (x == null) return 1; if (y == null) return -1; return (x > y ? 1 : x < y ? -1 : 0) * NB.dir; });
     $('#nbaCount').textContent = `${R.length} players`;
-    $('#nbaTable tbody').innerHTML = R.map(p => `<tr><td class="who"><b>${p.name}</b>${p.proj == null ? ' <small class="dim">no props</small>' : ''}</td><td><span class="pos">${p.pos}</span></td><td>${p.team}</td><td><small>${p.game}</small></td><td class="n">${money(p.sal)}</td><td class="n"><b>${fmt(p.proj)}</b></td><td class="n">${fmt(p.value, 2)}</td>
+    $('#nbaTable tbody').innerHTML = R.map(p => `<tr><td class="who"><b>${p.name}</b>${p.status ? ` <span class="tag">${esc(p.status)}</span>` : ''}${p.source === 'dk average' ? ' <small class="dim">DK avg stand-in</small>' : (p.proj == null ? ' <small class="dim">no props</small>' : '')}${p.why ? `<br><small class="dim">Why no line: ${esc(p.why)}</small>` : ''}${p.role ? `<br><small class="warn">⚑ ${esc(p.role)}</small>` : ''}</td><td><span class="pos">${p.pos}</span></td><td>${p.team}</td><td><small>${p.game}</small></td><td class="n">${money(p.sal)}</td><td class="n"><b>${fmt(p.proj)}</b></td><td class="n">${fmt(p.value, 2)}</td>
       ${['pts', 'reb', 'ast', 'tpm', 'stl', 'blk'].map(k => `<td class="n">${fmt(p[k])}</td>`).join('')}<td class="n">${p.dd == null ? '—' : fmt(100 * p.dd, 0) + '%'}</td><td class="n sdcol">${p.cpt_sal ? money(p.cpt_sal) : '—'}</td><td class="n sdcol">${p.p_top == null ? '—' : fmt(100 * p.p_top, 1) + '%'}</td>
       <td><input type="checkbox" data-n="${p.name}" ${NB.out.has(p.name) ? 'checked' : ''} ${p.proj == null ? 'disabled' : ''} aria-label="Exclude ${p.name}"></td></tr>`).join('');
     $$('#nbaTable tbody input[type=checkbox]').forEach(cb => cb.onchange = () => { cb.checked ? NB.out.add(cb.dataset.n) : NB.out.delete(cb.dataset.n); });
