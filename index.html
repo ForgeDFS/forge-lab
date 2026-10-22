@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="1fab4c1e5687"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="8883a9bc2aca"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -558,7 +558,7 @@ td.lev { color: var(--steel); }
         <div class="field"><label for="bN">Lineups</label><input type="number" id="bN" min="1" max="150" value="20"></div>
         <div class="field"><label>Method</label><div class="seg segwrap" id="bMethod"><button type="button" data-v="hyb" aria-pressed="false">FORGE Pick</button><button type="button" data-v="p51" aria-pressed="true">Top Projected Stacks</button><button type="button" data-v="ev" aria-pressed="false">Simulation's Best Payout</button><button type="button" data-v="hyb0" aria-pressed="false">FORGE Pick – original</button></div><p class="note" id="methodNote"></p></div>
         <div class="field"><label>Structure</label><div class="seg" id="bStruct"><button type="button" aria-pressed="false" data-v="any">Any split</button><button type="button" aria-pressed="false" data-v="51">5-1 only</button><button type="button" aria-pressed="true" data-v="hedge">Half 5-1</button></div></div>
-        <div class="field"><label for="bCap">Max lineups per captain</label><input type="number" id="bCap" min="1" max="150" value="6"></div>
+        <div class="field"><label for="bCap">Max lineups per captain</label><input type="number" id="bCap" min="1" max="150" value="6"><small class="note" id="bCapNote" hidden>Auto: FORGE Pick splits lineups across its 3 captains by their top-scorer chances (untick "FORGE Pick captains" below to set your own cap).</small></div>
         <div class="field"><label for="bExp">Max exposure per player (%)</label><input type="number" id="bExp" min="10" max="100" value="" placeholder="Auto"><p class="note" id="bExpNote">Auto = FORGE's per-player cap (FORGE Pick). Type a % to use your own flat cap instead.</p></div>
         <div class="field"><label for="bUniq">Min players different between lineups</label><input type="number" id="bUniq" min="1" max="4" value="1"></div>
         <details class="adv" id="bAdv"><summary>More settings <small>variation, salary floor, ownership lean, captain rules</small></summary>
@@ -573,7 +573,7 @@ td.lev { color: var(--steel); }
         <label class="check"><input type="checkbox" id="bDst" checked> No DST against your captain</label>
         <label class="check mine"><input type="checkbox" id="bMine"> Make my lineups mine <span class="tag steel">untested</span></label>
         <p class="note">Nudges every projection (typically within ±8%) in a pattern unique to this phone, so friends using FORGE don't build the same lineups and split a prize. It can cost a little projected score; turn it off to get FORGE's exact numbers.</p>
-        <p class="note">The simulation methods run FORGE's own game simulation in your browser (2,000 simulated games against a simulated field of 3,000 lineups; the server build uses 8,000), using your projections. Backtests replay real 2026 contests; they aren't a promise.</p>
+        <p class="note">The simulation methods run FORGE's own game simulation in your browser (2,000 simulated games against a simulated field of 3,000 lineups; FORGE's own entered builds use 256,000, and on NE@CHI the default Builder still matched all 26 entered lineups), using your projections. Backtests replay real 2026 contests; they aren't a promise.</p>
         </details>
         <button type="submit" class="btn primary" id="forgeBtn"><svg class="ico" aria-hidden="true"><use href="#i-hammer"/></svg>Forge lineups<span class="sparks" id="sparks"></span></button>
         <div class="status" id="bStatus" role="status"></div>
@@ -1169,7 +1169,12 @@ td.lev { color: var(--steel); }
   $('#resetProj').addEventListener('click', () => { D.players.forEach(p => builder.proj[p.name] = baseProj(p)); builder.lock.clear(); builder.out.clear(); builder.cpt.clear(); renderBuilderTable(); applyRecipe(builder.recipe, true); });
   const METHOD_NOTE = { p51: 'Highest-projected 5-1 stacks under your rules. Instant.', hyb: "FORGE's main method: half top-projected 5-1 stacks, half the best payers in simulated contests, with FORGE's per-player cap (Auto below). A few seconds.",
     ev: "Every lineup is played in 2,000 simulated games against a simulated field; the best average payouts win (FORGE's Showdown rules on). Takes a few seconds.", hyb0: 'FORGE Pick without the two fixes: captain can be anyone and cheap fillers are not marked down (unless you edited them).' };
-  function setMethod(v) { if (v !== 'p51' && !(D && D.simpack)) v = 'p51'; builder.method = v; $$('#bMethod button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === v)));
+  function syncCap() {   // (2026-10-22) with FORGE Pick captains on, the captain cap is FORGE's weighting, not this box -> show that instead of a number that isn't used
+    const on = builder.method === 'hyb' && $('#bTop3') && $('#bTop3').checked && !(builder.cpt && builder.cpt.size), c = $('#bCap');
+    if (on && !c.disabled) { c.dataset.v = c.value; c.value = ''; c.placeholder = 'Auto'; c.disabled = true; } else if (!on && c.disabled) { c.disabled = false; c.value = c.dataset.v || 6; c.placeholder = ''; }
+    $('#bCapNote').hidden = !on;
+  }
+  function setMethod(v) { if (v !== 'p51' && !(D && D.simpack)) v = 'p51'; builder.method = v; $$('#bMethod button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === v))); if (typeof syncCap === 'function' && $('#bCapNote')) syncCap();
     // 2026-10-21 PI decision: captain can be anyone by default; the box stays as an option
     $('#methodNote').textContent = (D && !D.simpack && v === 'p51' ? 'Simulation methods appear after FORGE builds this game. ' : '') + METHOD_NOTE[v]; if (v !== builder.method_prev) setStruct(v === 'ev' ? 'any' : (v === 'p51' ? builder.struct : 'hedge')); builder.method_prev = v; }   // 2026-10-16: structure is editable for every method; each method starts on its own default
   $$('#bMethod button').forEach(b => b.addEventListener('click', () => { setMethod(b.dataset.v); markCustom(); }));
@@ -1187,10 +1192,11 @@ td.lev { color: var(--steel); }
     $('#bN').value = r.n; setStruct(r.struct); $('#bCap').value = r.cap; $('#bExp').value = (r.method === 'hyb') ? '' : r.exp; $('#bUniq').value = r.uniq; $('#bMinSal').value = r.minSal; $('#bPunt').value = r.punt;
     $('#bNoCpt').checked = r.noCpt; $('#bDst').checked = r.dst; setMethod(r.method || 'p51'); $('#bOwn').value = 0; $('#bOwnV').textContent = 'off';
     if ($('#bTop3')) $('#bTop3').checked = !!r.top3; if ($('#bTop5')) $('#bTop5').checked = !!r.top5; if ($('#bMine')) $('#bMine').checked = false; $('#bSeed').value = 0; if ($('#bVar')) $('#bVar').value = 25; builder.cpt.clear(); applying = false;   // every recipe resets the extras: FORGE default = production build exactly
-    $$('#recipes .recipe').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.r === builder.recipe))); $('#customNote').textContent = ''; LS.set('forge_recipe', builder.recipe);
+    syncCap(); $$('#recipes .recipe').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.r === builder.recipe))); $('#customNote').textContent = ''; LS.set('forge_recipe', builder.recipe);
   }
   function markCustom() { if (applying) return; $('#customNote').textContent = 'Custom: started from ' + RECIPES[builder.recipe].label + '. Click it again to reset the rules.'; }
   $$('#recipes .recipe').forEach(b => b.addEventListener('click', () => applyRecipe(b.dataset.r)));
+  if ($('#bTop3')) $('#bTop3').addEventListener('change', syncCap);
   $$('#bform input').forEach(i => i.addEventListener('change', markCustom));
 
   // the forge: enumerate every legal lineup, score by projection, pick greedily under caps
@@ -1208,7 +1214,7 @@ td.lev { color: var(--steel); }
       return (sim && v === b0 && pkb[p.name] != null && Math.abs(pkb[p.name] - v) < 0.006) ? pkb[p.name] : v; });   // unedited -> FORGE's unrounded value (page shows 2 decimals)
     ownLean(P, proj); personal(P, proj, $('#bMine').checked);
     const teams = [...new Set(P.map(p => p.team))], tm = P.map(p => teams.indexOf(p.team));
-    const NREQ = RUN ? RUN.n : Math.max(1, Math.min(150, parseInt($('#bN').value) || 20)); let cap = Math.max(1, parseInt($('#bCap').value) || 6);
+    const NREQ = RUN ? RUN.n : Math.max(1, Math.min(150, parseInt($('#bN').value) || 20)); let cap = Math.max(1, parseInt($('#bCap').value || $('#bCap').dataset.v) || 6);
     // 2026-10-21 Round 38 (FORGE: "cut down the entries"): FORGE Pick builds twice the lineups and keeps the top half of each half (best stacks + first simulator picks)
     const top5 = ($('#bTop5') && $('#bTop5').checked) && $('#bMethod [aria-pressed="true"]') && $('#bMethod [aria-pressed="true"]').dataset.v === 'hyb' && builder.struct === 'hedge' && NREQ >= 10 && NREQ <= 75, N = top5 ? 2 * NREQ : NREQ;   // production: TOP5_HALF only for 10+ lineups
     const maxExp = Math.max(1, Math.ceil(N * Math.min(100, Math.max(10, parseFloat($('#bExp').value) || 100)) / 100));
