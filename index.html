@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="b79010851b12"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="8dfda05f8df9"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -694,7 +694,7 @@ td.lev { color: var(--steel); }
     </div>
   </section>
 
-  <div id="gate" hidden><form id="gateForm" class="gatebox"><svg class="ico gateico" aria-hidden="true"><use href="#i-anvil"/></svg><div class="gatek">Invite only</div><h2 class="gateh">Enter the forge</h2><p class="gatep">Type the password Drew sent you. This device will remember it.</p><input id="gatePw" type="password" autocomplete="current-password" placeholder="Password" aria-label="Password"><button type="submit" class="btn primary">Unlock</button><div id="gateMsg" class="gatem" role="status"></div></form></div>
+  <div id="gate" hidden><form id="gateForm" class="gatebox"><svg class="ico gateico" aria-hidden="true"><use href="#i-anvil"/></svg><div class="gatek">Invite only</div><h2 class="gateh">Enter the forge</h2><p class="gatep">Type the password you were sent. This device will remember it.</p><input id="gatePw" type="password" autocomplete="current-password" placeholder="Password" aria-label="Password"><button type="submit" class="btn primary">Unlock</button><div id="gateMsg" class="gatem" role="status"></div></form></div>
   <div id="emode" hidden role="dialog" aria-label="Entry mode">
     <div class="em-top"><button type="button" class="btn small" id="emClose" aria-label="Close">✕</button><div class="em-count" id="emCount"></div><button type="button" class="btn small" id="emWake" title="Keep the screen on">☀ On</button></div>
     <div class="em-contest" id="emTitle"></div>
@@ -752,7 +752,7 @@ td.lev { color: var(--steel); }
     return ENC ? dec(await r.json()) : r.json();
   }
   const kickLocal = s => new Date(s.kickoff_utc).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' });
-  function renderPicker() {     // 2026-10-21 (Drew): per sport, a Classic row (main / early / late slates) and a Showdown row (every game DraftKings offers)
+  function renderPicker() {     // 2026-10-21 (FORGE): per sport, a Classic row (main / early / late slates) and a Showdown row (every game DraftKings offers)
     const el = $('#slatePicker'); const L = IDX.filter(x => active(x) && sportOf(x) === SPORT).sort((a, b) => new Date(a.kickoff_utc) - new Date(b.kickoff_utc));
     const isSD = x => String(x.kind).includes('showdown'), C = L.filter(x => !isSD(x)), S = L.filter(isSD);
     const chip = x => { const sd = isSD(x), nba = sportOf(x) === 'NBA';
@@ -764,7 +764,7 @@ td.lev { color: var(--steel); }
     const on = el.querySelector('[aria-pressed="true"]'); if (on) { const row = on.parentElement, r0 = row.getBoundingClientRect(), r1 = on.getBoundingClientRect(); row.scrollLeft = Math.max(0, row.scrollLeft + (r1.left - r0.left) - (row.clientWidth - on.offsetWidth) / 2); }
   }
   function defaultSlateUnused() {}
-  let SPORT = LS.get('forge_sport') || 'NFL';   // 2026-10-21 (Drew): NFL / NBA tabs up top
+  let SPORT = LS.get('forge_sport') || 'NFL';   // 2026-10-21 (FORGE): NFL / NBA tabs up top
   const sportOf = x => (x && x.kind && String(x.kind).startsWith('nba')) ? 'NBA' : 'NFL';
   function renderSports() { $$('#sportPicker button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sport === SPORT))); }
   $$('#sportPicker button').forEach(b => b.onclick = () => { if (SPORT === b.dataset.sport) return; SPORT = b.dataset.sport; LS.set('forge_sport', SPORT); renderSports();
@@ -809,7 +809,7 @@ td.lev { color: var(--steel); }
     const tryPw = (pw, silent) => { PW = pw; for (const k in keys) delete keys[k];
       return dec(enc).then(() => { LS.set('forge_pw', pw); g.hidden = true; $('#dlMine').hidden = false; return start().catch(fail); })
         .catch(() => (silent ? Promise.reject() : ownerTry(pw).then(o => { OPW = pw; LS.set('forge_owner', pw); return tryPw(o.pw, false); }))
-        .catch(() => { g.hidden = false; if (!silent) { m.textContent = 'That password is not right. Check with Drew.'; i.select(); } })); };
+        .catch(() => { g.hidden = false; if (!silent) { m.textContent = 'That password is not right.'; i.select(); } })); };
     const saved = LS.get('forge_pw'); if (saved) tryPw(saved, true); else { g.hidden = false; setTimeout(() => i.focus(), 50); }
     f.addEventListener('submit', ev => { ev.preventDefault(); m.textContent = 'Heating the forge…'; tryPw(i.value.trim(), false); });
   }
@@ -847,7 +847,7 @@ td.lev { color: var(--steel); }
     const loc = u => { if (!u) return null; const d = new Date(String(u).replace(' UTC', 'Z').replace(' ', 'T')); return isNaN(d) ? null : d.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); };
     const fr = loc(s.odds_as_of); $('#fresh').textContent = fr ? 'Odds as of ' + fr + (s.refreshed_utc ? ' · projections refreshed ' + loc(s.refreshed_utc) : '') : '';
     if (!LS.get('forge_start_seen')) $('#startCard').hidden = false;
-    loadRecord().then(() => { const BC = REC && REC.current_backtest, A = BC && BC.patterns && BC.patterns[0]; $('#evGpp').textContent = A ? `Backtest, ${A.games} real 2026 Showdowns: ${sgn(A.roi)}% ROI on Drew's $7.50 entry pattern (every prize counted)` : ''; }).catch(() => {});
+    loadRecord().then(() => { const BC = REC && REC.current_backtest, A = BC && BC.patterns && BC.patterns[0]; $('#evGpp').textContent = A ? `Backtest, ${A.games} real 2026 Showdowns: ${sgn(A.roi)}% ROI with 10 × $0.25 + 5 × $0.50 a slate (every prize counted)` : ''; }).catch(() => {});
     renderBanner(); renderPastTop(); renderPast();
     renderPlayers(); initLineups(); renderBuilderTable(); renderRecord(); applyRecipe(LS.get('forge_recipe') || 'gpp', true); initTester();
     const t = LS.get('forge_tab'); if (t && $('#p-' + t)) show(t);
@@ -882,7 +882,7 @@ td.lev { color: var(--steel); }
   }
 
 
-  // ---------------------------------------------------------------- set names (2026-10-15, Drew: friendly names; internal code kept in grey for grading)
+  // ---------------------------------------------------------------- set names (2026-10-15, FORGE: friendly names; internal code kept in grey for grading)
   const SETS = [
     [/^HYB-M-SXPW-10$/, 'FORGE Pick – top 5 of each half', "Test (live only): the first 5 lineups of each half of FORGE Pick, graded on the same contests to see if fewer, better lineups earn more."],
     [/^HYB-M-SXPW$|^HYBMSXPW$|^FORGE build \(HYB-M-SXPW\)/, 'FORGE Pick', "Our main method and the set we enter (since 10/22): FORGE Pick with captains limited to FORGE's 3 most likely top scorers, more lineups for the likeliest."],
@@ -993,7 +993,7 @@ td.lev { color: var(--steel); }
     acc.stats = { evU: accU.map(v => v / Wn), cash: nCash.map(v => v / Wn), top1: nTop.map(v => v / Wn), win: nWin.map(v => v / Wn), cashLine: sumCash / Wn, first: sumFirst / Wn }; return acc;
   }
 
-  // ownership lean (2026-10-15, Drew): user lever, OFF by default (Hard Rule 7: untested; PREREG_ROUND18 uniqueness penalty did not beat the default on 14 games)
+  // ownership lean (2026-10-15, FORGE): user lever, OFF by default (Hard Rule 7: untested; PREREG_ROUND18 uniqueness penalty did not beat the default on 14 games)
   // build inbox (2026-10-15): every Builder run is queued on this device and filed to FORGE (anonymous device id, no names or accounts) so it can be
   // graded on the real outcome. Sent as a GitHub issue (label site-build) with a token limited to issues; kept in the queue until a send succeeds.
   let INBOX = null;
@@ -1141,7 +1141,7 @@ td.lev { color: var(--steel); }
     ownLean(P, proj); personal(P, proj, $('#bMine').checked);
     const teams = [...new Set(P.map(p => p.team))], tm = P.map(p => teams.indexOf(p.team));
     const NREQ = Math.max(1, Math.min(150, parseInt($('#bN').value) || 20)); let cap = Math.max(1, parseInt($('#bCap').value) || 6);
-    // 2026-10-21 Round 38 (Drew: "cut down the entries"): FORGE Pick builds twice the lineups and keeps the top half of each half (best stacks + first simulator picks)
+    // 2026-10-21 Round 38 (FORGE: "cut down the entries"): FORGE Pick builds twice the lineups and keeps the top half of each half (best stacks + first simulator picks)
     const top5 = ($('#bTop5') && $('#bTop5').checked) && $('#bMethod [aria-pressed="true"]') && $('#bMethod [aria-pressed="true"]').dataset.v === 'hyb' && builder.struct === 'hedge' && NREQ >= 2 && NREQ <= 75, N = top5 ? 2 * NREQ : NREQ;
     const maxExp = Math.max(1, Math.ceil(N * Math.min(100, Math.max(10, parseFloat($('#bExp').value) || 100)) / 100));
     const uniq = Math.max(1, Math.min(4, parseInt($('#bUniq').value) || 1)), minSal = parseInt($('#bMinSal').value) || 0, maxPunt = parseInt($('#bPunt').value);
@@ -1212,7 +1212,7 @@ td.lev { color: var(--steel); }
       const stc = builder.struct, evo51 = evOrder.filter(i => is51[i]);   // structure: any = no split rule, 51 = every lineup 5-1, hedge = half 5-1 (the default for FORGE Pick)
       if (method === 'ev') { if (stc === 'hedge') { pickFrom(evo51, Math.ceil(N / 2), cc, val); pickFrom(evOrder, N, {}, val); } else pickFrom(stc === '51' ? evo51 : evOrder, N, cc, val); }
       else { if (stc !== 'any') pickFrom(idx.filter(i => is51[i]), Math.ceil(N / 2), cc, val); const half = {}; pickFrom(stc === '51' ? evo51 : evOrder, N, (stc === 'any' || top3On) ? cc : half, val); }   // captain pool: one captain count across both halves (as tested)
-      // 2026-10-21 (Drew, 20 of 45): same as production hybrid_select_pitch: when the pitch cap, the captain cap and the "different players" rule use up the candidates, fill the rest without the pitch cap (logged); never fewer lineups than asked unless the other rules truly leave none
+      // 2026-10-21 (FORGE, 20 of 45): same as production hybrid_select_pitch: when the pitch cap, the captain cap and the "different players" rule use up the candidates, fill the rest without the pitch cap (logged); never fewer lineups than asked unless the other rules truly leave none
       if (method === 'hyb' && PC && chosen.length < N) { const before = chosen.length, ccAll = {}; chosen.forEach(ch => ccAll[ch.lu[0]] = (ccAll[ch.lu[0]] || 0) + 1); pickFrom(stc === '51' ? evo51 : evOrder, N, ccAll, val, true); builder.relaxed = chosen.length - before; }
       if (chosen.length < N) { const why = { cap: 0, exp: 0, uniq: 0 }; for (const i of (stc === '51' ? evo51 : evOrder)) { const lu = lus(i); if (chosen.some(ch => ch.lu.every((x, k) => x === lu[k]))) continue;
           if ((chosen.filter(ch => ch.lu[0] === lu[0]).length) >= capOf(lu[0])) { why.cap++; continue; } if (lu.some(x => (ex[x] || 0) >= maxExp && !lock[x])) { why.exp++; continue; }
@@ -1556,7 +1556,7 @@ td.lev { color: var(--steel); }
         else if (SERX.test(c) || perContest[c] === 1) { lu = src.se; why = 'top lineup'; }
         else { lu = src.gpp[gp++]; why = 'tournament lineups'; }
         used[c]++;
-        if (!lu) { skipped.push(r[0]); continue; }   // no lineup left for this entry: leave it untouched (2026-10-18, Drew: fill as many as there are)
+        if (!lu) { skipped.push(r[0]); continue; }   // no lineup left for this entry: leave it untouched (2026-10-18, FORGE: fill as many as there are)
         const names = kind === 'classic' ? lu.players.map(p => p.name || p) : [lu.cpt, ...lu.flex];
         const ids = names.map((n, k) => { const e = pool[n + '|' + (kind === 'classic' ? '' : (k === 0 ? 'CPT' : 'FLEX'))]; return e; });
         const miss = names.filter((n, k) => !ids[k]); if (miss.length) { errs.push(`${c}: ${miss.join(', ')} not found in your file's player list`); continue; }
@@ -1570,7 +1570,7 @@ td.lev { color: var(--steel); }
       if (errs.length) return say('<div class="err">Not filled. Fix this first:</div><ul>' + errs.slice(0, 8).map(e => `<li>${e}</li>`).join('') + '</ul>');
       const csv = [hdr.slice(0, 4 + nS).map(csvCell).join(','), ...out.map(r => r.map(x => csvCell(String(x))).join(','))].join('\r\n') + '\r\n';
       const fname = `DKEntries_FORGE_${(D.slate.kind === 'classic' ? 'classic' : D.slate.away + D.slate.home)}.csv`;
-      logBuild('export', { fname, source: DKSRC, skipped: skipped.length, contests: Object.fromEntries(Object.entries(plan).map(([c, v]) => [c, v.n])) }, expo);   // (2026-10-21, Drew) what was actually put into which contest
+      logBuild('export', { fname, source: DKSRC, skipped: skipped.length, contests: Object.fromEntries(Object.entries(plan).map(([c, v]) => [c, v.n])) }, expo);   // (2026-10-21, FORGE) what was actually put into which contest
       say(`<div class="ok">✓ ${out.length} entries filled and checked against DraftKings' player list.</div>${skipped.length ? `<p class="note"><b>${skipped.length} selected entries have no lineup yet</b> (you built ${src.gpp.length}). They are left out of the file and stay as they are on DraftKings. Build more lineups, or untick them above.</p>` : ''}
         <div class="tbl-wrap"><table><thead><tr><th>Contest</th><th class="n">Entries</th><th>Lineups used</th></tr></thead><tbody>${Object.entries(plan).map(([c, v]) => `<tr><td>${shortContest(c)}</td><td class="n">${v.n}</td><td>${v.why}</td></tr>`).join('')}</tbody></table></div>
         <div class="toolbar"><button class="btn primary" type="button" id="dkDl">Download filled file</button><button class="btn small" type="button" id="dkCopy">Copy instead</button></div>
@@ -1727,7 +1727,7 @@ td.lev { color: var(--steel); }
   const usd2 = v => v == null ? '—' : (v < 0 ? '−$' : '$') + Math.abs(v).toFixed(2);
   const sgn = v => v == null ? '—' : (v > 0 ? '+' : '') + v;
   const ordn = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th'));
-  const selName = s => s === 'DREW-SET' ? "Drew's own set" : setInfo(s).name;
+  const selName = s => s === 'DREW-SET' ? "FORGE's entered set" : setInfo(s).name;
   async function renderRecord() {
     getJSON('learn').then(L => {
       const G = (L.groups || []).filter(g => g.builds > 0), row = g => `<tr><td>${g.group}</td><td class="n">${g.builds}</td><td class="n">${g.slates}</td><td class="n">${g.lineups}</td><td class="n ${g.roi >= 0 ? 'netpos' : 'netneg'}">${g.roi == null ? '—' : sgn(g.roi) + '%'}</td><td class="n">${g.cash == null ? '—' : g.cash + '%'}</td><td class="n">${g.top1}</td><td class="n">${g.slates_compared ? g.ahead_of_forge_pick + ' of ' + g.slates_compared : '—'}</td></tr>`;
@@ -1747,10 +1747,10 @@ td.lev { color: var(--steel); }
     else tiles.push(`<div class="tile"><small>Live slates graded</small><b>0</b><span>Review point: 6 slates</span></div>`);
     const BC = REC && REC.current_backtest;
     if (BC && BC.patterns && BC.patterns.length) { const A = BC.patterns[0]; tiles.push(`<div class="tile"><small>Backtest · today's FORGE Pick</small><b class="${A.roi >= 0 ? 'gain' : 'loss'}">${sgn(A.roi)}%</b><span>ROI on ${A.games} real 2026 Showdowns, ${A.name.split(':')[1].trim()} · every prize counted</span></div>`); }
-    $('#btCur').innerHTML = !(BC && BC.patterns) ? '<p class="note">No backtest for the current build in this data yet.</p>' : `<p class="lede">The exact settings the Builder starts on (weighted top-3 captain pool + corrected ownership forecast), replayed on ${BC.patterns[0].games} real 2026 Showdowns from pre-game data only, ${BC.seeds} simulation runs per game, graded on the real contest results with two real entry patterns. Every prize counts in full. Backtest, not live money.</p>
+    $('#btCur').innerHTML = !(BC && BC.patterns) ? '<p class="note">No backtest for the current build in this data yet.</p>' : `<p class="lede">The exact settings the Builder starts on (10 lineups: the best 5 stacks + the simulator's best 5, weighted top-3 captain pool, corrected ownership forecast), replayed on ${BC.patterns[0].games} real 2026 Showdowns from pre-game data only, ${BC.seeds} simulation runs per game, graded on the real contest results with two real entry patterns. Every prize counts in full. Backtest, not live money.</p>
       <div class="tiles">${BC.patterns.map(P => `<div class="tile"><small>${P.name.split(':')[1].trim()}</small><b class="${P.roi >= 0 ? 'gain' : 'loss'}">${sgn(P.roi)}%</b><span>average $${P.avg_back.toFixed(2)} back on $${P.fee.toFixed(2)} · in profit on ${P.in_profit}% of slates${P.real_roi != null ? ` · games with the real prize table only (${P.real_games}): ${sgn(P.real_roi)}%` : ''}</span></div>`).join('')}</div>
       <details class="about"><summary>Game by game</summary><div class="tbl-wrap"><table><thead><tr><th>Game</th><th class="n">Week</th>${BC.patterns.map(P => `<th class="n">${P.name.split(':')[0]} back</th>`).join('')}<th>Prize table</th></tr></thead><tbody>${BC.patterns[0].by_game.map((g, i) => `<tr><td>${g.game}</td><td class="n">${g.week}</td>${BC.patterns.map(P => { const x = P.by_game[i]; return `<td class="n ${x.avg_back >= P.fee ? 'netpos' : 'netneg'}">$${x.avg_back.toFixed(2)}</td>`; }).join('')}<td class="dim">${g.real ? 'real' : 'estimated'}</td></tr>`).join('')}</tbody></table></div>
-      <p class="note">Pattern A = 20 × $0.25 (20-max) + 5 × $0.50 (150-max), $7.50 a slate. Pattern B = 20 × $0.10 + 20 × $0.25 + 10 × $0.50, $12 a slate. "Estimated" = that game's real field graded on the closest real prize table of the same contest type.</p></details>`;
+      <p class="note">Pattern A = 10 × $0.25 (20-max) + 5 × $0.50 (150-max), $5 a slate. Pattern B = 10 × $0.10 + 10 × $0.25 + 5 × $0.50, $6 a slate. "Estimated" = that game's real field graded on the closest real prize table of the same contest type.</p></details>`;
     $('#recTiles').innerHTML = tiles.join('');
     // owner: our real contests, by slate
     const K3 = (O && O.by_kind) || (REC && REC.ours_summary), money = !!(O && O.by_kind), kc = ['showdown', 'classic', 'combined'], kn = { showdown: 'Showdown', classic: 'Classic', combined: 'Combined' };
@@ -1773,7 +1773,7 @@ td.lev { color: var(--steel); }
       : '<p class="note">No live slates graded yet.</p>';
   }
 
-  // ---------------------------------------------------------------- Past contests (2026-10-21, Drew: "run these new default settings and see what 20 lineups it would have produced")
+  // ---------------------------------------------------------------- Past contests (2026-10-21, FORGE: "run these new default settings and see what 20 lineups it would have produced")
   // tools/replay_export.py: FORGE's pre-game data + the real result. Grading: actual DK points; place = 1 + entries that scored more; tied entries split
   // the prizes of the places they share (DraftKings rule); prize from the contest's own table; ROI only when the entry fee is on record.
   let RPX = null, RPC = null; const GR = {};
@@ -1912,7 +1912,7 @@ td.lev { color: var(--steel); }
     logBuild('nba_classic', { n: N, uniq, exp: capP, stack: stackG, blowout: blowG, outs: [...NB.out] }, chosen.map(c => ({ players: c.lu.map(p => p.name) })));
   });
 
-  // ---- NBA late swap (2026-10-21, Drew: "FORGE must contain late swap"): keep players whose game started, re-optimise the open slots (GLPK)
+  // ---- NBA late swap (2026-10-21, FORGE: "FORGE must contain late swap"): keep players whose game started, re-optimise the open slots (GLPK)
   let NBLS = null; $('#nbaLsFile').addEventListener('change', async ev => { const f = ev.target.files[0]; if (!f) return; NBLS = await f.text(); ev.target.value = ''; $('#nbaLsStatus').textContent = 'File loaded: ' + f.name; });
   $('#nbaLsRun').addEventListener('click', async () => {
     const st = $('#nbaLsStatus'), out = $('#nbaLsOut'); st.className = 'status'; out.innerHTML = '';
