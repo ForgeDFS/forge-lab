@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="6d7e2187ef7b"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="507ce9bb3103"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -544,7 +544,7 @@ td.lev { color: var(--steel); }
         <h3>Start from</h3>
         <div class="recipes" id="recipes">
           <button type="button" class="recipe" data-r="gpp" aria-pressed="true"><b>Tournament · FORGE default</b><small>FORGE Pick, exactly what FORGE enters: 10 lineups, the best 5 top-projected 5-1 stacks plus the simulator's 5 best picks (in a 20-entry contest each goes in twice); captains = FORGE's 3 most likely top scorers, more lineups for the likeliest; FORGE's per-player cap; cheap players adjusted; ownership forecast normalized. For 20-max and big GPPs.</small><span class="ev" id="evGpp"></span></button>
-          <button type="button" class="recipe" data-r="se" aria-pressed="false"><b>Single entry</b><small>The top-projected 5-1 lineup. Not FORGE's committed single-entry process yet (single entry is being researched).</small><span class="ev">Earlier test: 10 single-entry contests, estimated payouts</span></button>
+          <button type="button" class="recipe" data-r="se" aria-pressed="false"><b>Single entry</b><small>Lineup #1 of FORGE Pick (its best projected stack). With FORGE Pick built, the DraftKings tab puts #1 in your single-entry contests automatically.</small><span class="ev">18 past Showdowns: +11.8% ROI, +23.2% on real prize tables; the simulator's top pick did +6.7%</span></button>
           <button type="button" class="recipe" data-r="cash" aria-pressed="false"><b>Cash · Double Up, 50/50</b><small>The highest projected lineup of any shape. Floor over ceiling.</small><span class="ev">Top 44% in 86% of 37 tested fields (upper bound)</span></button>
         </div>
         <div class="custom-note" id="customNote"></div>
@@ -1118,7 +1118,7 @@ td.lev { color: var(--steel); }
   // recipes: settings FORGE has tested (P51-M-SX for tournaments = PREREG_ROUND11 B1ax; single entry = P51 #1, Round 24; cash = best projected lineup of any shape, Round 24)
   const RECIPES = {
     gpp: { n: 10, struct: 'hedge', cap: 6, exp: 100, uniq: 1, minSal: 47000, punt: 1, noCpt: false, dst: true, method: 'hyb', top3: true, top5: true, label: 'Tournament · FORGE default' },   // = production HYB-M-SXPW (2026-10-21)
-    se: { n: 1, struct: '51', cap: 6, exp: 100, uniq: 1, minSal: 47000, punt: 1, noCpt: false, dst: true, top3: false, label: 'Single entry' },
+    se: { n: 10, struct: 'hedge', cap: 6, exp: 100, uniq: 1, minSal: 47000, punt: 1, noCpt: false, dst: true, method: 'hyb', top3: true, top5: true, label: 'Single entry (uses lineup #1)' },   // Round 41: single entry = #1 of FORGE Pick
     cash: { n: 1, struct: 'any', cap: 6, exp: 100, uniq: 1, minSal: 47000, punt: 1, noCpt: false, dst: true, top3: false, label: 'Cash' } };
   let applying = false;
   function applyRecipe(k, quiet) {
@@ -1549,7 +1549,7 @@ td.lev { color: var(--steel); }
       if (kind === 'showdown') { const g = D.slate.away + '@' + D.slate.home; if (!games.has(g)) return say(`<div class="err">This file is for ${[...games].join(', ')}, but the game picked at the top is ${g}. Tap the right game at the top; this check runs again on its own.</div>`); }
       const src = lineupsFor(kind); if (!src.gpp || !src.gpp.length) return say(`<div class="err">${DKSRC === 'mine' ? 'Build your lineups in the Builder first.' : 'FORGE has no lineups for this game yet. Try the Builder, then pick "My Builder lineups".'}</div>`);
       const perContest = {}; entries.forEach(r => perContest[r[1].trim()] = (perContest[r[1].trim()] || 0) + 1);
-      if (DKSRC === 'mine' && Object.keys(perContest).some(c => !CASHRX.test(c) && (SERX.test(c) || perContest[c] === 1))) src.gpp = src.gpp.slice(1);   // FORGE rule: no lineup repeated across contests (single entry keeps #1)
+      // (2026-10-21 Round 41) single entry gets lineup #1, which also stays in the multi-entry contests (the tested plan)
       let gp = 0; const used = {}, out = [], errs = [], plan = {}, skipped = [], expo = [], twice = !!($('#dkTwice') && $('#dkTwice').checked);
       const status = {}; D.players.forEach(p => status[p.name] = p.status || '');
       for (const r of entries) {
