@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="1c55be0879f0"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="53c601e28da8"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -469,6 +469,12 @@ td.lev { color: var(--steel); }
       <th class="n sort simcol gc g-sim" data-k="floor" title="15th percentile score">Floor</th><th class="n sort simcol gc g-sim" data-k="ceil" title="85th percentile score">Ceil</th><th class="n sort simcol gc g-sim" data-k="opt_cpt" title="Share of simulated games where he captains the best lineup">Opt CPT</th><th class="n sort simcol gc g-sim" data-k="opt_flex" title="Share of simulated games where he is a FLEX in the best lineup">Opt FLX</th><th class="n sort simcol gc g-own" data-k="lev" title="Optimal rate minus projected ownership (untested)">Lev</th>
     </tr></thead><tbody></tbody></table></div>
     </div>
+    <div class="nfl-only" id="prodBox">
+      <h3 class="subh2">How each projection is built</h3>
+      <p class="note">Pick a player to see the production behind his DraftKings projection: the sportsbook prop lines turned into stats (this is the projection FORGE uses), next to FORGE's own stat model, which uses no prop prices (his game logs, team scoring and the opponent). FORGE's own numbers are <b>promising, not proven</b>: on 79 past games they added information the prop prices did not hold, but on their own they are less accurate than the market.</p>
+      <select id="prodSel" aria-label="Player" style="max-width:100%;margin:4px 0 8px"></select>
+      <div id="prodOut"></div>
+    </div>
   </section>
 
   <section class="panel" id="p-lineups" hidden>
@@ -653,6 +659,10 @@ td.lev { color: var(--steel); }
     <div class="nfl-only"><h3 class="subh2" id="nflLeadTitle">Who leads the game</h3><div class="nbaleaders" id="nflLeaders"><p class="note">No NFL slate loaded.</p></div>
       <h3 class="subh2">Every posted player line</h3><p class="note">The main line for each prop and the chance of going over or under it, from the sportsbook prices with the bookmaker's margin removed. A line near 50/50 is the book saying it is a coin flip.</p>
       <input id="nflLineQ" type="search" placeholder="Search a player" style="width:100%;max-width:320px;margin:4px 0 8px">
+      <h3 class="subh2">Where FORGE's own model disagrees with the book</h3>
+      <p class="note">FORGE's chance of going over each posted line from its own stat model (no prop prices used), next to the book's. <b>Research, not picks:</b> on 79 past games FORGE's numbers added information beyond the prices (backtest), but its disagreements did not make money there (+1% to +3%, inside the noise) and Week 6 did not confirm. A paper record starts this week. Known lean: FORGE's model sits on the under for catches and yards in general (it averaged 44-46% overs where 49-50% hit), so an under here is often that lean, not a read on the player. Touchdown props are left out here: FORGE's touchdown numbers swing too much on a few recent games and were clearly worse than the book's in the test.</p>
+      <div class="tbl-wrap"><table id="nflDis"><thead><tr><th>Player</th><th>Prop</th><th class="n">Line</th><th class="n">FORGE avg</th><th class="n">FORGE over</th><th class="n">Book over</th></tr></thead><tbody></tbody></table></div>
+      <h3 class="subh2">Every posted line, full list</h3>
       <div class="tbl-wrap"><table id="nflLines"><thead><tr><th>Player</th><th>Prop</th><th class="n">Line</th><th class="n">Over</th><th class="n">Under</th></tr></thead><tbody></tbody></table></div></div>
     <p class="note betfoot">Not betting advice · 21+ · 1-800-GAMBLER</p>
   </section>
@@ -830,6 +840,21 @@ td.lev { color: var(--steel); }
     .catch(() => { ENC = false; start().catch(fail); });
 
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  function renderProd(data) {   // 2026-10-22: production behind each projection (tools/nfl_production.py)
+    const P = (data.players || []).filter(p => p.prod), sel = $('#prodSel');
+    if (!P.length) { sel.innerHTML = ''; $('#prodOut').innerHTML = '<p class="note">No breakdowns for this slate yet.</p>'; return; }
+    sel.innerHTML = P.map((p, i) => `<option value="${i}">${esc(p.name)} · ${esc(p.pos)} · ${esc(p.team)}</option>`).join('');
+    const ST = { attempts: 'Pass attempts', completions: 'Completions', passing_yards: 'Passing yards', passing_tds: 'Passing TDs', passing_interceptions: 'Interceptions', carries: 'Carries', rushing_yards: 'Rushing yards', rushing_tds: 'Rushing TDs', targets: 'Targets', receptions: 'Receptions', receiving_yards: 'Receiving yards', receiving_tds: 'Receiving TDs', fumbles_lost: 'Fumbles lost', td: 'Touchdowns (any)' };
+    const show = () => { const p = P[+sel.value || 0], m = p.prod.market, f = p.prod.forge, keys = [...new Set([...Object.keys((m || {}).stats || {}), ...Object.keys((f || {}).stats || {})])];
+      const v = (o, k) => o && o.stats && o.stats[k] != null ? o.stats[k] : '—';
+      const fTD = f ? ((f.stats.rushing_tds || 0) + (f.stats.receiving_tds || 0)).toFixed(2) : '—';
+      const rows = keys.filter(k => k !== 'td').map(k => `<tr><td>${ST[k] || k}</td><td class="n">${v(m, k)}</td><td class="n">${v(f, k)}</td></tr>`).join('') + (m && m.stats.td != null ? `<tr><td>${ST.td}</td><td class="n">${m.stats.td}</td><td class="n">${p.pos === 'QB' ? (f ? f.stats.rushing_tds : '—') + ' (rushing)' : fTD}</td></tr>` : '');
+      const parts = o => o ? Object.entries(o.parts).map(([k, x]) => `<li><span>${esc(k)}</span><b>${x > 0 ? '+' : ''}${x}</b></li>`).join('') : '';
+      $('#prodOut').innerHTML = `<div class="tbl-wrap"><table><thead><tr><th>Expected stat</th><th class="n">From prop lines</th><th class="n">FORGE model</th></tr></thead><tbody>${rows}<tr><td><b>DraftKings points</b></td><td class="n"><b>${m ? m.total : '—'}</b></td><td class="n"><b>${f ? f.total : '—'}</b></td></tr></tbody></table></div>
+        <div class="nbaleaders" style="margin-top:10px">${m ? `<div class="card"><h4>From prop lines: ${m.total} pts</h4><ol style="list-style:none;padding:0">${parts(m)}</ol></div>` : '<div class="card"><h4>From prop lines</h4><p class="note">Not enough prop lines posted for this player.</p></div>'}
+        ${f ? `<div class="card"><h4>FORGE model: ${f.total} pts</h4><ol style="list-style:none;padding:0">${parts(f)}</ol><p class="note">${f.games != null ? 'Built from his last ' + f.games + ' games (2023 on), team scoring and the opponent.' : ''}${f.missing && f.missing.length ? ' Not modeled: ' + f.missing.join(', ') + '.' : ''} Two-point conversions are left out.</p></div>` : `<div class="card"><h4>FORGE model</h4><p class="note">${p.pos === 'K' || p.pos === 'DST' ? 'Kickers and defenses are not in FORGE\'s own model yet.' : 'No game history to build from.'}</p></div>`}</div>`; };
+    sel.onchange = show; show();
+  }
   function renderNFLProps(data) {   // 2026-10-22: NFL prop leaderboards (tools/nfl_leaders.py, v0) -- Props & odds tab only
     const L = data.leaders || {}, isC = data.slate && data.slate.kind === 'classic', pc = v => (100 * v).toFixed(v < 0.1 ? 1 : 0) + '%';
     $('#nflLeadTitle').textContent = isC ? 'Who leads the main slate' : 'Who leads the game';
@@ -841,6 +866,8 @@ td.lev { color: var(--steel); }
     const drawLines = () => { const q = ($('#nflLineQ').value || '').toLowerCase(); const R = rows.filter(r => !q || r.n.toLowerCase().includes(q));
       $('#nflLines tbody').innerHTML = R.length ? R.map(r => `<tr><td>${esc(r.n)} <small>${esc(r.t)}</small></td><td>${r.k === 'td' ? 'Anytime touchdown' : (LAB[r.k] || r.k)}</td><td class="n">${r.k === 'td' ? 'Yes / No' : r.l}</td><td class="n">${pc(r.o)}</td><td class="n">${pc(1 - r.o)}</td></tr>`).join('') : `<tr><td colspan="5" class="note">${rows.length ? 'No player matches.' : 'No player prop lines posted for this slate yet.'}</td></tr>`; };
     $('#nflLineQ').value = ''; $('#nflLineQ').oninput = drawLines; drawLines();
+    const DS = (data.disagree || []).filter(r => r.prop !== 'anytime touchdown');  /* TD rows hidden: FORGE's TD model is clearly worse than the book's (PROPS-P1 log loss 0.638-0.653 vs 0.593) */ $('#nflDis tbody').innerHTML = DS.length ? DS.slice(0, 15).map(r => `<tr><td>${esc(r.name)} <small>${esc(r.team || '')}</small></td><td>${esc(r.prop)}</td><td class="n">${r.line == null ? 'Yes / No' : r.line}</td><td class="n">${r.forge_mean}</td><td class="n"><b>${pc(r.p_forge)}</b></td><td class="n">${pc(r.p_mkt)}</td></tr>`).join('') : '<tr><td colspan="6" class="note">No lines to compare yet.</td></tr>';
+    renderProd(data);
     $('#nflLeaders').innerHTML = body ? body + `<p class="note" style="grid-column:1/-1">Chance to lead ${isC ? 'the whole main slate' : 'the game'} in that stat, from 20,000 simulated games built from the sportsbook prop lines (players simulated independently; early version, research not picks). Number next to the name = his average in the simulation${L.scrim && L.scrim.some(r => r.partial) ? '; * = a running back with only one of his two yardage lines posted' : ''}. Anytime touchdown = the sportsbook's own chance, with the bookmaker's margin removed. Only players with a posted line are counted.</p>` : '<p class="note">No player prop lines posted for this slate yet. They usually appear a day or two before kickoff.</p>';
   }
   function init(data, meta) {
