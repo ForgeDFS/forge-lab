@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="6b6ae6244ff9"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="1fab4c1e5687"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -900,7 +900,7 @@ td.lev { color: var(--steel); }
     $('#mTotal').textContent = fmt(s.total, 1); $('#mWeek').textContent = s.week;
     const st = (meta.status === 'live' || meta.status === 'complete') ? meta.status : s.status; const pill = $('#statusPill'); pill.className = 'pill ' + (st === 'final' || st === 'complete' ? 'ok' : st === 'live' ? '' : 'hot');
     $('#statusText').textContent = { final: 'Final build', live: 'Locked', complete: 'Final results' }[st] || 'Preliminary';
-    D.players.forEach(p => { p.value = p.proj / (p.sal / 1000); builder.proj[p.name] = p.proj; });
+    D.players.forEach(p => { p.value = p.proj / (p.sal / 1000); builder.proj[p.name] = baseProj(p); });
     const ST = D.simpack && D.simpack.stats, ix = ST ? Object.fromEntries(D.simpack.names.map((n, k) => [n, k])) : {};   // sim stats (tools/sim_pack.sim_stats)
     D.players.forEach(p => { const k = ix[p.name]; if (!ST || k == null) { p.floor = p.ceil = p.opt_cpt = p.opt_flex = p.lev = null; return; }
       p.floor = ST.p15[k]; p.ceil = ST.p85[k]; p.sd = ST.sd[k]; p.opt_cpt = 100 * ST.opt_cpt[k]; p.opt_flex = 100 * ST.opt_flex[k];
@@ -1166,7 +1166,7 @@ td.lev { color: var(--steel); }
       if (cb.checked) { const other = cb.dataset.a === 'lock' ? builder.out : builder.lock; other.delete(cb.dataset.n); const o = $(`#btable input[data-n="${CSS.escape(cb.dataset.n)}"][data-a="${cb.dataset.a === 'lock' ? 'out' : 'lock'}"]`); if (o) o.checked = false; }
     }));
   }
-  $('#resetProj').addEventListener('click', () => { D.players.forEach(p => builder.proj[p.name] = p.proj); builder.lock.clear(); builder.out.clear(); builder.cpt.clear(); renderBuilderTable(); applyRecipe(builder.recipe, true); });
+  $('#resetProj').addEventListener('click', () => { D.players.forEach(p => builder.proj[p.name] = baseProj(p)); builder.lock.clear(); builder.out.clear(); builder.cpt.clear(); renderBuilderTable(); applyRecipe(builder.recipe, true); });
   const METHOD_NOTE = { p51: 'Highest-projected 5-1 stacks under your rules. Instant.', hyb: "FORGE's main method: half top-projected 5-1 stacks, half the best payers in simulated contests, with FORGE's per-player cap (Auto below). A few seconds.",
     ev: "Every lineup is played in 2,000 simulated games against a simulated field; the best average payouts win (FORGE's Showdown rules on). Takes a few seconds.", hyb0: 'FORGE Pick without the two fixes: captain can be anyone and cheap fillers are not marked down (unless you edited them).' };
   function setMethod(v) { if (v !== 'p51' && !(D && D.simpack)) v = 'p51'; builder.method = v; $$('#bMethod button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === v)));
@@ -1195,17 +1195,22 @@ td.lev { color: var(--steel); }
 
   // the forge: enumerate every legal lineup, score by projection, pick greedily under caps
   $('#bform').addEventListener('submit', ev => { ev.preventDefault(); const st = $('#bStatus'); st.className = 'status'; st.textContent = 'Heating the steel…'; setTimeout(runForge, 30); });
+  // (2026-10-22, FORGE: "would it build the lineups we are actually entering?") on an entered (final) slate the Builder starts from the projections
+  // the entered build used (proj_build; the page's numbers refresh after the build); RUN = an automatic extra build for one contest (DK tab)
+  function baseProj(p) { return (D && D.slate && D.slate.status === 'final' && p.proj_build != null) ? p.proj_build : p.proj; }
+  let FORGE_RUN = null;
+  async function forgeRun(n, exclude) { FORGE_RUN = { n, exclude, result: null, keep: builder.result }; try { await runForge(); return FORGE_RUN.result || []; } finally { FORGE_RUN = null; } }
   async function runForge() {
-    const st = $('#bStatus'), t0 = performance.now(), method = builder.method || 'p51', sim = method !== 'p51';
+    const RUN = FORGE_RUN; const st = RUN ? { set className(v) {}, set textContent(v) {} } : $('#bStatus'), t0 = performance.now(), method = builder.method || 'p51', sim = method !== 'p51';
     const P = D.players, n = P.length, sal = P.map(p => p.sal), pos = P.map(p => p.pos);
     const pkb = sim && D.simpack ? Object.fromEntries(D.simpack.names.map((nm, k) => [nm, D.simpack.base[k]])) : {};
-    const proj = P.map(p => { const v = builder.proj[p.name] ?? p.proj; if (method === 'hyb0' && p.shrunk && v === p.proj && p.market != null) return p.market;
-      return (sim && v === p.proj && pkb[p.name] != null && Math.abs(pkb[p.name] - v) < 0.006) ? pkb[p.name] : v; });   // unedited -> FORGE's unrounded value (page shows 2 decimals)
+    const proj = P.map(p => { const b0 = baseProj(p), v = builder.proj[p.name] ?? b0; if (method === 'hyb0' && p.shrunk && v === b0 && p.market != null) return p.market;
+      return (sim && v === b0 && pkb[p.name] != null && Math.abs(pkb[p.name] - v) < 0.006) ? pkb[p.name] : v; });   // unedited -> FORGE's unrounded value (page shows 2 decimals)
     ownLean(P, proj); personal(P, proj, $('#bMine').checked);
     const teams = [...new Set(P.map(p => p.team))], tm = P.map(p => teams.indexOf(p.team));
-    const NREQ = Math.max(1, Math.min(150, parseInt($('#bN').value) || 20)); let cap = Math.max(1, parseInt($('#bCap').value) || 6);
+    const NREQ = RUN ? RUN.n : Math.max(1, Math.min(150, parseInt($('#bN').value) || 20)); let cap = Math.max(1, parseInt($('#bCap').value) || 6);
     // 2026-10-21 Round 38 (FORGE: "cut down the entries"): FORGE Pick builds twice the lineups and keeps the top half of each half (best stacks + first simulator picks)
-    const top5 = ($('#bTop5') && $('#bTop5').checked) && $('#bMethod [aria-pressed="true"]') && $('#bMethod [aria-pressed="true"]').dataset.v === 'hyb' && builder.struct === 'hedge' && NREQ >= 2 && NREQ <= 75, N = top5 ? 2 * NREQ : NREQ;
+    const top5 = ($('#bTop5') && $('#bTop5').checked) && $('#bMethod [aria-pressed="true"]') && $('#bMethod [aria-pressed="true"]').dataset.v === 'hyb' && builder.struct === 'hedge' && NREQ >= 10 && NREQ <= 75, N = top5 ? 2 * NREQ : NREQ;   // production: TOP5_HALF only for 10+ lineups
     const maxExp = Math.max(1, Math.ceil(N * Math.min(100, Math.max(10, parseFloat($('#bExp').value) || 100)) / 100));
     const uniq = Math.max(1, Math.min(4, parseInt($('#bUniq').value) || 1)), minSal = parseInt($('#bMinSal').value) || 0, maxPunt = parseInt($('#bPunt').value);
     const noCpt = $('#bNoCpt').checked, dstRule = $('#bDst').checked;
@@ -1222,6 +1227,7 @@ td.lev { color: var(--steel); }
       T3.forEach((i, j) => wcap[i] = c[j]); }
     const capOf = i => top3On ? (wcap[i] || 0) : cap;
     const out = P.map(p => builder.out.has(p.name)), lock = P.map(p => builder.lock.has(p.name)), nLock = lock.filter(Boolean).length;
+    const luKey = lu => P[lu[0]].name + '|' + lu.slice(1).map(x => P[x].name).sort().join(',');
     const codes = [], scores = [], is51 = [];
     for (let c = 0; c < n; c++) {
       if (out[c] || (noCpt && (pos[c] === 'TE' || pos[c] === 'K' || pos[c] === 'DST')) || (cptPool.size && !cptPool.has(c))) continue;
@@ -1246,7 +1252,7 @@ td.lev { color: var(--steel); }
         if (chosen.length >= want) break;
         if (need51 === true && !is51[i]) continue; if (need51 === false && is51[i]) continue;
         const code = codes[i], lu = [code & 31, (code >> 5) & 31, (code >> 10) & 31, (code >> 15) & 31, (code >> 20) & 31, (code >> 25) & 31];
-        if ((cc[lu[0]] || 0) >= capOf(lu[0])) continue; if (lu.some(x => (ex[x] || 0) >= maxExp && !lock[x])) continue;
+        if ((cc[lu[0]] || 0) >= capOf(lu[0])) continue; if (lu.some(x => (ex[x] || 0) >= maxExp && !lock[x])) continue; if (RUN && RUN.exclude && RUN.exclude.has(luKey(lu))) continue;
         let ok = true; for (const ch of chosen) { let sh = (ch.lu[0] === lu[0]) ? 1 : 0; const fs = new Set(ch.lu.slice(1)); for (let k = 1; k < 6; k++) if (fs.has(lu[k])) sh++; if (6 - sh < uniq) { ok = false; break; } }
         if (!ok) continue;
         chosen.push({ lu, s: scores[i], rank: rankOf.get(i) }); cc[lu[0]] = (cc[lu[0]] || 0) + 1; lu.forEach(x => ex[x] = (ex[x] || 0) + 1);
@@ -1258,7 +1264,7 @@ td.lev { color: var(--steel); }
     const pickFrom = (order, want, ccx, val, noPC) => {     // same caps/uniqueness as pick(), in a given order (EV order for the simulation methods)
       for (const i of order) {
         if (chosen.length >= want) break; const code = codes[i], lu = [code & 31, (code >> 5) & 31, (code >> 10) & 31, (code >> 15) & 31, (code >> 20) & 31, (code >> 25) & 31];
-        if ((ccx[lu[0]] || 0) >= capOf(lu[0])) continue; if (lu.some(x => (ex[x] || 0) >= maxExp && !lock[x])) continue; if (PC && !noPC && lu.some(x => (ex[x] || 0) >= PC[x] && !lock[x])) continue;
+        if ((ccx[lu[0]] || 0) >= capOf(lu[0])) continue; if (lu.some(x => (ex[x] || 0) >= maxExp && !lock[x])) continue; if (RUN && RUN.exclude && RUN.exclude.has(luKey(lu))) continue; if (PC && !noPC && lu.some(x => (ex[x] || 0) >= PC[x] && !lock[x])) continue;
         let ok = true; for (const ch of chosen) { let sh = (ch.lu[0] === lu[0]) ? 1 : 0; const fs = new Set(ch.lu.slice(1)); for (let k = 1; k < 6; k++) if (fs.has(lu[k])) sh++; if (6 - sh < uniq) { ok = false; break; } }
         if (!ok) continue; chosen.push({ lu, s: scores[i], rank: rankOf.get(i), ev: val ? val.get(i) : undefined }); ccx[lu[0]] = (ccx[lu[0]] || 0) + 1; lu.forEach(x => ex[x] = (ex[x] || 0) + 1);
       }
@@ -1288,6 +1294,8 @@ td.lev { color: var(--steel); }
     const ownSum = lu => { let t = 0, any = false; const c0 = P[lu[0]]; if (c0.own_cpt != null) { t += c0.own_cpt; any = true; } lu.slice(1).forEach(x => { if (P[x].own_flex != null) { t += P[x].own_flex; any = true; } }); return any ? t : null; };
     builder.result = chosen.map(ch => ({ cpt: P[ch.lu[0]].name, flex: ch.lu.slice(1).map(x => P[x].name), proj: ch.s, sal: 1.5 * sal[ch.lu[0]] + ch.lu.slice(1).reduce((t, x) => t + sal[x], 0),
       pct: 100 * (ch.rank + 1) / codes.length, own: ownSum(ch.lu), ev: ch.ev }));
+    if (RUN) { RUN.result = builder.result; builder.result = RUN.keep;
+      logBuild('showdown_auto', { method, n: NREQ, top5: !!top5, top3: !!top3On, excluded: RUN.exclude ? RUN.exclude.size : 0, got: chosen.length, purpose: 'extra contest (DraftKings tab)' }, RUN.result.map(l => ({ cpt: l.cpt, flex: l.flex }))); return; }
     const ms = Math.round(performance.now() - t0);
     st.className = 'status'; st.textContent = `Forged ${chosen.length} of ${NREQ} lineups${top5 ? ' (best half of ' + N + ')' : ''} (${setInfo({ p51: 'P51-M-SX', hyb: 'HYB-M-SXPW', ev: 'EV-M', hyb0: 'HYB-M' }[method]).name}) · ${codes.length.toLocaleString('en-US')} legal lineups${sim ? ', ' + (builder.poolN || Math.min(codes.length, D.simpack.topn || 10000)).toLocaleString('en-US') + ' simulated' : ''} in ${(ms / 1000).toFixed(1)} s` + (builder.relaxed ? ` · the last ${builder.relaxed === 1 ? 'lineup was' : builder.relaxed + ' lineups were'} filled without FORGE's per-player cap (the cap alone left too few)` : '') + (chosen.length < NREQ ? ` · stopped at ${chosen.length}: of the ${(builder.why ? builder.why.cap + builder.why.exp + builder.why.uniq : 0).toLocaleString('en-US')} lineups left, ${builder.why ? builder.why.cap.toLocaleString('en-US') : 0} are blocked by the per-captain limit, ${builder.why ? builder.why.exp.toLocaleString('en-US') : 0} by the per-player exposure limit and ${builder.why ? builder.why.uniq.toLocaleString('en-US') : 0} by the min-players-different rule. With a high "min players different" only so many lineups can fit; lower it (or raise the captain limit) to get more` : '');
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) { const sp = $('#sparks'); sp.innerHTML = Array.from({ length: 18 }, () => { const a = Math.random() * Math.PI * 2, r = 40 + Math.random() * 70; return `<b style="--dx:${(Math.cos(a) * r).toFixed(0)}px;--dy:${(Math.sin(a) * r - 20).toFixed(0)}px"></b>`; }).join(''); setTimeout(() => sp.innerHTML = '', 800); }
@@ -1584,6 +1592,18 @@ td.lev { color: var(--steel); }
     out.innerHTML = `<div class="toolbar"><a class="btn primary" href="${url}" download="DKEntries_FORGE_lateswap.csv">Download late-swap file</a></div>`
       + changed.slice(0, 60).map(c => `<p class="note"><b>${c.r[1].replace(/\[.*?\]/g, '').trim()}</b> (entry ${c.r[0]}): ${c.swaps.join(', ')} · +${c.gain.toFixed(1)} pts${c.relaxed ? ' · rules relaxed (locked players already break one)' : ''}</p>`).join('') + notes.map(n => `<p class="note">${n}</p>`).join('');
   }
+  let AUTO = null;
+  async function prepAuto(per, L, twice) {
+    const key = l => l.cpt + '|' + [...l.flex].sort().join(','); const cs = Object.keys(per).filter(c => !CASHRX.test(c) && !(SERX.test(c) || per[c] === 1)).sort((a, b) => per[b] - per[a]);
+    const map = {}, why = {}, used = new Set(L.map(key));
+    cs.forEach((c, j) => { if (j > 0) return; const n = per[c]; map[c] = (twice && n > L.length) ? L.flatMap(l => [l, l]) : L.slice(); why[c] = (twice && n > L.length) ? 'your lineups, each twice' : 'your lineups'; });
+    for (const c of cs.slice(1)) {
+      const n = per[c], dup = twice && n >= 20 && n % 2 === 0, need = dup ? n / 2 : n;
+      const R = await forgeRun(need, used); R.forEach(l => used.add(key(l)));
+      map[c] = dup ? R.flatMap(l => [l, l]) : R; why[c] = `${R.length} more of your lineups built for this contest${dup ? ', each twice' : ''} (none repeat another contest)`;
+    }
+    return { map, why };
+  }
   function fillDK(text) {
     const res = $('#dkResult'); let PICK = ''; const say = (html) => res.innerHTML = PICK + html;
     res.onchange = ev => { const t = ev.target; if (t && t.dataset && t.dataset.dkc !== undefined) { const all = [...res.querySelectorAll('[data-dkc]')]; DKONLY = new Set(all.filter(x => x.checked).map(x => x.dataset.dkc)); fillDK(DKFILE); } };
@@ -1610,12 +1630,18 @@ td.lev { color: var(--steel); }
       if (kind === 'showdown') { const g = D.slate.away + '@' + D.slate.home; if (!games.has(g)) return say(`<div class="err">This file is for ${[...games].join(', ')}, but the game picked at the top is ${g}. Tap the right game at the top; this check runs again on its own.</div>`); }
       const src = lineupsFor(kind); if (!src.gpp || !src.gpp.length) return say(`<div class="err">${DKSRC === 'mine' ? 'Build your lineups in the Builder first.' : 'FORGE has no lineups for this game yet. Try the Builder, then pick "My Builder lineups".'}</div>`);
       const perContest = {}; entries.forEach(r => perContest[r[1].trim()] = (perContest[r[1].trim()] || 0) + 1);
+      const twice0 = !!($('#dkTwice') && $('#dkTwice').checked);
+      if (DKSRC === 'mine' && kind === 'showdown' && src.gpp.length) {   // (2026-10-22) same plan as FORGE's entries: biggest contest = your set (each twice), every other multi-entry contest gets its own lineups, built the same way and never repeating
+        const key = JSON.stringify([perContest, src.gpp.map(l => l.cpt + '|' + l.flex.join(',')), twice0]);
+        if (!AUTO || AUTO.key !== key) { say('<p class="note">Building the lineups each contest needs, the same way FORGE builds its own entries…</p>'); prepAuto(perContest, src.gpp, twice0).then(m => { AUTO = { key, map: m.map, why: m.why }; fillDK(text); }).catch(e => say('<div class="err">Could not build the extra lineups (' + e.message + ').</div>')); return; }
+      }
       // (2026-10-21 Round 41) single entry gets lineup #1, which also stays in the multi-entry contests (the tested plan)
       let gp = 0; const used = {}, out = [], errs = [], plan = {}, skipped = [], expo = [], twice = !!($('#dkTwice') && $('#dkTwice').checked);
       const status = {}; D.players.forEach(p => status[p.name] = p.status || '');
       for (const r of entries) {
         const c = r[1].trim(); used[c] = used[c] || 0; let lu, why;
         if (DKSRC === 'forge' && src.byContest[c] && src.byContest[c][used[c]]) { lu = src.byContest[c][used[c]]; why = 'FORGE set for this contest'; }
+        else if (DKSRC === 'mine' && AUTO && AUTO.map && AUTO.map[c] && !CASHRX.test(c) && !(SERX.test(c) || perContest[c] === 1)) { lu = AUTO.map[c][used[c]]; why = AUTO.why[c] || 'your lineups'; }
         else if (CASHRX.test(c)) { lu = src.cash; why = 'cash lineup'; }
         else if (SERX.test(c) || perContest[c] === 1) { lu = src.se; why = 'top lineup'; }
         else { lu = src.gpp[gp++]; why = 'tournament lineups'; if (!lu && twice && gp - 1 < 2 * src.gpp.length) { lu = src.gpp[(gp - 1) % src.gpp.length]; why = 'tournament lineups (each twice)'; } }
