@@ -9,9 +9,9 @@ self.addEventListener('fetch', e => {
       try {
         const fd = await e.request.formData();
         const f = fd.get('dkfile') || [...fd.values()].find(v => typeof v === 'object' && v && 'text' in v);
-        const txt = f ? await f.text() : (fd.get('text') || '');
         const c = await caches.open('forge-share');
-        await c.put('shared-entries', new Response(String(txt), { headers: { 'content-type': 'text/csv', 'x-name': (f && f.name) || '' } }));
+        if (f && 'arrayBuffer' in f) await c.put('shared-entries', new Response(await f.arrayBuffer(), { headers: { 'content-type': f.type || 'application/octet-stream', 'x-name': f.name || '' } }));   // 2026-10-22: bytes kept (standings zips)
+        else await c.put('shared-entries', new Response(String(fd.get('text') || ''), { headers: { 'content-type': 'text/csv', 'x-name': '' } }));
       } catch (err) { /* page shows the normal picker if nothing was stored */ }
       return Response.redirect(new URL('./?shared=1', self.registration.scope).href, 303);
     })());

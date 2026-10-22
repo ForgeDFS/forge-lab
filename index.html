@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="507ce9bb3103"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="7947963d941f"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -253,7 +253,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 #moreSheet button { text-align: left; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; color: var(--fg); font: inherit; cursor: pointer; display: grid; gap: 2px; }
 #moreSheet button b { font-weight: 600; font-size: 16px; } #moreSheet button small { color: var(--muted); font-size: 12.5px; }
 #moreSheet .sheetx { text-align: center; background: none; border: 0; color: var(--muted); padding: 10px; }
-.rpbanner:empty { display: none !important; } .whobox { display: grid; gap: 4px; font-size: 14px; margin-top: 8px; } .whobox small { color: var(--muted); font-size: 12px; } .whobox input { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); } .subnav { margin-bottom: 14px; } .subnav button { padding: 8px 16px; font-size: 14px; } .betfoot { margin-top: 18px; }
+.rpbanner:empty { display: none !important; } body:not(.owner) .owner-only { display: none !important; } .whobox { display: grid; gap: 4px; font-size: 14px; margin-top: 8px; } .whobox small { color: var(--muted); font-size: 12px; } .whobox input { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); } .subnav { margin-bottom: 14px; } .subnav button { padding: 8px 16px; font-size: 14px; } .betfoot { margin-top: 18px; }
 @media (max-width: 640px) {
   body { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
   .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; margin: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; overflow: visible;
@@ -669,6 +669,8 @@ td.lev { color: var(--steel); }
     <p class="note" id="liveNote">Each set graded on the real contest results. ROI counts every prize in full: a win counts as a win.</p>
     <div id="live"></div>
     <div id="entSum"></div>
+    <div class="appbox owner-only" id="stBox"><b>Send contest standings to FORGE.</b> After a contest ends, download its standings on DraftKings (the contest page, then Export / Download standings), then tap Share and pick FORGE, or choose the file here. FORGE archives it, grades every build and learns from it on its own.
+      <div class="toolbar" style="margin-top:8px"><label class="btn filebtn"><input type="file" id="stFile" accept=".zip,.csv">Choose standings file</label><span class="status" id="stStatus" role="status"></span></div></div>
     <h3 class="subh">What everyone's builds are teaching FORGE</h3>
     <div id="learnBox"><p class="note">Loading…</p></div>
     <h3 class="subh">Backtest: today's FORGE Pick</h3>
@@ -1670,11 +1672,35 @@ td.lev { color: var(--steel); }
     if (pr < 0) return null; const g = (rows[pr + 1] || [])[pc + 5]; const game = g ? g.split(' ')[0] : null;
     const m = IDX.find(x => x.kind === 'showdown' && x.game === game); return m && m.id;
   }
+  // ---- standings -> FORGE inbox (2026-10-22, owner only): Git Data API with the owner-encrypted upload key (data/upload.owner.enc.json)
+  async function sendStandings(name, buf) {
+    const st = $('#stStatus'); const say = (m, err) => { if (st) { st.className = 'status' + (err ? ' err' : ''); st.textContent = m; } };
+    try {
+      if (!OPW) return say('Sign in as owner first (footer: Owner sign-in), then send the file again.', true);
+      const r = await fetch('data/upload.owner.enc.json', { cache: 'no-cache' }); if (!r.ok) return say('The upload key is not set up yet (secret FORGE_UPLOAD_TOKEN).', true);
+      const cfg = await odec(await r.json()); const H = { Authorization: 'Bearer ' + cfg.token, Accept: 'application/vnd.github+json' }, A = 'https://api.github.com/repos/' + cfg.repo;
+      const fname = String(name).replace(/[^A-Za-z0-9._-]/g, '_'); if (!/\d{8,}/.test(fname)) return say('That file name has no contest number. Use the file exactly as DraftKings names it (contest-standings-<number>).', true);
+      say('Sending ' + fname + '…'); let b = ''; const u8 = new Uint8Array(buf); for (let i = 0; i < u8.length; i += 0x8000) b += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+      const j = async (url, opt) => { const x = await fetch(url, Object.assign({ headers: Object.assign({ 'Content-Type': 'application/json' }, H) }, opt)); if (!x.ok) throw new Error(url.split('/repos/')[1] + ' ' + x.status); return x.json(); };
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const ref = await j(A + '/git/ref/heads/main'), com = await j(A + '/git/commits/' + ref.object.sha), blob = await j(A + '/git/blobs', { method: 'POST', body: JSON.stringify({ content: btoa(b), encoding: 'base64' }) });
+          const tree = await j(A + '/git/trees', { method: 'POST', body: JSON.stringify({ base_tree: com.tree.sha, tree: [{ path: cfg.path + '/' + fname, mode: '100644', type: 'blob', sha: blob.sha }] }) });
+          const nc = await j(A + '/git/commits', { method: 'POST', body: JSON.stringify({ message: 'standings via the app: ' + fname, tree: tree.sha, parents: [ref.object.sha] }) });
+          await j(A + '/git/refs/heads/main', { method: 'PATCH', body: JSON.stringify({ sha: nc.sha }) });
+          return say('Sent. FORGE is archiving and grading it now; results show up here in a few minutes.');
+        } catch (e) { if (attempt === 2) throw e; await new Promise(z => setTimeout(z, 1500)); }
+      }
+    } catch (e) { say('Could not send: ' + e.message, true); }
+  }
+  if ($('#stFile')) $('#stFile').addEventListener('change', async ev => { const f = ev.target.files[0]; if (!f) return; await sendStandings(f.name, await f.arrayBuffer()); ev.target.value = ''; });
   async function pickupShared() {
     if (!/[?&]shared=1/.test(location.search) || !('caches' in window)) return;
     try {
       const c = await caches.open('forge-share'), r = await c.match('shared-entries'); history.replaceState(null, '', location.pathname);
-      if (!r) return; const text = await r.text(); await c.delete('shared-entries'); if (!text.trim()) return;
+      if (!r) return; const nm = r.headers.get('x-name') || '', buf = await r.arrayBuffer(); await c.delete('shared-entries'); if (!buf.byteLength) return;
+      if (/standings/i.test(nm) || /\.zip$/i.test(nm)) { show('record'); await sendStandings(nm || 'contest-standings.zip', buf); return; }   // 2026-10-22: standings -> FORGE's inbox
+      const text = new TextDecoder().decode(buf); if (!text.trim()) return;
       DKFILE = text; const id = slateForFile(text); show('dk');
       if (id && id !== CUR) await loadSlate(id); else fillDK(DKFILE);
       window.scrollTo({ top: $('#p-dk').offsetTop - 60, behavior: 'smooth' });
