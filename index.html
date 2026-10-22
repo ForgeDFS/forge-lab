@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="7947963d941f"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="2d82c5d94585"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -650,7 +650,7 @@ td.lev { color: var(--steel); }
     <h3 class="subh">Props &amp; odds</h3>
     <p class="lede">Betting-side numbers, kept apart from the DFS tools. FORGE's own chances come from player prop lines turned into simulated games; they are research, not picks.</p>
     <div class="nba-only"><h3 class="subh2">Who leads the slate tonight</h3><div class="nbaleaders" id="nbaLeaders"><p class="note">No NBA slate loaded.</p></div></div>
-    <div class="nfl-only"><p class="note">NFL prop tools are not on the site yet. The chance to be the top DraftKings scorer is a DFS number and stays on Players.</p></div>
+    <div class="nfl-only"><h3 class="subh2" id="nflLeadTitle">Who leads the game</h3><div class="nbaleaders" id="nflLeaders"><p class="note">No NFL slate loaded.</p></div></div>
     <p class="note betfoot">Not betting advice · 21+ · 1-800-GAMBLER</p>
   </section>
 
@@ -826,9 +826,19 @@ td.lev { color: var(--steel); }
   fetch('data/index.enc.json', { cache: 'no-cache' }).then(r => { if (!r.ok) throw new Error('plain'); return r.json(); }).then(enc => { ENC = true; gate(enc); })
     .catch(() => { ENC = false; start().catch(fail); });
 
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  function renderNFLProps(data) {   // 2026-10-22: NFL prop leaderboards (tools/nfl_leaders.py, v0) -- Props & odds tab only
+    const L = data.leaders || {}, isC = data.slate && data.slate.kind === 'classic', pc = v => (100 * v).toFixed(v < 0.1 ? 1 : 0) + '%';
+    $('#nflLeadTitle').textContent = isC ? 'Who leads the main slate' : 'Who leads the game';
+    const card = (k, lab) => L[k] && L[k].length ? `<div class="card"><h4>${lab}</h4><ol>${L[k].slice(0, 5).map(r => `<li><span>${esc(r.name)} <small>${esc(r.team || '')} · ${r.mean}${r.partial ? '*' : ''}</small></span><b>${pc(r.p_lead)}</b></li>`).join('')}</ol></div>` : '';
+    const td = L.td && L.td.length ? `<div class="card"><h4>Anytime touchdown</h4><ol>${L.td.slice(0, 5).map(r => `<li><span>${esc(r.name)} <small>${esc(r.team || '')}</small></span><b>${pc(r.p)}</b></li>`).join('')}</ol></div>` : '';
+    const body = card('passyds', 'Passing yards') + card('rushyds', 'Rushing yards') + card('recyds', 'Receiving yards') + card('rec', 'Receptions') + card('scrim', 'Rush + receiving yards') + card('passtd', 'Passing touchdowns') + td;
+    $('#nflLeaders').innerHTML = body ? body + `<p class="note" style="grid-column:1/-1">Chance to lead ${isC ? 'the whole main slate' : 'the game'} in that stat, from 20,000 simulated games built from the sportsbook prop lines (players simulated independently; early version, research not picks). Number next to the name = his average in the simulation${L.scrim && L.scrim.some(r => r.partial) ? '; * = a running back with only one of his two yardage lines posted' : ''}. Anytime touchdown = the sportsbook's own chance, with the bookmaker's margin removed. Only players with a posted line are counted.</p>` : '<p class="note">No player prop lines posted for this slate yet. They usually appear a day or two before kickoff.</p>';
+  }
   function init(data, meta) {
     meta = meta || {}; const isNBA = sportOf(data.slate); document.body.classList.toggle('nba', isNBA === 'NBA'); document.body.classList.remove('nbasd');
     if (isNBA === 'NBA') { D = data; return initNBA(data, meta); }
+    renderNFLProps(data);
     const isC = data.slate && data.slate.kind === 'classic'; document.body.classList.toggle('classic', isC);
     setTimeout(() => { if (typeof DKFILE !== 'undefined' && DKFILE) fillDK(DKFILE); renderManual(); emFill(); }, 0);   // re-check a loaded entries file against the newly picked game
     if (isC) { D = data; return initClassic(data, meta); }
