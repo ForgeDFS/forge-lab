@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="5f31ed825749"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="ee2b32a94e4a"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -663,7 +663,7 @@ td.lev { color: var(--steel); }
     <div class="tiles" id="recTiles"></div>
     <div id="ourBox"></div>
     <h3 class="subh">Live: FORGE builds on real contests</h3>
-    <p class="note" id="liveNote">Each set graded on the real contest results. ROI counts every prize in full; "Capped" counts any one lineup at most 10&times; its entry, shown only as a check on how much one big hit carries.</p>
+    <p class="note" id="liveNote">Each set graded on the real contest results. ROI counts every prize in full: a win counts as a win.</p>
     <div id="live"></div>
     <div id="entSum"></div>
     <h3 class="subh">Backtest: today's FORGE Pick</h3>
@@ -1751,8 +1751,8 @@ td.lev { color: var(--steel); }
     // live grades: entered build and its comparator up front, everything else folded
     const Lv = (REC && REC.live) || [], lead = new Set([K ? K.entered : 'HYB-M-SXP', K ? K.shadow : 'HYB-M-SX']), own = !!D.owner;
     const rowsMain = Lv.filter(r => lead.has(r.selector) || (own && r.selector === 'DREW-SET')), rowsMore = Lv.filter(r => !rowsMain.includes(r) && r.selector !== 'DREW-SET');
-    const tr = r => `<tr><td>W${r.week} ${r.slate}</td><td>${selName(r.selector)}${r.entered ? ' <span class="tag">entered</span>' : (r.selector === 'DREW-SET' ? ' <span class="tag">entered</span>' : ' <span class="tag steel">paper</span>')}</td><td class="n">${r.contests}</td><td class="n">${r.lineups}</td><td class="n">${r.roi == null ? '—' : sgn(Math.round(100 * r.roi) || 0) + '%'}</td><td class="n dim">${r.roi_cap == null ? '—' : sgn(Math.round(100 * r.roi_cap) || 0) + '%'}</td><td class="n">${r.cash == null ? '—' : fmt(100 * r.cash, 0) + '%'}</td><td class="n">${r.top1}</td><td class="n">${fmt(r.best, 1)}</td></tr>`;
-    const tbl = R => `<div class="tbl-wrap"><table><thead><tr><th>Slate</th><th>Set</th><th class="n">Contests</th><th class="n">Lineups</th><th class="n">ROI</th><th class="n" title="Each lineup counted at most 10x its entry">Capped</th><th class="n">Cashed</th><th class="n">Top 1%</th><th class="n">Best</th></tr></thead><tbody>${R.map(tr).join('')}</tbody></table></div>`;
+    const tr = r => `<tr><td>W${r.week} ${r.slate}</td><td>${selName(r.selector)}${r.entered ? ' <span class="tag">entered</span>' : (r.selector === 'DREW-SET' ? ' <span class="tag">entered</span>' : ' <span class="tag steel">paper</span>')}</td><td class="n">${r.contests}</td><td class="n">${r.lineups}</td><td class="n">${r.roi == null ? '—' : sgn(Math.round(100 * r.roi) || 0) + '%'}</td><td class="n">${r.cash == null ? '—' : fmt(100 * r.cash, 0) + '%'}</td><td class="n">${r.top1}</td><td class="n">${fmt(r.best, 1)}</td></tr>`;
+    const tbl = R => `<div class="tbl-wrap"><table><thead><tr><th>Slate</th><th>Set</th><th class="n">Contests</th><th class="n">Lineups</th><th class="n">ROI</th><th class="n">Cashed</th><th class="n">Top 1%</th><th class="n">Best</th></tr></thead><tbody>${R.map(tr).join('')}</tbody></table></div>`;
     $('#live').innerHTML = Lv.length ? (rowsMain.length ? tbl(rowsMain) : '<p class="note">FORGE Pick in its current form (weighted top-3 captains) has not been graded on a live slate yet; its first is NE@CHI. Earlier builds\' live grades are kept below.</p>') + (rowsMore.length ? `<details class="about"><summary>All other FORGE builds (${rowsMore.length} rows, not entered)</summary>${tbl(rowsMore)}</details>` : '')
       + `<p class="note">"Paper" = FORGE built it but the lineups we entered were different; graded anyway so every method keeps a record.${REC && REC.updated_utc ? ' Updated ' + REC.updated_utc.replace('T', ' ') + ' UTC.' : ''}</p>`
       : '<p class="note">No live slates graded yet.</p>';
