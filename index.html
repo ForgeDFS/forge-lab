@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="2d82c5d94585"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="1c55be0879f0"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -650,7 +650,10 @@ td.lev { color: var(--steel); }
     <h3 class="subh">Props &amp; odds</h3>
     <p class="lede">Betting-side numbers, kept apart from the DFS tools. FORGE's own chances come from player prop lines turned into simulated games; they are research, not picks.</p>
     <div class="nba-only"><h3 class="subh2">Who leads the slate tonight</h3><div class="nbaleaders" id="nbaLeaders"><p class="note">No NBA slate loaded.</p></div></div>
-    <div class="nfl-only"><h3 class="subh2" id="nflLeadTitle">Who leads the game</h3><div class="nbaleaders" id="nflLeaders"><p class="note">No NFL slate loaded.</p></div></div>
+    <div class="nfl-only"><h3 class="subh2" id="nflLeadTitle">Who leads the game</h3><div class="nbaleaders" id="nflLeaders"><p class="note">No NFL slate loaded.</p></div>
+      <h3 class="subh2">Every posted player line</h3><p class="note">The main line for each prop and the chance of going over or under it, from the sportsbook prices with the bookmaker's margin removed. A line near 50/50 is the book saying it is a coin flip.</p>
+      <input id="nflLineQ" type="search" placeholder="Search a player" style="width:100%;max-width:320px;margin:4px 0 8px">
+      <div class="tbl-wrap"><table id="nflLines"><thead><tr><th>Player</th><th>Prop</th><th class="n">Line</th><th class="n">Over</th><th class="n">Under</th></tr></thead><tbody></tbody></table></div></div>
     <p class="note betfoot">Not betting advice · 21+ · 1-800-GAMBLER</p>
   </section>
 
@@ -833,6 +836,11 @@ td.lev { color: var(--steel); }
     const card = (k, lab) => L[k] && L[k].length ? `<div class="card"><h4>${lab}</h4><ol>${L[k].slice(0, 5).map(r => `<li><span>${esc(r.name)} <small>${esc(r.team || '')} · ${r.mean}${r.partial ? '*' : ''}</small></span><b>${pc(r.p_lead)}</b></li>`).join('')}</ol></div>` : '';
     const td = L.td && L.td.length ? `<div class="card"><h4>Anytime touchdown</h4><ol>${L.td.slice(0, 5).map(r => `<li><span>${esc(r.name)} <small>${esc(r.team || '')}</small></span><b>${pc(r.p)}</b></li>`).join('')}</ol></div>` : '';
     const body = card('passyds', 'Passing yards') + card('rushyds', 'Rushing yards') + card('recyds', 'Receiving yards') + card('rec', 'Receptions') + card('scrim', 'Rush + receiving yards') + card('passtd', 'Passing touchdowns') + td;
+    const LAB = { passyds: 'Passing yards', passtd: 'Passing TDs', int: 'Interceptions', rushyds: 'Rushing yards', recyds: 'Receiving yards', rec: 'Receptions', kpts: 'Kicking points' };
+    const rows = []; (data.players || []).filter(p => !/^(OUT|IR|D)$/i.test(p.status || '')).forEach(p => { Object.entries(p.lines || {}).forEach(([k, v]) => { if (v && v.length === 2 && v[1] != null) rows.push({ n: p.name, t: p.team || '', k, l: v[0], o: v[1] }); }); if (p.p_td != null) rows.push({ n: p.name, t: p.team || '', k: 'td', l: null, o: p.p_td }); });
+    const drawLines = () => { const q = ($('#nflLineQ').value || '').toLowerCase(); const R = rows.filter(r => !q || r.n.toLowerCase().includes(q));
+      $('#nflLines tbody').innerHTML = R.length ? R.map(r => `<tr><td>${esc(r.n)} <small>${esc(r.t)}</small></td><td>${r.k === 'td' ? 'Anytime touchdown' : (LAB[r.k] || r.k)}</td><td class="n">${r.k === 'td' ? 'Yes / No' : r.l}</td><td class="n">${pc(r.o)}</td><td class="n">${pc(1 - r.o)}</td></tr>`).join('') : `<tr><td colspan="5" class="note">${rows.length ? 'No player matches.' : 'No player prop lines posted for this slate yet.'}</td></tr>`; };
+    $('#nflLineQ').value = ''; $('#nflLineQ').oninput = drawLines; drawLines();
     $('#nflLeaders').innerHTML = body ? body + `<p class="note" style="grid-column:1/-1">Chance to lead ${isC ? 'the whole main slate' : 'the game'} in that stat, from 20,000 simulated games built from the sportsbook prop lines (players simulated independently; early version, research not picks). Number next to the name = his average in the simulation${L.scrim && L.scrim.some(r => r.partial) ? '; * = a running back with only one of his two yardage lines posted' : ''}. Anytime touchdown = the sportsbook's own chance, with the bookmaker's margin removed. Only players with a posted line are counted.</p>` : '<p class="note">No player prop lines posted for this slate yet. They usually appear a day or two before kickoff.</p>';
   }
   function init(data, meta) {
