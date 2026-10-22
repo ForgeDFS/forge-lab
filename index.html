@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="907eb088975a"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="6bbca68413e0"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -1235,6 +1235,9 @@ td.lev { color: var(--steel); }
     const capOf = i => top3On ? (wcap[i] || 0) : cap;
     const out = P.map(p => builder.out.has(p.name)), lock = P.map(p => builder.lock.has(p.name)), nLock = lock.filter(Boolean).length;
     const luKey = lu => P[lu[0]].name + '|' + lu.slice(1).map(x => P[x].name).sort().join(',');
+    /* 2026-10-22 (FORGE): on a slate FORGE entered, friends' builds never reproduce FORGE's entered lineups (salted hashes only; owner builds unaffected) */
+    const ENT = (!D.owner && D.slate && D.slate.entered_h && D.slate.entered_h.length) ? new Set(D.slate.entered_h) : null; const esalt = (D.slate && (D.slate.id || D.slate.game)) || '';
+    const isEnt = lu => { if (!ENT) return false; const k = luKey(lu); return ENT.has(hash32(esalt + '|x|' + k) + '-' + hash32(esalt + '|y|' + k)); };
     const codes = [], scores = [], is51 = [];
     for (let c = 0; c < n; c++) {
       if (out[c] || (noCpt && (pos[c] === 'TE' || pos[c] === 'K' || pos[c] === 'DST')) || (cptPool.size && !cptPool.has(c))) continue;
@@ -1259,7 +1262,7 @@ td.lev { color: var(--steel); }
         if (chosen.length >= want) break;
         if (need51 === true && !is51[i]) continue; if (need51 === false && is51[i]) continue;
         const code = codes[i], lu = [code & 31, (code >> 5) & 31, (code >> 10) & 31, (code >> 15) & 31, (code >> 20) & 31, (code >> 25) & 31];
-        if ((cc[lu[0]] || 0) >= capOf(lu[0])) continue; if (lu.some(x => (ex[x] || 0) >= maxExp && !lock[x])) continue; if (RUN && RUN.exclude && RUN.exclude.has(luKey(lu))) continue;
+        if ((cc[lu[0]] || 0) >= capOf(lu[0])) continue; if (lu.some(x => (ex[x] || 0) >= maxExp && !lock[x])) continue; if (RUN && RUN.exclude && RUN.exclude.has(luKey(lu))) continue; if (isEnt(lu)) continue;
         let ok = true; for (const ch of chosen) { let sh = (ch.lu[0] === lu[0]) ? 1 : 0; const fs = new Set(ch.lu.slice(1)); for (let k = 1; k < 6; k++) if (fs.has(lu[k])) sh++; if (6 - sh < uniq) { ok = false; break; } }
         if (!ok) continue;
         chosen.push({ lu, s: scores[i], rank: rankOf.get(i) }); cc[lu[0]] = (cc[lu[0]] || 0) + 1; lu.forEach(x => ex[x] = (ex[x] || 0) + 1);
@@ -1271,7 +1274,7 @@ td.lev { color: var(--steel); }
     const pickFrom = (order, want, ccx, val, noPC) => {     // same caps/uniqueness as pick(), in a given order (EV order for the simulation methods)
       for (const i of order) {
         if (chosen.length >= want) break; const code = codes[i], lu = [code & 31, (code >> 5) & 31, (code >> 10) & 31, (code >> 15) & 31, (code >> 20) & 31, (code >> 25) & 31];
-        if ((ccx[lu[0]] || 0) >= capOf(lu[0])) continue; if (lu.some(x => (ex[x] || 0) >= maxExp && !lock[x])) continue; if (RUN && RUN.exclude && RUN.exclude.has(luKey(lu))) continue; if (PC && !noPC && lu.some(x => (ex[x] || 0) >= PC[x] && !lock[x])) continue;
+        if ((ccx[lu[0]] || 0) >= capOf(lu[0])) continue; if (lu.some(x => (ex[x] || 0) >= maxExp && !lock[x])) continue; if (RUN && RUN.exclude && RUN.exclude.has(luKey(lu))) continue; if (isEnt(lu)) continue; if (PC && !noPC && lu.some(x => (ex[x] || 0) >= PC[x] && !lock[x])) continue;
         let ok = true; for (const ch of chosen) { let sh = (ch.lu[0] === lu[0]) ? 1 : 0; const fs = new Set(ch.lu.slice(1)); for (let k = 1; k < 6; k++) if (fs.has(lu[k])) sh++; if (6 - sh < uniq) { ok = false; break; } }
         if (!ok) continue; chosen.push({ lu, s: scores[i], rank: rankOf.get(i), ev: val ? val.get(i) : undefined }); ccx[lu[0]] = (ccx[lu[0]] || 0) + 1; lu.forEach(x => ex[x] = (ex[x] || 0) + 1);
       }
