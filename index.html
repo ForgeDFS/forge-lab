@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="8dfda05f8df9"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="6d7e2187ef7b"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -543,7 +543,7 @@ td.lev { color: var(--steel); }
       <form class="controls" id="bform">
         <h3>Start from</h3>
         <div class="recipes" id="recipes">
-          <button type="button" class="recipe" data-r="gpp" aria-pressed="true"><b>Tournament · FORGE default</b><small>FORGE Pick, exactly what FORGE enters: 10 lineups, the best 5 top-projected 5-1 stacks plus the simulator's 5 best picks; captains = FORGE's 3 most likely top scorers, more lineups for the likeliest; FORGE's per-player cap; cheap players adjusted; ownership forecast normalized. For 20-max and big GPPs.</small><span class="ev" id="evGpp"></span></button>
+          <button type="button" class="recipe" data-r="gpp" aria-pressed="true"><b>Tournament · FORGE default</b><small>FORGE Pick, exactly what FORGE enters: 10 lineups, the best 5 top-projected 5-1 stacks plus the simulator's 5 best picks (in a 20-entry contest each goes in twice); captains = FORGE's 3 most likely top scorers, more lineups for the likeliest; FORGE's per-player cap; cheap players adjusted; ownership forecast normalized. For 20-max and big GPPs.</small><span class="ev" id="evGpp"></span></button>
           <button type="button" class="recipe" data-r="se" aria-pressed="false"><b>Single entry</b><small>The top-projected 5-1 lineup. Not FORGE's committed single-entry process yet (single entry is being researched).</small><span class="ev">Earlier test: 10 single-entry contests, estimated payouts</span></button>
           <button type="button" class="recipe" data-r="cash" aria-pressed="false"><b>Cash · Double Up, 50/50</b><small>The highest projected lineup of any shape. Floor over ceiling.</small><span class="ev">Top 44% in 86% of 37 tested fields (upper bound)</span></button>
         </div>
@@ -630,6 +630,7 @@ td.lev { color: var(--steel); }
       <li><b>Download your entries file.</b> On the DraftKings website, open <b>Lineups → Edit Entries</b> and download your entries (DKEntries.csv). <a class="btn small" id="dkOpen" href="https://www.draftkings.com/entry/upload" target="_blank" rel="noopener">Open DraftKings Edit Entries</a>
         <span class="note" style="display:block;margin-top:4px">The page is draftkings.com/entry/upload. On a phone, if the DraftKings app opens instead, type that address into your browser.</span></li>
       <li><b>Fill it here.</b> <label class="btn primary filebtn"><input type="file" id="dkFile">Choose your DKEntries file</label>
+        <label class="check" style="margin-top:8px"><input type="checkbox" id="dkTwice" checked> Enter each lineup twice when a contest has more entries than lineups (FORGE's default: 10 best lineups, each twice, beat 20 different ones on 18 past Showdowns)</label>
         <div class="field" style="margin-top:10px"><label>Use these lineups</label><div class="seg" id="dkSrc"><button type="button" data-v="forge" aria-pressed="true">FORGE's lineups</button><button type="button" data-v="mine" aria-pressed="false">My Builder lineups</button></div></div>
         <p class="note">Can't see the file? iPhone: tap <b>Choose File</b>, then <b>Browse</b> → <b>Downloads</b>. Android: if photos open, tap <b>Browse</b> or the ☰ menu → <b>Downloads</b>. The file is usually named <b>DKEntries.csv</b>.</p>
         <div id="dkResult" class="dkres" role="status"></div></li>
@@ -847,7 +848,7 @@ td.lev { color: var(--steel); }
     const loc = u => { if (!u) return null; const d = new Date(String(u).replace(' UTC', 'Z').replace(' ', 'T')); return isNaN(d) ? null : d.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); };
     const fr = loc(s.odds_as_of); $('#fresh').textContent = fr ? 'Odds as of ' + fr + (s.refreshed_utc ? ' · projections refreshed ' + loc(s.refreshed_utc) : '') : '';
     if (!LS.get('forge_start_seen')) $('#startCard').hidden = false;
-    loadRecord().then(() => { const BC = REC && REC.current_backtest, A = BC && BC.patterns && BC.patterns[0]; $('#evGpp').textContent = A ? `Backtest, ${A.games} real 2026 Showdowns: ${sgn(A.roi)}% ROI with 10 × $0.25 + 5 × $0.50 a slate (every prize counted)` : ''; }).catch(() => {});
+    loadRecord().then(() => { const BC = REC && REC.current_backtest, A = BC && BC.patterns && BC.patterns[0]; $('#evGpp').textContent = A ? `Backtest, ${A.games} real 2026 Showdowns: ${sgn(A.roi)}% ROI at $7.50 a slate (every prize counted)` : ''; }).catch(() => {});
     renderBanner(); renderPastTop(); renderPast();
     renderPlayers(); initLineups(); renderBuilderTable(); renderRecord(); applyRecipe(LS.get('forge_recipe') || 'gpp', true); initTester();
     const t = LS.get('forge_tab'); if (t && $('#p-' + t)) show(t);
@@ -884,6 +885,7 @@ td.lev { color: var(--steel); }
 
   // ---------------------------------------------------------------- set names (2026-10-15, FORGE: friendly names; internal code kept in grey for grading)
   const SETS = [
+    [/^HYB-M-SXPW-20$|^HYBMSXPW20$/, 'FORGE Pick – 20 different', "Comparator (not entered): FORGE Pick with 20 different lineups, graded live against the entered 10 best, each twice."],
     [/^HYB-M-SXPW-10$/, 'FORGE Pick – top 5 of each half', "Test (live only): the first 5 lineups of each half of FORGE Pick, graded on the same contests to see if fewer, better lineups earn more."],
     [/^HYB-M-SXPW$|^HYBMSXPW$|^FORGE build \(HYB-M-SXPW\)/, 'FORGE Pick', "Our main method and the set we enter (since 10/22): FORGE Pick with captains limited to FORGE's 3 most likely top scorers, more lineups for the likeliest."],
     [/^HYB-M-SXPC$|^HYBMSXPC$|^FORGE build \(HYB-M-SXPC\)/, 'FORGE Pick – equal captains', "FORGE Pick with FORGE's 3 most likely top scorers as captains, equal lineups each (the comparator for the entered build)."],
@@ -1429,6 +1431,7 @@ td.lev { color: var(--steel); }
   }
   const csvCell = v => /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
   let DKFILE = null, DKONLY = null;   // DKONLY: contests chosen in the selector (null = all in the file)
+  if ($('#dkTwice')) $('#dkTwice').addEventListener('change', () => { if (DKFILE) fillDK(DKFILE); });
   $('#dkFile').addEventListener('change', async ev => { const f = ev.target.files[0]; if (!f) return; DKFILE = await f.text(); DKONLY = null; ev.target.value = ''; fillDK(DKFILE); });
   function forgeSendSet() {     // the set picked on the FORGE Lineups tab (default: the entered/FORGE Pick set), narrowed by its filter
     const keys = Object.keys(D.builds || {}); const sel = $('#buildSel') && $('#buildSel').value; const k = (sel && D.builds[sel] && D.builds[sel].length) ? sel : (keys.find(x => /^(Entered|FORGE build)/.test(x)) || keys[0]);
@@ -1547,14 +1550,14 @@ td.lev { color: var(--steel); }
       const src = lineupsFor(kind); if (!src.gpp || !src.gpp.length) return say(`<div class="err">${DKSRC === 'mine' ? 'Build your lineups in the Builder first.' : 'FORGE has no lineups for this game yet. Try the Builder, then pick "My Builder lineups".'}</div>`);
       const perContest = {}; entries.forEach(r => perContest[r[1].trim()] = (perContest[r[1].trim()] || 0) + 1);
       if (DKSRC === 'mine' && Object.keys(perContest).some(c => !CASHRX.test(c) && (SERX.test(c) || perContest[c] === 1))) src.gpp = src.gpp.slice(1);   // FORGE rule: no lineup repeated across contests (single entry keeps #1)
-      let gp = 0; const used = {}, out = [], errs = [], plan = {}, skipped = [], expo = [];
+      let gp = 0; const used = {}, out = [], errs = [], plan = {}, skipped = [], expo = [], twice = !!($('#dkTwice') && $('#dkTwice').checked);
       const status = {}; D.players.forEach(p => status[p.name] = p.status || '');
       for (const r of entries) {
         const c = r[1].trim(); used[c] = used[c] || 0; let lu, why;
         if (DKSRC === 'forge' && src.byContest[c] && src.byContest[c][used[c]]) { lu = src.byContest[c][used[c]]; why = 'FORGE set for this contest'; }
         else if (CASHRX.test(c)) { lu = src.cash; why = 'cash lineup'; }
         else if (SERX.test(c) || perContest[c] === 1) { lu = src.se; why = 'top lineup'; }
-        else { lu = src.gpp[gp++]; why = 'tournament lineups'; }
+        else { lu = src.gpp[gp++]; why = 'tournament lineups'; if (!lu && twice && gp - 1 < 2 * src.gpp.length) { lu = src.gpp[(gp - 1) % src.gpp.length]; why = 'tournament lineups (each twice)'; } }
         used[c]++;
         if (!lu) { skipped.push(r[0]); continue; }   // no lineup left for this entry: leave it untouched (2026-10-18, FORGE: fill as many as there are)
         const names = kind === 'classic' ? lu.players.map(p => p.name || p) : [lu.cpt, ...lu.flex];
@@ -1565,7 +1568,7 @@ td.lev { color: var(--steel); }
         const outP = names.filter(n => /^(OUT|IR|D)$/.test(status[n] || '')); if (outP.length) { errs.push(`${c}: ${outP.join(', ')} is ruled out`); continue; }
         out.push([r[0], r[1], r[2], r[3], ...ids.map(e => e.nid)]); (plan[c] = plan[c] || { n: 0, why }).n++; expo.push({ entry: r[0], contest: c, names, why });
       }
-      for (const c of Object.keys(perContest)) { if (CASHRX.test(c)) continue; const ls = out.filter(o => o[1].trim() === c).map(o => isSD ? o[4] + '|' + o.slice(5).sort().join(',') : o.slice(4).sort().join(',')); if (ls.length !== new Set(ls).size) errs.push(`${c}: the same lineup would be entered twice. Build more lineups.`); }
+      for (const c of Object.keys(perContest)) { if (CASHRX.test(c)) continue; const ls = out.filter(o => o[1].trim() === c).map(o => isSD ? o[4] + '|' + o.slice(5).sort().join(',') : o.slice(4).sort().join(',')); const cnt_ = {}; ls.forEach(k => cnt_[k] = (cnt_[k] || 0) + 1); if (Object.values(cnt_).some(v => v > (twice ? 2 : 1))) errs.push(`${c}: the same lineup would be entered twice. Build more lineups.`); }
       if (!out.length && skipped.length) return say(`<div class="err">Not filled: your ${DKSRC === 'mine' ? 'Builder made' : 'FORGE set has'} ${src.gpp.length} lineups but the selected entries need ${skipped.length}${DKSRC === 'mine' ? '. In the Builder set Lineups higher and press Forge, or untick contests above' : '. Untick contests above or switch to "My Builder lineups"'}.</div>`);
       if (errs.length) return say('<div class="err">Not filled. Fix this first:</div><ul>' + errs.slice(0, 8).map(e => `<li>${e}</li>`).join('') + '</ul>');
       const csv = [hdr.slice(0, 4 + nS).map(csvCell).join(','), ...out.map(r => r.map(x => csvCell(String(x))).join(','))].join('\r\n') + '\r\n';
@@ -1747,10 +1750,10 @@ td.lev { color: var(--steel); }
     else tiles.push(`<div class="tile"><small>Live slates graded</small><b>0</b><span>Review point: 6 slates</span></div>`);
     const BC = REC && REC.current_backtest;
     if (BC && BC.patterns && BC.patterns.length) { const A = BC.patterns[0]; tiles.push(`<div class="tile"><small>Backtest · today's FORGE Pick</small><b class="${A.roi >= 0 ? 'gain' : 'loss'}">${sgn(A.roi)}%</b><span>ROI on ${A.games} real 2026 Showdowns, ${A.name.split(':')[1].trim()} · every prize counted</span></div>`); }
-    $('#btCur').innerHTML = !(BC && BC.patterns) ? '<p class="note">No backtest for the current build in this data yet.</p>' : `<p class="lede">The exact settings the Builder starts on (10 lineups: the best 5 stacks + the simulator's best 5, weighted top-3 captain pool, corrected ownership forecast), replayed on ${BC.patterns[0].games} real 2026 Showdowns from pre-game data only, ${BC.seeds} simulation runs per game, graded on the real contest results with two real entry patterns. Every prize counts in full. Backtest, not live money.</p>
+    $('#btCur').innerHTML = !(BC && BC.patterns) ? '<p class="note">No backtest for the current build in this data yet.</p>' : `<p class="lede">The exact settings the Builder starts on (the 10 best lineups: best 5 stacks + the simulator's best 5, each entered twice in a 20-entry contest; weighted top-3 captain pool; corrected ownership forecast), replayed on ${BC.patterns[0].games} real 2026 Showdowns from pre-game data only, ${BC.seeds} simulation runs per game, graded on the real contest results with two real entry patterns. Every prize counts in full. Backtest, not live money.</p>
       <div class="tiles">${BC.patterns.map(P => `<div class="tile"><small>${P.name.split(':')[1].trim()}</small><b class="${P.roi >= 0 ? 'gain' : 'loss'}">${sgn(P.roi)}%</b><span>average $${P.avg_back.toFixed(2)} back on $${P.fee.toFixed(2)} · in profit on ${P.in_profit}% of slates${P.real_roi != null ? ` · games with the real prize table only (${P.real_games}): ${sgn(P.real_roi)}%` : ''}</span></div>`).join('')}</div>
       <details class="about"><summary>Game by game</summary><div class="tbl-wrap"><table><thead><tr><th>Game</th><th class="n">Week</th>${BC.patterns.map(P => `<th class="n">${P.name.split(':')[0]} back</th>`).join('')}<th>Prize table</th></tr></thead><tbody>${BC.patterns[0].by_game.map((g, i) => `<tr><td>${g.game}</td><td class="n">${g.week}</td>${BC.patterns.map(P => { const x = P.by_game[i]; return `<td class="n ${x.avg_back >= P.fee ? 'netpos' : 'netneg'}">$${x.avg_back.toFixed(2)}</td>`; }).join('')}<td class="dim">${g.real ? 'real' : 'estimated'}</td></tr>`).join('')}</tbody></table></div>
-      <p class="note">Pattern A = 10 × $0.25 (20-max) + 5 × $0.50 (150-max), $5 a slate. Pattern B = 10 × $0.10 + 10 × $0.25 + 5 × $0.50, $6 a slate. "Estimated" = that game's real field graded on the closest real prize table of the same contest type.</p></details>`;
+      <p class="note">Pattern A = the 10 best twice in a $0.25 20-max (20 entries) + 5 × $0.50 (150-max), $7.50 a slate. Pattern B = the 10 best in a $0.10 and a $0.25 20-max + 5 × $0.50, $6 a slate. "Estimated" = that game's real field graded on the closest real prize table of the same contest type.</p></details>`;
     $('#recTiles').innerHTML = tiles.join('');
     // owner: our real contests, by slate
     const K3 = (O && O.by_kind) || (REC && REC.ours_summary), money = !!(O && O.by_kind), kc = ['showdown', 'classic', 'combined'], kn = { showdown: 'Showdown', classic: 'Classic', combined: 'Combined' };
