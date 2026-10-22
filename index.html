@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="783d736be80d"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="f44b4338ea11"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -142,12 +142,12 @@ details.adv .field:first-of-type { margin-top: 4px; }
 #slatePicker { display: block; overflow: visible; } #slatePicker[hidden] { display: none; }
 .sports { display: flex; gap: 6px; margin: 0 0 10px; } .sports button { font: 700 14px var(--f-display); letter-spacing: .12em; padding: 7px 18px; border-radius: 99px; border: 1px solid var(--line); background: var(--plate); color: var(--muted); cursor: pointer; }
 .sports button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
-body.nba nav.tabs, body.nba .panel, body.nba #rpBanner { display: none !important; } body.nba #nbaView { display: block !important; }
+body.nba .cl-only, body.nba .sd-only, body.nba .nfl-only, body.nba #rpBanner, body:not(.nba) .nba-only { display: none !important; }
 .nbaleaders { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; margin-bottom: 18px; }
 .nbaleaders .card { background: var(--plate); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; } .nbaleaders .card h4 { margin: 0 0 6px; font: 700 12.5px var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .nbaleaders ol { margin: 0; padding-left: 18px; font-size: 13.5px; } .nbaleaders li { display: flex; justify-content: space-between; gap: 8px; } .nbaleaders li small { color: var(--muted); }
 .nbaform { display: grid; gap: 8px; max-width: 760px; } .nbaform label { display: flex; gap: 8px; align-items: center; } .nbaform input[type=number] { width: 80px; }
-#nbaView.sd .clonly, #nbaView:not(.sd) .sdonly, #nbaView:not(.sd) .sdcol { display: none; }
+body.nbasd .clonly, body:not(.nbasd) .sdonly, body:not(.nbasd) .sdcol { display: none; }
 .nbaflag { border-left: 3px solid var(--steel); padding-left: 10px; }
 .rpbanner { margin: 0 0 12px; padding: 10px 14px; border: 1px solid var(--steel); border-radius: 10px; background: var(--plate); font-size: 13.5px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .rpbanner b { color: var(--steel); } .rpbanner .btn { margin-left: auto; }
@@ -246,14 +246,25 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
   .pill { font-size: 11px; letter-spacing: .04em; white-space: nowrap; max-width: 54vw; overflow: hidden; text-overflow: ellipsis; } #refreshBtn { margin-right: 0; padding: 4px 9px; }
 }
 /* 2026-10-15 redesign: phones get a bottom tab bar (icons + short labels) and a compact game plate */
-.tab .tico, .tab .tshort { display: none; }
+.tab .tico, .tab .tshort { display: none; } #tab-more { display: none; }
+#moreSheet { position: fixed; inset: 0; z-index: 45; } #moreSheet .sheetbg { position: absolute; inset: 0; background: rgba(0,0,0,.45); }
+#moreSheet .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--plate); border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; padding: 10px 14px calc(14px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 6px; max-width: 640px; margin: 0 auto; box-shadow: 0 -10px 30px rgba(0,0,0,.25); }
+#moreSheet .sheeth { font: 800 13px var(--f-display); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding: 4px 4px 6px; }
+#moreSheet button { text-align: left; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; color: var(--fg); font: inherit; cursor: pointer; display: grid; gap: 2px; }
+#moreSheet button b { font-weight: 600; font-size: 16px; } #moreSheet button small { color: var(--muted); font-size: 12.5px; }
+#moreSheet .sheetx { text-align: center; background: none; border: 0; color: var(--muted); padding: 10px; }
+.rpbanner:empty { display: none !important; } .subnav { margin-bottom: 14px; } .subnav button { padding: 8px 16px; font-size: 14px; } .betfoot { margin-top: 18px; }
 @media (max-width: 640px) {
   body { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
-  .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; margin: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0; overflow: visible;
+  .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; margin: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; overflow: visible;
     background: var(--plate); border-top: 1px solid var(--line); border-bottom: 0; padding: 4px 2px calc(4px + env(safe-area-inset-bottom, 0px)); }
   .tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 54px; padding: 4px 1px; border-bottom: 0;
     font-family: var(--f-body); font-weight: 500; font-size: 10.5px; letter-spacing: 0; text-transform: none; white-space: nowrap; }
   .tab .kicker, .tab .tlong { display: none; } .tab .tshort { display: block; } .tab .tico { display: block; width: 23px; height: 23px; }
+  .tab.tmore { display: none; } #tab-more { display: flex; }
+  .pickrow { flex-direction: column; align-items: stretch; gap: 4px; margin-bottom: 10px; } .pklab { min-width: 0; }
+  .slate-chip { min-width: 0; }
+  .bar .row { min-width: 0; } #statusPill { max-width: 46vw; } #statusText { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tab[aria-selected="true"] { color: var(--ember); }
   .plate { margin-top: 10px; padding: 12px 14px; gap: 8px; }
   .plate .glow { display: none; }
@@ -405,47 +416,30 @@ td.lev { color: var(--steel); }
     <div class="meta">
       <div class="stat"><b id="mSpread">—</b><span id="lSpread">Spread</span></div>
       <div class="stat"><b id="mTotal">—</b><span id="lTotal">Total</span></div>
-      <div class="stat"><b id="mWeek">—</b><span>NFL week</span></div>
+      <div class="stat nfl-only"><b id="mWeek">—</b><span>NFL week</span></div>
     </div>
   </section>
 
-  <section id="nbaView" hidden>
-    <p class="note nbaflag"><b>NBA v0 · unproven.</b> Projections come from tonight's FanDuel player props turned into DraftKings points; the chances come from 20,000 simulated nights with players treated as independent. No NBA backtest yet. Turnovers are estimated (10% of points + assists) because FanDuel does not price them.</p>
-    <h3 class="subh">Who leads the slate tonight</h3>
-    <div class="nbaleaders" id="nbaLeaders"></div>
-    <h3 class="subh">Players</h3>
-    <div class="toolbar"><input type="search" id="nbaSearch" placeholder="Search players" aria-label="Search players"><select id="nbaGame" aria-label="Game"></select><span class="note" id="nbaCount"></span></div>
-    <div class="tbl-wrap"><table id="nbaTable"><thead><tr><th data-k="name">Player</th><th>Pos</th><th data-k="team">Team</th><th data-k="game">Game</th><th class="n" data-k="sal">Salary</th><th class="n" data-k="proj">Proj</th><th class="n" data-k="value">Value</th><th class="n" data-k="pts">PTS</th><th class="n" data-k="reb">REB</th><th class="n" data-k="ast">AST</th><th class="n" data-k="tpm">3PM</th><th class="n" data-k="stl">STL</th><th class="n" data-k="blk">BLK</th><th class="n" data-k="dd">DD%</th><th class="n sdcol" data-k="cpt_sal">CPT $</th><th class="n sdcol" data-k="p_top">Top scorer</th><th>Out</th></tr></thead><tbody></tbody></table></div>
-    <h3 class="subh" id="nbaBTitle">Builder · NBA Classic</h3>
-    <div class="nbaform">
-      <label>Lineups <input type="number" id="nbaN" min="1" max="150" value="20"></label>
-      <label>Min players different <input type="number" id="nbaUniq" min="1" max="6" value="2"></label>
-      <label>Max exposure % <input type="number" id="nbaExp" min="10" max="100" value="100"></label>
-      <label class="check sdonly"><input type="checkbox" id="nbaTop3" checked> FORGE Pick captains: FORGE's 3 most likely top DraftKings scorers, more lineups for the likeliest (FORGE's Showdown default)</label>
-      <label class="check clonly"><input type="checkbox" id="nbaStack" checked> Game stack: 3+ players from one of the 3 highest-total close games (spread 7 or less)</label>
-      <label class="check clonly"><input type="checkbox" id="nbaBlow" checked> At most 1 player from likely blowouts (spread 9+)</label>
-      <p class="note">Both rules are FORGE's starting hypotheses for NBA (fast, close games score more; starters sit in blowouts). Untested until NBA contests are graded.</p>
-      <div class="toolbar"><button type="button" class="btn primary" id="nbaRun">Forge NBA lineups</button><span class="status" id="nbaStatus" role="status"></span></div>
-    </div>
-    <div id="nbaOut" hidden><div class="toolbar"><h3 style="font-size:22px">Fresh off the anvil</h3><button type="button" class="btn small" id="nbaCsv">Download for DraftKings</button></div><div class="expo" id="nbaExpo"></div><div class="grid" id="nbaGrid"></div></div>
-  </section>
   <div class="rpbanner" id="rpBanner" hidden></div>
   <nav class="tabs" role="tablist" aria-label="Sections">
     <button class="tab" role="tab" id="tab-players" aria-selected="true" data-p="players"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-4 3.5-6 7-6s6.2 2 7 6"/></svg><span class="kicker">The ore</span><span class="tlong">Players</span><span class="tshort">Players</span></button>
-    <button class="tab" role="tab" id="tab-lineups" aria-selected="false" data-p="lineups"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><span class="kicker">Forged</span><span class="tlong">Lineups</span><span class="tshort">Lineups</span></button>
     <button class="tab" role="tab" id="tab-builder" aria-selected="false" data-p="builder"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4l6 6-3 3-6-6zM11 7l-7 7 3 3 7-7M4 20h8"/></svg><span class="kicker">The anvil</span><span class="tlong">Builder</span><span class="tshort">Build</span></button>
     <button class="tab" role="tab" id="tab-dk" aria-selected="false" data-p="dk"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7 9l5-5 5 5M5 15v4h14v-4"/></svg><span class="kicker">Out of the fire</span><span class="tlong">To DraftKings</span><span class="tshort">DraftKings</span></button>
-    <button class="tab" role="tab" id="tab-alerts" aria-selected="false" data-p="alerts"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg><span class="kicker">Hot iron</span><span class="tlong">Alerts<b class="badge" id="ovlBadge" hidden></b></span><span class="tshort">Alerts<b class="badge" id="ovlBadgeS" hidden></b></span></button>
-    <button class="tab" role="tab" id="tab-record" aria-selected="false" data-p="record"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span class="kicker">Proof of steel</span><span class="tlong">Record</span><span class="tshort">Record</span></button>
-    <button class="tab" role="tab" id="tab-past" aria-selected="false" data-p="past"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4"/><path d="M12 8v4l3 2"/></svg><span class="kicker">Cooled steel</span><span class="tlong">Past contests</span><span class="tshort">Past</span></button>
-    <button class="tab" role="tab" id="tab-how" aria-selected="false" data-p="how"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/></svg><span class="kicker">The process</span><span class="tlong">How it works</span><span class="tshort">How</span></button>
+    <button class="tab" role="tab" id="tab-record" aria-selected="false" data-p="record" data-grp="past"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span class="kicker">Proof of steel</span><span class="tlong">Results</span><span class="tshort">Results</span></button>
+    <button class="tab tmore" role="tab" id="tab-lineups" aria-selected="false" data-p="lineups"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><span class="kicker">Forged</span><span class="tlong">Lineups</span><span class="tshort">Lineups</span></button>
+    <button class="tab tmore" role="tab" id="tab-props" aria-selected="false" data-p="props"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19h16M7 16V9M12 16V5M17 16v-4"/></svg><span class="kicker">Side bets</span><span class="tlong">Props &amp; odds</span><span class="tshort">Props</span></button>
+    <button class="tab tmore" role="tab" id="tab-alerts" aria-selected="false" data-p="alerts"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg><span class="kicker">Hot iron</span><span class="tlong">Alerts<b class="badge" id="ovlBadge" hidden></b></span><span class="tshort">Alerts<b class="badge" id="ovlBadgeS" hidden></b></span></button>
+    <button class="tab tmore" role="tab" id="tab-how" aria-selected="false" data-p="how"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/></svg><span class="kicker">The process</span><span class="tlong">How it works</span><span class="tshort">How</span></button>
+    <button class="tab tmorebtn" type="button" id="tab-more" aria-haspopup="dialog" aria-expanded="false"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg><span class="tshort">More<b class="badge" id="ovlBadgeM" hidden></b></span></button>
   </nav>
+  <div id="moreSheet" hidden><div class="sheetbg" data-close="1"></div><div class="sheet" role="dialog" aria-label="More sections"><div class="sheeth">More</div><button type="button" data-go="lineups"><b>FORGE lineups</b><small>How FORGE played the slate (after lock)</small></button><button type="button" data-go="props"><b>Props &amp; odds</b><small>Stat leaders and betting-side numbers</small></button><button type="button" data-go="alerts"><b>Overlay alerts <span class="badge" id="ovlBadgeX" hidden></span></b><small>Contests running under their prize pool</small></button><button type="button" data-go="how"><b>How it works</b><small>The process behind FORGE Pick</small></button><button type="button" class="sheetx" data-close="1">Close</button></div></div>
 
   <section class="panel" id="p-players">
     <div class="start" id="startCard" hidden><h3>Start here <button class="btn small" id="startX" type="button">Got it</button></h3><ol>
-      <li><b>Players</b> shows each player's projection, prop lines, projected ownership and chance to be the top scorer. Numbers refresh through the day.</li>
-      <li><b>Lineups</b> keeps FORGE's own entries private, so nobody duplicates them. After lock it shows how we played the slate: captain and flex percentages and who we faded.</li>
-      <li><b>Builder</b> starts on FORGE's best-tested settings. Pick your contest type, tweak anything, press Forge, then copy or download for DraftKings.</li></ol></div>
+      <li><b>Pick a game</b> at the top: NFL or NBA, then a Classic slate or a Showdown.</li>
+      <li><b>Build</b> and press <b>Forge</b>. It is already set to FORGE Pick, the same settings FORGE enters with. No changes needed.</li>
+      <li><b>DraftKings</b> walks you through getting the lineups into your contests, from your phone.</li>
+      <li><b>Results</b> shows how FORGE has done on real contests, and lets you replay past contests.</li></ol></div>
     <div class="cl-only">
       <details class="about"><summary>About these numbers</summary>
       <p class="lede">Classic main slate: 9 players, $50,000. Projections come from DraftKings and FanDuel player props converted to DraftKings points. Players without enough prop lines get a salary-based number and are tagged. Games with no lines yet have no projections.</p>
@@ -453,6 +447,13 @@ td.lev { color: var(--steel); }
       <div class="qbenv" id="qbEnv"></div>
       <div class="toolbar"><div class="seg" id="cPos"></div><input type="search" id="cSearch" placeholder="Search players" aria-label="Search players"></div>
       <div class="tbl-wrap"><table id="ctable"><thead><tr><th>Player</th><th>Pos</th><th class="n sort" data-k="sal">Salary</th><th class="n sort" data-k="proj">Proj</th><th class="n sort" data-k="value">Pts / $1K</th><th>DK lines</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="nba-only" id="nbaPlayersBox">
+    <p class="note nbaflag"><b>NBA v0 · unproven.</b> Projections come from tonight's FanDuel player props turned into DraftKings points; No NBA backtest yet. Turnovers are estimated (10% of points + assists) because FanDuel does not price them.</p>
+    <div class="nbaleaders" id="nbaCptPool"></div>
+    
+    <div class="toolbar"><input type="search" id="nbaSearch" placeholder="Search players" aria-label="Search players"><select id="nbaGame" aria-label="Game"></select><span class="note" id="nbaCount"></span></div>
+    <div class="tbl-wrap"><table id="nbaTable"><thead><tr><th data-k="name">Player</th><th>Pos</th><th data-k="team">Team</th><th data-k="game">Game</th><th class="n" data-k="sal">Salary</th><th class="n" data-k="proj">Proj</th><th class="n" data-k="value">Value</th><th class="n" data-k="pts">PTS</th><th class="n" data-k="reb">REB</th><th class="n" data-k="ast">AST</th><th class="n" data-k="tpm">3PM</th><th class="n" data-k="stl">STL</th><th class="n" data-k="blk">BLK</th><th class="n" data-k="dd">DD%</th><th class="n sdcol" data-k="cpt_sal">CPT $</th><th class="n sdcol" data-k="p_top">Top scorer</th><th>Out</th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="sd-only">
     <details class="about"><summary>About these numbers</summary>
@@ -470,6 +471,7 @@ td.lev { color: var(--steel); }
   </section>
 
   <section class="panel" id="p-lineups" hidden>
+    <p class="note nba-only">FORGE's own NBA lineups are not shown on the site yet. Use Build: it starts on FORGE's default settings.</p>
     <div class="cl-only" id="cForge"></div>
     <div id="privBox"></div>
     <div class="sd-only" id="forgeSets">
@@ -590,10 +592,30 @@ td.lev { color: var(--steel); }
       </div>
     </div>
     </div>
+    <div class="nba-only" id="nbaBuildBox">
+    <h3 class="subh" id="nbaBTitle">Builder · NBA Classic</h3>
+    <div class="nbaform">
+      <label>Lineups <input type="number" id="nbaN" min="1" max="150" value="20"></label>
+      <label>Min players different <input type="number" id="nbaUniq" min="1" max="6" value="2"></label>
+      <label>Max exposure % <input type="number" id="nbaExp" min="10" max="100" value="100"></label>
+      <label class="check sdonly"><input type="checkbox" id="nbaTop3" checked> FORGE Pick captains: FORGE's 3 most likely top DraftKings scorers, more lineups for the likeliest (FORGE's Showdown default)</label>
+      <label class="check clonly"><input type="checkbox" id="nbaStack" checked> Game stack: 3+ players from one of the 3 highest-total close games (spread 7 or less)</label>
+      <label class="check clonly"><input type="checkbox" id="nbaBlow" checked> At most 1 player from likely blowouts (spread 9+)</label>
+      <p class="note">Both rules are FORGE's starting hypotheses for NBA (fast, close games score more; starters sit in blowouts). Untested until NBA contests are graded.</p>
+      <div class="toolbar"><button type="button" class="btn primary" id="nbaRun">Forge NBA lineups</button><span class="status" id="nbaStatus" role="status"></span></div>
+    </div>
+    <div id="nbaOut" hidden><div class="toolbar"><h3 style="font-size:22px">Fresh off the anvil</h3><button type="button" class="btn small" id="nbaCsv">Download for DraftKings</button></div><div class="expo" id="nbaExpo"></div><div class="grid" id="nbaGrid"></div></div>
+    </div>
     <div id="copyBox" hidden><p class="note">Copy didn't go through on this device. Select the text below and copy it.</p><textarea id="copyText" readonly></textarea></div>
   </section>
 
   <section class="panel" id="p-dk" hidden>
+    <div class="nba-only"><ol class="steps">
+      <li><b>Build.</b> In <b>Build</b>, press <b>Forge NBA lineups</b> (FORGE's default settings are already set).</li>
+      <li><b>Download.</b> Press <b>Download for DraftKings</b> under your lineups. The file is in DraftKings' upload format with player IDs.</li>
+      <li><b>Upload.</b> On the DraftKings website open <b>Lineups → Upload Lineups</b> for this slate and pick the file. <a class="btn small" href="https://www.draftkings.com/lineup/upload" target="_blank" rel="noopener">Open DraftKings upload</a></li></ol>
+      <div class="toolbar"><button type="button" class="btn primary" id="nbaCsv2">Download my NBA lineups</button><span class="status" id="nbaCsv2s"></span></div></div>
+    <div class="nfl-only">
     <p class="lede">Get your Builder lineups into DraftKings from your phone. Use your phone's web browser for DraftKings here, not the DraftKings app: the app can't take a file, the website can.</p>
     <div class="appbox" id="appBox">
       <b>Android: skip the file hunt.</b> Install FORGE as an app once. After that, when your entries file downloads, open it from the download message or your Downloads, tap <b>Share</b>, pick <b>FORGE</b>, and it lands here already filled.
@@ -616,33 +638,39 @@ td.lev { color: var(--steel); }
     <details class="manual"><summary>Checklist view</summary>
       <p class="note">Your current lineups in DraftKings' slot order. Tick each one off as you enter it in the app; this phone remembers the ticks.</p>
       <div class="grid" id="dkManual"></div></details>
+    </div>
+  </section>
+
+  <section class="panel" id="p-props" hidden>
+    <h3 class="subh">Props &amp; odds</h3>
+    <p class="lede">Betting-side numbers, kept apart from the DFS tools. FORGE's own chances come from player prop lines turned into simulated games; they are research, not picks.</p>
+    <div class="nba-only"><h3 class="subh2">Who leads the slate tonight</h3><div class="nbaleaders" id="nbaLeaders"><p class="note">No NBA slate loaded.</p></div></div>
+    <div class="nfl-only"><p class="note">NFL prop tools are not on the site yet. The chance to be the top DraftKings scorer is a DFS number and stays on Players.</p></div>
+    <p class="note betfoot">Not betting advice · 21+ · 1-800-GAMBLER</p>
   </section>
 
   <section class="panel" id="p-alerts" hidden>
     <h3 class="subh">Overlay alerts</h3>
-    <p class="lede">Guaranteed DraftKings contests on real NFL games that are running under their prize pool, checked every 10 minutes before NFL locks. FORGE never enters contests for you.</p>
+    <p class="lede">Guaranteed DraftKings contests on real NFL games that are running under their prize pool, checked about 2 hours, 1 hour and 15–25 minutes before every NFL lock. FORGE never enters contests for you.</p>
     <section class="ovl" id="ovl" aria-live="polite"><p class="note">No overlay check loaded yet.</p></section>
   </section>
 
   <section class="panel" id="p-record" hidden>
+    <div class="seg subnav" role="group" aria-label="Results"><button type="button" data-go="record" aria-pressed="true">Live record</button><button type="button" data-go="past" aria-pressed="false">Past contests</button></div>
+    <p class="note nba-only">No NBA slates graded yet: the results below are NFL.</p>
     <div class="tiles" id="recTiles"></div>
     <div id="ourBox"></div>
     <h3 class="subh">Live: FORGE builds on real contests</h3>
     <p class="note" id="liveNote">Each set graded on the real contest results. ROI counts every prize in full; "Capped" counts any one lineup at most 10&times; its entry, shown only as a check on how much one big hit carries.</p>
     <div id="live"></div>
     <div id="entSum"></div>
-    <details class="about" style="margin-top:18px"><summary>Backtest: 14 real 2026 Showdowns</summary>
-    <p class="lede">Every slate we enter gets graded, losses included. Backtests replay 14 real 2026 Showdowns: each builder makes 20 lineups from pre-game data only, then gets graded against the real contest field. Capped ROI limits any one lineup to 10× its entry, so a single huge hit can't hide a bad method.</p>
-    <div class="bars" id="bars"></div>
-    <div class="facts">
-      <div class="fact" id="factCash"><b>Measured against the cash line</b>What counts is clearing the cash line, not the field average. The live numbers are in "Our results" above.</div>
-      <div class="fact"><b>Cheap players are overrated</b>The prop market projects $1,500-and-under players at about twice what they score. FORGE corrects for it.</div>
-      <div class="fact"><b>Cash games want a floor</b>For double-ups the best-projected lineup of any shape cleared the cash line in 86% of tested fields.</div>
-    </div>
-    </details>
+    <h3 class="subh">Backtest: today's FORGE Pick</h3>
+    <div id="btCur"><p class="note">Loading…</p></div>
   </section>
 
   <section class="panel" id="p-past" hidden>
+    <div class="seg subnav" role="group" aria-label="Results"><button type="button" data-go="record" aria-pressed="false">Live record</button><button type="button" data-go="past" aria-pressed="true">Past contests</button></div>
+    <p class="note nba-only">Past contests are NFL Showdowns for now.</p>
     <h3 class="subh">Past contests</h3>
     <p class="lede">Every finished Showdown with FORGE's pre-game data: the projections, ownership forecast and simulated games it had before kickoff. Pick one, build in the Builder with any settings, and every lineup is graded against the real contest: actual points, finishing place, prize and the cash line.</p>
     <div id="pastList"><p class="note">Loading past contests…</p></div>
@@ -650,12 +678,13 @@ td.lev { color: var(--steel); }
   </section>
 
   <section class="panel" id="p-how" hidden>
-    <p class="lede">FORGE is a research system, not a picks service. Every rule it uses was written down before it was tested, then checked against real contests.</p>
+    <p class="lede">FORGE is a research system, not a picks service. Every rule it uses was written down before it was tested, then checked against real contests. The Builder starts on exactly what FORGE enters.</p>
     <div class="facts">
-      <div class="fact"><b>1 · Market projections</b>Player props from DraftKings and FanDuel are converted to expected Showdown points, captured automatically every two hours.</div>
-      <div class="fact"><b>2 · Simulation</b>100,000 correlated game simulations estimate each player's range and the chance he's the top scorer.</div>
-      <div class="fact"><b>3 · The hybrid build</b>Half the lineups are the best 5-1 stacks; half come from a payout simulator against a modeled field. The mix hedges whether one team dominates.</div>
-      <div class="fact"><b>4 · Graded live</b>After every game, all of FORGE's sets are graded on the real contest. A builder that falls behind gets switched out.</div>
+      <div class="fact"><b>1 · Market projections</b>Player props from the sportsbooks are turned into expected DraftKings points. Lines are saved the moment FORGE first sees them, then checked again about 2 hours, 1 hour and 15 minutes before every lock.</div>
+      <div class="fact"><b>2 · Simulation</b>Thousands of correlated game simulations give each player a range of outcomes and a chance to be the game's top scorer.</div>
+      <div class="fact"><b>3 · Captain pool</b>FORGE Pick only captains the 3 players most likely to be the top scorer, with more lineups on the likeliest. The top-scoring player was the winning captain in most of the 18 Showdowns we studied.</div>
+      <div class="fact"><b>4 · The hybrid build</b>Half the lineups are the best stacks with 5 players from one team; half come from a payout simulator that plays your lineups against a modeled field using FORGE's ownership forecast.</div>
+      <div class="fact"><b>5 · Graded live</b>After every game, FORGE's lineups are graded on the real contest. A change only goes live after it tests better on past contests.</div>
     </div>
   </section>
 
@@ -681,8 +710,18 @@ td.lev { color: var(--steel); }
   const LS = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
 
   // tabs
-  function show(p) { $$('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.p === p))); $$('.panel').forEach(x => x.hidden = x.id !== 'p-' + p); LS.set('forge_tab', p); }
-  $$('.tab').forEach(t => t.addEventListener('click', () => { show(t.dataset.p); if (matchMedia('(max-width: 640px)').matches) window.scrollTo({ top: 0, behavior: 'smooth' }); }));
+  function show(p) {
+    $$('.tab[data-p]').forEach(t => t.setAttribute('aria-selected', String(t.dataset.p === p || (t.dataset.grp || '').split(' ').includes(p))));
+    const sec = ['lineups', 'props', 'alerts', 'how'].includes(p); $('#tab-more').setAttribute('aria-selected', String(sec));
+    $$('.panel').forEach(x => x.hidden = x.id !== 'p-' + p); $$('.subnav button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.go === p)));
+    LS.set('forge_tab', p); if (p === 'past' && typeof renderPast === 'function') renderPast();
+  }
+  const toTop = () => { if (matchMedia('(max-width: 640px)').matches) window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  $$('.tab[data-p]').forEach(t => t.addEventListener('click', () => { show(t.dataset.p); toTop(); }));
+  const sheet = $('#moreSheet'), sheetOpen = o => { sheet.hidden = !o; $('#tab-more').setAttribute('aria-expanded', String(o)); };
+  $('#tab-more').addEventListener('click', () => sheetOpen(sheet.hidden));
+  document.addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g) { show(g.dataset.go); sheetOpen(false); toTop(); return; } if (e.target.closest('[data-close]')) sheetOpen(false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !sheet.hidden) sheetOpen(false); });
 
   const fail = e => { $('#statusText').textContent = 'No slate data'; $('#ptable tbody').innerHTML = '<tr><td colspan="8">The slate data could not be loaded (' + e.message + ').</td></tr>'; };
   // Data: public site = AES-GCM files encrypted with a key derived from the friends' password (PBKDF2-SHA256, one salt per publish);
@@ -716,16 +755,17 @@ td.lev { color: var(--steel); }
     el.hidden = !L.length;
     el.innerHTML = (C.length ? `<div class="pickrow"><span class="pklab">Classic</span><div class="pkchips">${C.map(chip).join('')}</div></div>` : '') + (S.length ? `<div class="pickrow"><span class="pklab">Showdown</span><div class="pkchips">${S.map(chip).join('')}</div></div>` : '');
     $$('.slate-chip', el).forEach(b => b.onclick = () => loadSlate(b.dataset.id));
-    const on = el.querySelector('[aria-pressed="true"]'); if (on) { const row = on.parentElement; row.scrollLeft = Math.max(0, on.offsetLeft - (row.clientWidth - on.offsetWidth) / 2); }
+    const on = el.querySelector('[aria-pressed="true"]'); if (on) { const row = on.parentElement, r0 = row.getBoundingClientRect(), r1 = on.getBoundingClientRect(); row.scrollLeft = Math.max(0, row.scrollLeft + (r1.left - r0.left) - (row.clientWidth - on.offsetWidth) / 2); }
   }
   function defaultSlateUnused() {}
   let SPORT = LS.get('forge_sport') || 'NFL';   // 2026-10-21 (Drew): NFL / NBA tabs up top
   const sportOf = x => (x && x.kind && String(x.kind).startsWith('nba')) ? 'NBA' : 'NFL';
   function renderSports() { $$('#sportPicker button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sport === SPORT))); }
   $$('#sportPicker button').forEach(b => b.onclick = () => { if (SPORT === b.dataset.sport) return; SPORT = b.dataset.sport; LS.set('forge_sport', SPORT); renderSports();
-    const d = defaultSlate(); if (d && sportOf(d) === SPORT) loadSlate(d.id); else { renderPicker(); document.body.classList.toggle('nba', SPORT === 'NBA'); $('#nbaView').hidden = SPORT !== 'NBA'; if (SPORT === 'NBA') $('#nbaLeaders').innerHTML = '<p class="note">No NBA slate published yet.</p>'; } });
+    const d = defaultSlate(); if (d && sportOf(d) === SPORT) loadSlate(d.id); else { renderPicker(); document.body.classList.toggle('nba', SPORT === 'NBA'); if (SPORT === 'NBA') { $('#nbaLeaders').innerHTML = '<p class="note">No NBA slate published yet.</p>'; $('#nbaCount').textContent = 'No NBA slate published yet.'; } } });
   function active(x) { if (x.status === 'complete') return false; return Date.now() < new Date(x.kickoff_utc).getTime() + (x.kind === 'classic' ? 12 : 4.5) * 3600e3; }   // live window: Showdown 4.5 h after kickoff, Classic main slate 12 h
-  function defaultSlate() { const S = IDX.filter(x => sportOf(x) === SPORT), up = S.filter(active); return (up[0] || S[S.length - 1] || IDX[IDX.length - 1]); }
+  function defaultSlate() { const k = x => new Date(x.kickoff_utc).getTime(), S = IDX.filter(x => sportOf(x) === SPORT).sort((a, b) => k(a) - k(b)), soon = S.filter(x => active(x) && k(x) > Date.now()), up = S.filter(active);   // next slate that has not locked yet, then a live one
+    return (soon[0] || up[up.length - 1] || S[S.length - 1] || IDX[IDX.length - 1]); }
   async function loadSlate(id) {
     CUR = id; renderPicker(); $('#statusText').textContent = 'Loading';
     try { const d = await getJSON(id); const ob = await ownerBuilds(id); if (ob) { d.builds = ob; d.owner = true; } else d.builds = d.builds || {};
@@ -743,7 +783,7 @@ td.lev { color: var(--steel); }
     let O; try { O = await getJSON('overlays'); } catch (e) { return; }
     const el = $('#ovl'), ago = Math.round((Date.now() - new Date(O.checked_utc).getTime()) / 60e3), ALL = (O.overlays || []).map(o => ({ ...o, mins: Math.round((new Date(o.locks_utc).getTime() - Date.now()) / 60e3) })).filter(o => o.mins > 0);
     const isMad = o => o.madden || /madden/i.test(o.name), L = ALL.filter(o => !isMad(o)), M = ALL.filter(isMad);   // Madden Stream = DK contests on simulated video-game NFL games (FORGE has no projections for them)
-    const setB = n => ['#ovlBadge', '#ovlBadgeS'].forEach(s => { const b = $(s); if (b) { b.hidden = !n; b.textContent = n; } });
+    const setB = n => ['#ovlBadge', '#ovlBadgeS', '#ovlBadgeM', '#ovlBadgeX'].forEach(s => { const b = $(s); if (b) { b.hidden = !n; b.textContent = n; } });
     if (ago > 240 && !ALL.length) { setB(0); el.classList.remove('hot'); el.innerHTML = '<p class="note">No overlay check in the last 4 hours. Checks run every 10 minutes in the hours before NFL locks.</p>'; return; }
     setB(L.length);
     el.hidden = false; el.classList.toggle('hot', L.length > 0); el.classList.toggle('quiet', !L.length); const usd = v => '$' + (v >= 100 ? Math.round(v).toLocaleString('en-US') : v.toFixed(2));
@@ -778,7 +818,7 @@ td.lev { color: var(--steel); }
     .catch(() => { ENC = false; start().catch(fail); });
 
   function init(data, meta) {
-    meta = meta || {}; const isNBA = sportOf(data.slate); document.body.classList.toggle('nba', isNBA === 'NBA'); $('#nbaView').hidden = isNBA !== 'NBA';
+    meta = meta || {}; const isNBA = sportOf(data.slate); document.body.classList.toggle('nba', isNBA === 'NBA'); document.body.classList.remove('nbasd');
     if (isNBA === 'NBA') { D = data; return initNBA(data, meta); }
     const isC = data.slate && data.slate.kind === 'classic'; document.body.classList.toggle('classic', isC);
     setTimeout(() => { if (typeof DKFILE !== 'undefined' && DKFILE) fillDK(DKFILE); renderManual(); emFill(); }, 0);   // re-check a loaded entries file against the newly picked game
@@ -791,7 +831,7 @@ td.lev { color: var(--steel); }
     const sp = s.spread_home; $('#mSpread').textContent = sp === 0 ? 'PK' : (sp > 0 ? s.away + ' −' + sp : s.home + ' −' + (-sp));
     $('#mTotal').textContent = fmt(s.total, 1); $('#mWeek').textContent = s.week;
     const st = (meta.status === 'live' || meta.status === 'complete') ? meta.status : s.status; const pill = $('#statusPill'); pill.className = 'pill ' + (st === 'final' || st === 'complete' ? 'ok' : st === 'live' ? '' : 'hot');
-    $('#statusText').textContent = { final: 'Tempered · final build', live: 'Locked · game on', complete: 'Cooled · final results' }[st] || 'Heating · preliminary build';
+    $('#statusText').textContent = { final: 'Final build', live: 'Locked', complete: 'Final results' }[st] || 'Preliminary';
     D.players.forEach(p => { p.value = p.proj / (p.sal / 1000); builder.proj[p.name] = p.proj; });
     const ST = D.simpack && D.simpack.stats, ix = ST ? Object.fromEntries(D.simpack.names.map((n, k) => [n, k])) : {};   // sim stats (tools/sim_pack.sim_stats)
     D.players.forEach(p => { const k = ix[p.name]; if (!ST || k == null) { p.floor = p.ceil = p.opt_cpt = p.opt_flex = p.lev = null; return; }
@@ -801,8 +841,7 @@ td.lev { color: var(--steel); }
     const loc = u => { if (!u) return null; const d = new Date(String(u).replace(' UTC', 'Z').replace(' ', 'T')); return isNaN(d) ? null : d.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); };
     const fr = loc(s.odds_as_of); $('#fresh').textContent = fr ? 'Odds as of ' + fr + (s.refreshed_utc ? ' · projections refreshed ' + loc(s.refreshed_utc) : '') : '';
     if (!LS.get('forge_start_seen')) $('#startCard').hidden = false;
-    const g = (D.record && D.record.backtest || []).find(b => b.name === 'H1ax');   // the gpp recipe uses method 'hyb' = the entered build (FORGE Pick)
-    $('#evGpp').textContent = g ? `Backtest, ${g.games} real contests: ${g.roi > 0 ? '+' : ''}${g.roi}% capped ROI (median ${g.median > 0 ? '+' : ''}${g.median}%)` : '';
+    loadRecord().then(() => { const BC = REC && REC.current_backtest, A = BC && BC.patterns && BC.patterns[0]; $('#evGpp').textContent = A ? `Backtest, ${A.games} real 2026 Showdowns: ${sgn(A.roi)}% ROI on Drew's $7.50 entry pattern (every prize counted)` : ''; }).catch(() => {});
     renderBanner(); renderPastTop(); renderPast();
     renderPlayers(); initLineups(); renderBuilderTable(); renderRecord(); applyRecipe(LS.get('forge_recipe') || 'gpp', true); initTester();
     const t = LS.get('forge_tab'); if (t && $('#p-' + t)) show(t);
@@ -1245,7 +1284,7 @@ td.lev { color: var(--steel); }
     $('#mSpread').textContent = Object.keys(data.lines || {}).length + '/' + s.games; $('#lSpread').textContent = 'Games with lines';
     $('#mTotal').textContent = P.length; $('#lTotal').textContent = 'Players'; $('#mWeek').textContent = s.week ?? '—';
     const st = (meta.status === 'live' || meta.status === 'complete') ? meta.status : s.status; $('#statusPill').className = 'pill ' + (st === 'live' ? '' : 'hot');
-    $('#statusText').textContent = { live: 'Locked · games on', complete: 'Cooled · final results' }[st] || 'Heating · preliminary build';
+    $('#statusText').textContent = { live: 'Locked', complete: 'Final results' }[st] || 'Preliminary';
     P.forEach(p => { p.value = p.proj == null ? null : p.proj / (p.sal / 1000); CL.proj[p.name] = p.proj; if (/^(OUT|IR|D)$/.test(p.status) || p.proj == null) CL.out.add(p.name); });
     const E = (data.passenv || []).filter(e => e.env != null);
     $('#qbEnv').innerHTML = E.length ? `<h3>QB environment <small>· FORGE's QB pick model (pass game, opponent, game total); backtest rank skill 0.31, 2026 so far ~0</small></h3><ol>${E.slice(0, 12).map(e => `<li><b>${e.name}</b> <small>${e.team} vs ${e.opp} · ${fmt(e.env, 1)}</small></li>`).join('')}</ol>` : '';
@@ -1679,15 +1718,8 @@ td.lev { color: var(--steel); }
   const ordn = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th'));
   const selName = s => s === 'DREW-SET' ? "Drew's own set" : setInfo(s).name;
   async function renderRecord() {
-    const B = (D.record && D.record.backtest) || [];
-    if (B.length) {
-      const lo = Math.min(0, ...B.map(b => b.roi)), hi = Math.max(...B.map(b => b.roi)), span = hi - lo || 1, x = v => 100 * (v - lo) / span;
-      $('#bars').innerHTML = B.map(b => `<div class="barrow"><div class="lbl">${b.label === 'Entered build' ? 'FORGE Pick (entered)' : setInfo(b.label.replace(/ \(old default\)/, '')).name}<small>median ${b.median > 0 ? '+' : ''}${b.median}% · ${b.games} games</small></div>
-      <div class="track"><div class="zero" style="left:${x(0)}%"></div><div class="fill ${b.label === 'Entered build' ? 'lead' : ''}" style="left:${Math.min(x(0), x(b.roi))}%;width:${Math.abs(x(b.roi) - x(0))}%"></div></div>
-      <div class="n mono">${b.roi > 0 ? '+' : ''}${b.roi}%</div></div>`).join('');
-    } else $('#bars').innerHTML = '<p class="note">No backtest record in this data file.</p>';
     await loadRecord();
-    const ent = B.find(b => b.label === 'Entered build'), K = REC && REC.killswitch, O = OREC && OREC.ours, tiles = [];
+    const K = REC && REC.killswitch, O = OREC && OREC.ours, tiles = [];
     if (O && O.total) {
       const T = O.total, W = (O.weeks || [])[0];
       tiles.push(`<div class="tile"><small>Our results · all weeks</small><b class="${T.net >= 0 ? 'gain' : 'loss'}">${usd2(T.net)}</b><span>${usd2(T.fees)} in, ${usd2(T.prizes)} back · ROI ${sgn(T.roi)}%${T.priced < T.entries ? ` · ${T.entries - T.priced} of ${T.entries} entries have no prize table yet` : ''}</span></div>`);
@@ -1696,7 +1728,12 @@ td.lev { color: var(--steel); }
     if (!O && REC && REC.ours_summary && REC.ours_summary.combined) { const c = REC.ours_summary.combined; tiles.push(`<div class="tile"><small>Our ROI · all weeks</small><b class="${c.roi >= 0 ? 'gain' : 'loss'}">${sgn(c.roi)}%</b><span>${c.entries} lineups in ${c.contests} contests · ${c.cashed} cashed</span></div>`); }
     if (K && K.n) tiles.push(`<div class="tile"><small>Kill switch</small><b class="${K.mean_diff >= 0 ? 'gain' : 'loss'}">${sgn(K.mean_diff)} pts</b><span>FORGE Pick vs its version before the player cap, per slate · ${K.n} of ${K.review_at} slates to the review · behind in ${K.behind} · really entered on ${K.entered_only_n}</span></div>`);
     else tiles.push(`<div class="tile"><small>Live slates graded</small><b>0</b><span>Review point: 6 slates</span></div>`);
-    if (ent) tiles.push(`<div class="tile"><small>Backtest</small><b class="${ent.roi >= 0 ? 'gain' : 'loss'}">${sgn(ent.roi)}%</b><span>FORGE Pick capped ROI · ${ent.games} real 2026 Showdowns · median ${sgn(ent.median)}%</span></div>`);
+    const BC = REC && REC.current_backtest;
+    if (BC && BC.patterns && BC.patterns.length) { const A = BC.patterns[0]; tiles.push(`<div class="tile"><small>Backtest · today's FORGE Pick</small><b class="${A.roi >= 0 ? 'gain' : 'loss'}">${sgn(A.roi)}%</b><span>ROI on ${A.games} real 2026 Showdowns, ${A.name.split(':')[1].trim()} · every prize counted</span></div>`); }
+    $('#btCur').innerHTML = !(BC && BC.patterns) ? '<p class="note">No backtest for the current build in this data yet.</p>' : `<p class="lede">The exact settings the Builder starts on (weighted top-3 captain pool + corrected ownership forecast), replayed on ${BC.patterns[0].games} real 2026 Showdowns from pre-game data only, ${BC.seeds} simulation runs per game, graded on the real contest results with two real entry patterns. Every prize counts in full. Backtest, not live money.</p>
+      <div class="tiles">${BC.patterns.map(P => `<div class="tile"><small>${P.name.split(':')[1].trim()}</small><b class="${P.roi >= 0 ? 'gain' : 'loss'}">${sgn(P.roi)}%</b><span>average $${P.avg_back.toFixed(2)} back on $${P.fee.toFixed(2)} · in profit on ${P.in_profit}% of slates${P.real_roi != null ? ` · games with the real prize table only (${P.real_games}): ${sgn(P.real_roi)}%` : ''}</span></div>`).join('')}</div>
+      <details class="about"><summary>Game by game</summary><div class="tbl-wrap"><table><thead><tr><th>Game</th><th class="n">Week</th>${BC.patterns.map(P => `<th class="n">${P.name.split(':')[0]} back</th>`).join('')}<th>Prize table</th></tr></thead><tbody>${BC.patterns[0].by_game.map((g, i) => `<tr><td>${g.game}</td><td class="n">${g.week}</td>${BC.patterns.map(P => { const x = P.by_game[i]; return `<td class="n ${x.avg_back >= P.fee ? 'netpos' : 'netneg'}">$${x.avg_back.toFixed(2)}</td>`; }).join('')}<td class="dim">${g.real ? 'real' : 'estimated'}</td></tr>`).join('')}</tbody></table></div>
+      <p class="note">Pattern A = 20 × $0.25 (20-max) + 5 × $0.50 (150-max), $7.50 a slate. Pattern B = 20 × $0.10 + 20 × $0.25 + 10 × $0.50, $12 a slate. "Estimated" = that game's real field graded on the closest real prize table of the same contest type.</p></details>`;
     $('#recTiles').innerHTML = tiles.join('');
     // owner: our real contests, by slate
     const K3 = (O && O.by_kind) || (REC && REC.ours_summary), money = !!(O && O.by_kind), kc = ['showdown', 'classic', 'combined'], kn = { showdown: 'Showdown', classic: 'Classic', combined: 'Combined' };
@@ -1714,7 +1751,7 @@ td.lev { color: var(--steel); }
     const rowsMain = Lv.filter(r => lead.has(r.selector) || (own && r.selector === 'DREW-SET')), rowsMore = Lv.filter(r => !rowsMain.includes(r) && r.selector !== 'DREW-SET');
     const tr = r => `<tr><td>W${r.week} ${r.slate}</td><td>${selName(r.selector)}${r.entered ? ' <span class="tag">entered</span>' : (r.selector === 'DREW-SET' ? ' <span class="tag">entered</span>' : ' <span class="tag steel">paper</span>')}</td><td class="n">${r.contests}</td><td class="n">${r.lineups}</td><td class="n">${r.roi == null ? '—' : sgn(Math.round(100 * r.roi) || 0) + '%'}</td><td class="n dim">${r.roi_cap == null ? '—' : sgn(Math.round(100 * r.roi_cap) || 0) + '%'}</td><td class="n">${r.cash == null ? '—' : fmt(100 * r.cash, 0) + '%'}</td><td class="n">${r.top1}</td><td class="n">${fmt(r.best, 1)}</td></tr>`;
     const tbl = R => `<div class="tbl-wrap"><table><thead><tr><th>Slate</th><th>Set</th><th class="n">Contests</th><th class="n">Lineups</th><th class="n">ROI</th><th class="n" title="Each lineup counted at most 10x its entry">Capped</th><th class="n">Cashed</th><th class="n">Top 1%</th><th class="n">Best</th></tr></thead><tbody>${R.map(tr).join('')}</tbody></table></div>`;
-    $('#live').innerHTML = Lv.length ? tbl(rowsMain) + (rowsMore.length ? `<details class="about"><summary>All other FORGE builds (${rowsMore.length} rows, not entered)</summary>${tbl(rowsMore)}</details>` : '')
+    $('#live').innerHTML = Lv.length ? (rowsMain.length ? tbl(rowsMain) : '<p class="note">FORGE Pick in its current form (weighted top-3 captains) has not been graded on a live slate yet; its first is NE@CHI. Earlier builds\' live grades are kept below.</p>') + (rowsMore.length ? `<details class="about"><summary>All other FORGE builds (${rowsMore.length} rows, not entered)</summary>${tbl(rowsMore)}</details>` : '')
       + `<p class="note">"Paper" = FORGE built it but the lineups we entered were different; graded anyway so every method keeps a record.${REC && REC.updated_utc ? ' Updated ' + REC.updated_utc.replace('T', ' ') + ' UTC.' : ''}</p>`
       : '<p class="note">No live slates graded yet.</p>';
   }
@@ -1786,13 +1823,12 @@ td.lev { color: var(--steel); }
     el.innerHTML = `<h3 class="subh" style="margin-top:18px">Actual top 20 · Week ${s.week} ${s.away} @ ${s.home}</h3><p class="note">${shortContest(c.name)} · ${c.entries.toLocaleString('en-US')} entries · distinct lineups in finishing order (entries = how many people played that exact lineup).</p>
       <div class="tbl-wrap"><table><thead><tr><th class="n">Place</th><th>Captain</th><th>Flex</th><th class="n">Points</th><th class="n">Entries</th></tr></thead><tbody>${c.top20.map(t => `<tr><td class="n">${ordinal(t.rank)}</td><td><b>${t.cpt}</b></td><td>${t.flex.join(', ')}</td><td class="n">${fmt(t.pts, 2)}</td><td class="n">${t.entries}</td></tr>`).join('')}</tbody></table></div>`;
   }
-  $('#tab-past').addEventListener('click', renderPast);
 
   // ---------------------------------------------------------------- NBA v0 (2026-10-21): projections from props, leaderboards, Classic builder (GLPK)
   const NB = { sort: 'proj', dir: -1, out: new Set(), result: [] };
   const NSLOT = ['PG', 'SG', 'SF', 'PF', 'C', 'G', 'F', 'UTIL'], NEL = { PG: ['PG'], SG: ['SG'], SF: ['SF'], PF: ['PF'], C: ['C'], G: ['PG', 'SG'], F: ['SF', 'PF'], UTIL: ['PG', 'SG', 'SF', 'PF', 'C'] };
   function initNBA(data, meta) {
-    const s = data.slate, P = data.players, SD = s.kind === 'nba_showdown'; NB.out.clear(); NB.result = []; $('#nbaView').classList.toggle('sd', SD);
+    const s = data.slate, P = data.players, SD = s.kind === 'nba_showdown'; NB.out.clear(); NB.result = []; document.body.classList.toggle('nbasd', SD);
     $('#nbaBTitle').textContent = SD ? 'Builder · NBA Showdown (Captain + 5 UTIL)' : 'Builder · NBA Classic'; $('#nbaOut').hidden = true; $('#nbaStatus').textContent = '';
     if (SD) { const [a, h] = (s.game_list || [''])[0].split('@'); $('#tAway').textContent = a; $('#tAt').textContent = '@'; $('#tHome').textContent = h; }
     else { $('#tAway').textContent = 'NBA'; $('#tAt').textContent = '·'; $('#tHome').textContent = s.games + ' games'; }
@@ -1800,11 +1836,12 @@ td.lev { color: var(--steel); }
     $('#fresh').textContent = s.odds_file ? 'FanDuel props snapshot ' + s.odds_file.replace('.json', '') : '';
     $('#mSpread').textContent = Object.keys(data.game_lines || {}).length + '/' + s.games; $('#lSpread').textContent = 'Games with lines';
     $('#mTotal').textContent = P.filter(p => p.proj != null).length; $('#lTotal').textContent = 'Projected players'; $('#mWeek').textContent = '—';
-    $('#statusPill').className = 'pill hot'; $('#statusText').textContent = (meta.status === 'live') ? 'Locked · games on' : 'NBA v0 · unproven';
+    $('#statusPill').className = 'pill hot'; $('#statusText').textContent = (meta.status === 'live') ? 'Locked' : 'NBA · unproven';
     P.forEach(p => { p.value = p.proj == null ? null : p.proj / (p.sal / 1000); if (p.proj == null) NB.out.add(p.name); });
     const L = data.leaders || {}, pc = v => (100 * v).toFixed(v < 0.1 ? 1 : 0) + '%';
     const card = (k, lab, team) => L[k] ? `<div class="card"><h4>${lab}</h4><ol>${L[k].slice(0, 5).map(r => `<li><span>${team ? r.team : r.name} <small>${team ? '' : r.team + ' · '}${r.mean}</small></span><b>${pc(r.p_lead)}</b></li>`).join('')}</ol></div>` : '';
-    $('#nbaLeaders').innerHTML = (SD ? card('dk', 'Top DraftKings scorer (captain pool)') : '') + card('pra', 'Points + rebounds + assists') + card('pts', 'Points') + card('reb', 'Rebounds') + card('ast', 'Assists') + card('tpm', 'Made threes') + card('stl', 'Steals') + card('blk', 'Blocks') + card('team_tpm', 'Team threes', true)
+    $('#nbaCptPool').innerHTML = SD ? card('dk', 'Captain pool · chance to be the top DraftKings scorer') : '';
+    $('#nbaLeaders').innerHTML = card('pra', 'Points + rebounds + assists') + card('pts', 'Points') + card('reb', 'Rebounds') + card('ast', 'Assists') + card('tpm', 'Made threes') + card('stl', 'Steals') + card('blk', 'Blocks') + card('team_tpm', 'Team threes', true)
       + '<p class="note" style="grid-column:1/-1">Chance to lead the whole slate in that stat, from 20,000 simulated nights. Number next to the name = average in the simulation. Team threes count only players with a threes line.</p>';
     const games = [...new Set(P.map(p => p.game))].sort(); $('#nbaGame').innerHTML = '<option value="">All games</option>' + games.map(g => { const gl = (data.game_lines || {})[g]; return `<option value="${g}">${g}${gl && gl.total ? ' · total ' + gl.total + ', home ' + (gl.home_spread > 0 ? '+' : '') + gl.home_spread : ''}</option>`; }).join('');
     $('#nbaSearch').oninput = renderNBATable; $('#nbaGame').onchange = renderNBATable;
@@ -1893,6 +1930,7 @@ td.lev { color: var(--steel); }
     $('#nbaOut').hidden = false;
     logBuild('nba_showdown', { n: N, uniq, exp: capP, top3: !!pool, cpt_caps: pool ? Object.fromEntries([...pool].map(i => [D.players[i].name, wcap[i]])) : null, outs: [...NB.out] }, chosen.map(c => ({ cpt: c.lu[0].name, flex: c.lu.slice(1).map(p => p.name) })));
   }
+  $('#nbaCsv2').addEventListener('click', () => { if (NB.result && NB.result.length) $('#nbaCsv').click(); else $('#nbaCsv2s').textContent = 'No NBA lineups yet: press Forge NBA lineups in Build first.'; });
   $('#nbaCsv').addEventListener('click', () => {
     const sd = D.slate.kind === 'nba_showdown';
     const rows = sd ? ['CPT,UTIL,UTIL,UTIL,UTIL,UTIL', ...NB.result.map(c => c.lu.map((p, j) => `"${p.name} (${j ? p.id : p.cpt_id})"`).join(','))].join('\n')
