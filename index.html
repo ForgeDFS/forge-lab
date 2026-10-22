@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="445ddff5efd2"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="7c6adaa6d48f"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -846,14 +846,23 @@ td.lev { color: var(--steel); }
     if (!P.length) { sel.innerHTML = ''; $('#prodOut').innerHTML = '<p class="note">No breakdowns for this slate yet.</p>'; return; }
     sel.innerHTML = P.map((p, i) => `<option value="${i}">${esc(p.name)} · ${esc(p.pos)} · ${esc(p.team)}</option>`).join('');
     const ST = { attempts: 'Pass attempts', completions: 'Completions', passing_yards: 'Passing yards', passing_tds: 'Passing TDs', passing_interceptions: 'Interceptions', carries: 'Carries', rushing_yards: 'Rushing yards', rushing_tds: 'Rushing TDs', targets: 'Targets', receptions: 'Receptions', receiving_yards: 'Receiving yards', receiving_tds: 'Receiving TDs', fumbles_lost: 'Fumbles lost', td: 'Touchdowns (any)' };
-    const show = () => { const p = P[+sel.value || 0], m = p.prod.market, f = p.prod.forge, keys = [...new Set([...Object.keys((m || {}).stats || {}), ...Object.keys((f || {}).stats || {})])];
-      const v = (o, k) => o && o.stats && o.stats[k] != null ? o.stats[k] : '—';
-      const fTD = f ? ((f.stats.rushing_tds || 0) + (f.stats.receiving_tds || 0)).toFixed(2) : '—';
-      const rows = keys.filter(k => k !== 'td').map(k => `<tr><td>${ST[k] || k}</td><td class="n">${v(m, k)}</td><td class="n">${v(f, k)}</td></tr>`).join('') + (m && m.stats.td != null ? `<tr><td>${ST.td}</td><td class="n">${m.stats.td}</td><td class="n">${p.pos === 'QB' ? (f ? f.stats.rushing_tds : '—') + ' (rushing)' : fTD}</td></tr>` : '');
-      const parts = o => o ? Object.entries(o.parts).map(([k, x]) => `<li><span>${esc(k)}</span><b>${x > 0 ? '+' : ''}${x}</b></li>`).join('') : '';
-      $('#prodOut').innerHTML = `<div class="tbl-wrap"><table><thead><tr><th>Expected stat</th><th class="n">From prop lines</th><th class="n">FORGE model</th></tr></thead><tbody>${rows}<tr><td><b>DraftKings points</b></td><td class="n"><b>${m ? m.total : '—'}</b></td><td class="n"><b>${f ? f.total : '—'}</b></td></tr></tbody></table></div>
+    const ORDER = ['attempts', 'completions', 'passing_yards', 'passing_tds', 'passing_interceptions', 'targets', 'receptions', 'receiving_yards', 'receiving_tds', 'carries', 'rushing_yards', 'rushing_tds', 'touches', 'fumbles_lost'];
+    ST.touches = 'Touches (carries + catches)';
+    const fmt = v => v == null ? '—' : (Math.abs(v) < 0.005 ? '0.00' : (+v).toFixed(Math.abs(v) >= 100 ? 1 : 2));
+    const show = () => { const p = P[+sel.value || 0], m = p.prod.market, f = p.prod.forge, s = p.prod.season, fill = (m && m.filled) || {};
+      const keys = (f && f.kind) ? Object.keys(f.stats) : ORDER.filter(k => (s && s.stats[k] != null) || fill[k] || (f && f.stats[k] != null));
+      const mark = { derived: '<sup title="Worked out from his posted lines and his own career rates">◦</sup>', forge: '<sup title="No line posted for this stat: FORGE\'s model number">†</sup>', line: '' };
+      const mcell = k => fill[k] ? fmt(fill[k][0]) + mark[fill[k][1]] : (m && m.stats && m.stats[k] != null ? fmt(m.stats[k]) : '—');
+      const fcell = k => f && f.stats[k] != null ? fmt(f.stats[k]) + ((f.from_season || []).includes(k) ? '<sup title="Not in FORGE\'s model for this position: his season average">§</sup>' : '') : '—';
+      const scell = k => s && s.stats[k] != null ? fmt(s.stats[k]) : '—';
+      const rows = keys.map(k => `<tr><td>${ST[k] || k}</td><td class="n">${scell(k)}</td><td class="n">${f && f.kind ? '—' : mcell(k)}</td><td class="n">${fcell(k)}</td></tr>`).join('')
+        + (m && m.stats.td != null ? `<tr><td>${ST.td}</td><td class="n">${s ? fmt((s.stats.rushing_tds || 0) + (s.stats.receiving_tds || 0)) : '—'}</td><td class="n">${fmt(m.stats.td)}</td><td class="n">${f ? fmt((f.stats.rushing_tds || 0) + (f.stats.receiving_tds || 0)) : '—'}</td></tr>` : '');
+      const parts = o => o ? Object.entries(o.parts).map(([k, x]) => `<li><span>${esc(k)}</span><b>${x > 0 ? '+' : ''}${fmt(x)}</b></li>`).join('') : '';
+      const shead = s ? (s.last_season ? `Last season avg (${s.games} g)` : `This season avg (${s.games} g)`) : 'This season avg';
+      $('#prodOut').innerHTML = `<div class="tbl-wrap"><table><thead><tr><th>Per game</th><th class="n">${shead}</th><th class="n">From prop lines</th><th class="n">${f && f.baseline ? 'FORGE baseline' : 'FORGE model'}</th></tr></thead><tbody>${rows}<tr><td><b>DraftKings points</b></td><td class="n">—</td><td class="n"><b>${m ? m.total : '—'}</b></td><td class="n"><b>${f ? f.total : '—'}</b></td></tr></tbody></table></div>
+        <p class="note">◦ worked out from his posted lines and his own career rates (e.g. targets = projected catches ÷ his catch rate; carries = projected rushing yards ÷ his yards per carry). † no line is posted for that stat, so FORGE's model number is shown. A real 0.00 means he almost never does it (a wide receiver's carries). DraftKings points from prop lines use only the posted lines, so the filled stats don't change them.</p>
         <div class="nbaleaders" style="margin-top:10px">${m ? `<div class="card"><h4>From prop lines: ${m.total} pts</h4><ol style="list-style:none;padding:0">${parts(m)}</ol></div>` : '<div class="card"><h4>From prop lines</h4><p class="note">Not enough prop lines posted for this player.</p></div>'}
-        ${f ? `<div class="card"><h4>FORGE model: ${f.total} pts</h4><ol style="list-style:none;padding:0">${parts(f)}</ol><p class="note">${f.games != null ? 'Built from his last ' + f.games + ' games (2023 on), team scoring and the opponent.' : ''}${f.missing && f.missing.length ? ' Not modeled: ' + f.missing.join(', ') + '.' : ''} Two-point conversions are left out.</p></div>` : `<div class="card"><h4>FORGE model</h4><p class="note">${p.pos === 'K' || p.pos === 'DST' ? 'Kickers and defenses are not in FORGE\'s own model yet.' : 'No game history to build from.'}</p></div>`}</div>`; };
+        ${f ? `<div class="card"><h4>FORGE model: ${f.total} pts</h4><ol style="list-style:none;padding:0">${parts(f)}</ol><p class="note">${f.baseline ? 'No NFL games in his history yet (rookie, backup or fullback), so this is a baseline: what the low-usage players at his position average this season (backup QBs: what non-starting QBs produce per game). It is a stand-in, not a read on him.' : (f.games != null ? 'Built from his last ' + f.games + ' games (2023 on), team scoring and the opponent.' : '')}${f.missing && f.missing.length ? ' Not modeled: ' + f.missing.join(', ') + '.' : ''} Two-point conversions are left out.</p></div>` : `<div class="card"><h4>FORGE model</h4><p class="note">No game history to build from.</p></div>`}</div>`; };
     sel.onchange = show; show();
   }
   function renderNFLProps(data) {   // 2026-10-22: NFL prop leaderboards (tools/nfl_leaders.py, v0) -- Props & odds tab only
