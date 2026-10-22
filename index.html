@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="ee2b32a94e4a"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="9114e986327b"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -253,7 +253,7 @@ body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 #moreSheet button { text-align: left; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; color: var(--fg); font: inherit; cursor: pointer; display: grid; gap: 2px; }
 #moreSheet button b { font-weight: 600; font-size: 16px; } #moreSheet button small { color: var(--muted); font-size: 12.5px; }
 #moreSheet .sheetx { text-align: center; background: none; border: 0; color: var(--muted); padding: 10px; }
-.rpbanner:empty { display: none !important; } .subnav { margin-bottom: 14px; } .subnav button { padding: 8px 16px; font-size: 14px; } .betfoot { margin-top: 18px; }
+.rpbanner:empty { display: none !important; } .whobox { display: grid; gap: 4px; font-size: 14px; margin-top: 8px; } .whobox small { color: var(--muted); font-size: 12px; } .whobox input { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); } .subnav { margin-bottom: 14px; } .subnav button { padding: 8px 16px; font-size: 14px; } .betfoot { margin-top: 18px; }
 @media (max-width: 640px) {
   body { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
   .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; margin: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; overflow: visible;
@@ -432,14 +432,15 @@ td.lev { color: var(--steel); }
     <button class="tab tmore" role="tab" id="tab-how" aria-selected="false" data-p="how"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/></svg><span class="kicker">The process</span><span class="tlong">How it works</span><span class="tshort">How</span></button>
     <button class="tab tmorebtn" type="button" id="tab-more" aria-haspopup="dialog" aria-expanded="false"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg><span class="tshort">More<b class="badge" id="ovlBadgeM" hidden></b></span></button>
   </nav>
-  <div id="moreSheet" hidden><div class="sheetbg" data-close="1"></div><div class="sheet" role="dialog" aria-label="More sections"><div class="sheeth">More</div><button type="button" data-go="lineups"><b>FORGE lineups</b><small>How FORGE played the slate (after lock)</small></button><button type="button" data-go="props"><b>Props &amp; odds</b><small>Stat leaders and betting-side numbers</small></button><button type="button" data-go="alerts"><b>Overlay alerts <span class="badge" id="ovlBadgeX" hidden></span></b><small>Contests running under their prize pool</small></button><button type="button" data-go="how"><b>How it works</b><small>The process behind FORGE Pick</small></button><button type="button" class="sheetx" data-close="1">Close</button></div></div>
+  <div id="moreSheet" hidden><div class="sheetbg" data-close="1"></div><div class="sheet" role="dialog" aria-label="More sections"><div class="sheeth">More</div><button type="button" data-go="lineups"><b>FORGE lineups</b><small>How FORGE played the slate (after lock)</small></button><button type="button" data-go="props"><b>Props &amp; odds</b><small>Stat leaders and betting-side numbers</small></button><button type="button" data-go="alerts"><b>Overlay alerts <span class="badge" id="ovlBadgeX" hidden></span></b><small>Contests running under their prize pool</small></button><button type="button" data-go="how"><b>How it works</b><small>The process behind FORGE Pick</small></button><label class="whobox">Your name <small>(every build you make is saved under it and graded against the real contest results, so FORGE learns from everyone)</small><input type="text" id="whoName" maxlength="24" placeholder="e.g. Jake" autocomplete="nickname"></label><button type="button" class="sheetx" data-close="1">Close</button></div></div>
 
   <section class="panel" id="p-players">
     <div class="start" id="startCard" hidden><h3>Start here <button class="btn small" id="startX" type="button">Got it</button></h3><ol>
       <li><b>Pick a game</b> at the top: NFL or NBA, then a Classic slate or a Showdown.</li>
       <li><b>Build</b> and press <b>Forge</b>. It is already set to FORGE Pick, the same settings FORGE enters with. No changes needed.</li>
       <li><b>DraftKings</b> walks you through getting the lineups into your contests, from your phone.</li>
-      <li><b>Results</b> shows how FORGE has done on real contests, and lets you replay past contests.</li></ol></div>
+      <li><b>Results</b> shows how FORGE has done on real contests, and lets you replay past contests.</li></ol>
+      <label class="whobox">Your name <small>(optional: your builds get graded on the real results so FORGE learns from them)</small><input type="text" id="whoName2" maxlength="24" placeholder="e.g. Jake" autocomplete="nickname"></label></div>
     <div class="cl-only">
       <details class="about"><summary>About these numbers</summary>
       <p class="lede">Classic main slate: 9 players, $50,000. Projections come from DraftKings and FanDuel player props converted to DraftKings points. Players without enough prop lines get a salary-based number and are tagged. Games with no lines yet have no projections.</p>
@@ -666,6 +667,8 @@ td.lev { color: var(--steel); }
     <p class="note" id="liveNote">Each set graded on the real contest results. ROI counts every prize in full: a win counts as a win.</p>
     <div id="live"></div>
     <div id="entSum"></div>
+    <h3 class="subh">What everyone's builds are teaching FORGE</h3>
+    <div id="learnBox"><p class="note">Loading…</p></div>
     <h3 class="subh">Backtest: today's FORGE Pick</h3>
     <div id="btCur"><p class="note">Loading…</p></div>
   </section>
@@ -718,6 +721,7 @@ td.lev { color: var(--steel); }
     $$('.panel').forEach(x => x.hidden = x.id !== 'p-' + p); $$('.subnav button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.go === p)));
     LS.set('forge_tab', p); if (p === 'past' && typeof renderPast === 'function') renderPast();
   }
+  ['#whoName', '#whoName2'].forEach(s => { const el = $(s); if (!el) return; el.value = LS.get('forge_who') || ''; el.addEventListener('change', () => { const v = el.value.trim().slice(0, 24); LS.set('forge_who', v); ['#whoName', '#whoName2'].forEach(o => { if ($(o)) $(o).value = v; }); }); });
   const toTop = () => { if (matchMedia('(max-width: 640px)').matches) window.scrollTo({ top: 0, behavior: 'smooth' }); };
   $$('.tab[data-p]').forEach(t => t.addEventListener('click', () => { show(t.dataset.p); toTop(); }));
   const sheet = $('#moreSheet'), sheetOpen = o => { sheet.hidden = !o; $('#tab-more').setAttribute('aria-expanded', String(o)); };
@@ -996,7 +1000,7 @@ td.lev { color: var(--steel); }
   function anonId() { return 'd' + hash32('forge-device|' + devSeed()).toString(36); }
   function logBuild(kind, settings, lineups) {
     try {
-      const rec = { v: 1, kind, slate: D.slate.id || D.slate.game, device: anonId(), owner: !!D.owner, ts: new Date().toISOString(), page: (document.querySelector('meta[name="forge-version"]') || {}).content || null,
+      const rec = { v: 1, kind, slate: D.slate.id || D.slate.game, device: anonId(), who: LS.get('forge_who') || null, owner: !!D.owner, ts: new Date().toISOString(), page: (document.querySelector('meta[name="forge-version"]') || {}).content || null,
         status: (IDX.find(x => x.id === CUR) || {}).status || null, data_built: (D.slate || {}).built_utc || null, replay: !!(D.slate || {}).replay, settings, lineups };
       let q = []; try { q = JSON.parse(LS.get('forge_outbox') || '[]'); } catch (e) {}
       q.push(rec); LS.set('forge_outbox', JSON.stringify(q.slice(-60))); flushInbox();
@@ -1502,6 +1506,7 @@ td.lev { color: var(--steel); }
       changed.push({ r, nu, gain: newP - oldP, relaxed, swaps: nu.map((n, s_) => n !== cur[s_] ? `${cur[s_]} → ${n}` : null).filter(Boolean) });
       if (k % 5 === 0) { st.textContent = `Re-optimising… ${k} of ${entries.length}`; await new Promise(z => setTimeout(z, 0)); }
     }
+    logBuild('lateswap_classic', { entries: entries.length, changed: changed.length }, changed.map(c => ({ players: c.nu, swaps: c.swaps })));
     if (!changed.length) { st.textContent = `Checked ${entries.length} entries: no swap gains 0.5 projected points.`; out.innerHTML = notes.map(n => `<p class="note">${n}</p>`).join(''); return; }
     const EOL = text.includes('\r\n') ? '\r\n' : '\n', cell = n => `${n} (${PL[n].id})`;
     const lines = [hdr.slice(0, qi + 9).map(csvCell).join(',')];
@@ -1720,6 +1725,12 @@ td.lev { color: var(--steel); }
   const ordn = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th'));
   const selName = s => s === 'DREW-SET' ? "Drew's own set" : setInfo(s).name;
   async function renderRecord() {
+    getJSON('learn').then(L => {
+      const G = (L.groups || []).filter(g => g.builds > 0), row = g => `<tr><td>${g.group}</td><td class="n">${g.builds}</td><td class="n">${g.slates}</td><td class="n">${g.lineups}</td><td class="n ${g.roi >= 0 ? 'netpos' : 'netneg'}">${g.roi == null ? '—' : sgn(g.roi) + '%'}</td><td class="n">${g.cash == null ? '—' : g.cash + '%'}</td><td class="n">${g.top1}</td><td class="n">${g.slates_compared ? g.ahead_of_forge_pick + ' of ' + g.slates_compared : '—'}</td></tr>`;
+      $('#learnBox').innerHTML = `<p class="lede">Every set built on this site, by anyone, any size, is saved with its settings and graded on the real contest results once they're in: ${L.builds} builds on ${L.slates} slates so far. Grouped by settings, every prize counted in full.</p>`
+        + (G.length ? `<div class="tbl-wrap"><table><thead><tr><th>Settings</th><th class="n">Builds</th><th class="n">Slates</th><th class="n">Lineups</th><th class="n">ROI</th><th class="n">Cashed</th><th class="n">Top 1%</th><th class="n">Ahead of FORGE Pick</th></tr></thead><tbody>${G.map(row).join('')}</tbody></table></div>` : '')
+        + `<p class="note">${L.flags && L.flags.length ? '<b>Flagged for testing:</b> ' + L.flags.join(', ') + '. ' : ''}A setting gets flagged for a full backtest when it has ${L.rule.min_slates}+ slates and ${L.rule.min_builds}+ builds and beat FORGE Pick on the same contests in ${Math.round(100 * L.rule.win_share)}% of its slates. Only a passed backtest changes FORGE's default. Updated ${L.updated}.</p>`;
+    }).catch(() => { $('#learnBox').innerHTML = '<p class="note">No graded builds yet.</p>'; });
     await loadRecord();
     const K = REC && REC.killswitch, O = OREC && OREC.ours, tiles = [];
     if (O && O.total) {
@@ -1936,6 +1947,7 @@ td.lev { color: var(--steel); }
       if (nu.reduce((t, p) => t + p.sal, 0) > 50000 || new Set(nu.map(p => p.name)).size !== 8 || nu.some((p, s) => !el(p, s))) { notes.push(`Entry ${r[0]}: check failed, left unchanged.`); continue; }
       changed.push({ r, nu, gain: newP - oldP, swaps: nu.map((p, s) => p !== cur[s] ? `${NSLOT[s]}: ${cur[s].name} → ${p.name}` : null).filter(Boolean) });
     }
+    logBuild('lateswap_nba', { entries: entries.length, changed: changed.length }, changed.map(c => ({ players: c.nu.map(p => p.name), swaps: c.swaps })));
     if (!changed.length) { st.textContent = `Checked ${entries.length} entries: keep them as they are (no swap gains 0.5 projected points and nobody left is missing a line).`; out.innerHTML = notes.map(n => `<p class="note">${n}</p>`).join(''); return; }
     const EOL = text.includes('\r\n') ? '\r\n' : '\n', lines = [hdr.slice(0, qi + 8).map(csvCell).join(',')];
     changed.forEach(c => { const rr = c.r.slice(0, qi + 8); c.nu.forEach((p, s) => rr[qi + s] = `${p.name} (${p.id})`); lines.push(rr.map(v => csvCell(String(v))).join(',')); });
