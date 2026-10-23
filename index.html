@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="6bbca68413e0"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="bdc35bd1f05d"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -1224,10 +1224,10 @@ td.lev { color: var(--steel); }
     const cptPool = new Set(P.map((p, i) => builder.cpt.has(p.name) ? i : -1).filter(i => i >= 0));
     // 2026-10-21 (PI decision, Round 28 C3): FORGE Pick captains only FORGE's 3 most likely top scorers, up to ceil(N/3) lineups each (unless you pick your own CPT pool)
     const top3On = method === 'hyb' && $('#bTop3') && $('#bTop3').checked && !cptPool.size;
-    // 2026-10-21 PI (Round 30): weighted -- lineups per captain proportional to FORGE's P(top scorer), at least 1, summing to N (production HYB-M-SXPW)
+    // 2026-10-21 PI (Round 30) + 2026-10-23 Round 48 H1: weighted -- lineups per captain proportional to FORGE's P(top scorer)^1.6, at least 1, summing to N (production HYB-M-SXPW)
     const wcap = {};
     if (top3On) { const T3 = [...P.keys()].sort((a, b) => (P[b].p_mvp || 0) - (P[a].p_mvp || 0)).slice(0, 3); T3.forEach(i => cptPool.add(i));
-      const w = T3.map(i => P[i].p_mvp || 0), sw = w.reduce((a, b) => a + b, 0) || 1, wn = w.map(x => x / sw), c = wn.map(x => Math.max(1, Math.round(N * x)));
+      const w = T3.map(i => Math.pow(P[i].p_mvp || 0, 1.6)), sw = w.reduce((a, b) => a + b, 0) || 1, wn = w.map(x => x / sw), c = wn.map(x => Math.max(1, Math.round(N * x)));
       if (N < T3.length) c.forEach((_, j) => c[j] = 0), [...wn.keys()].sort((a, b) => wn[b] - wn[a]).slice(0, N).forEach(j => c[j] = 1);   // fewer lineups than captains: the likeliest
       while (c.reduce((a, b) => a + b, 0) > N) c[c.indexOf(Math.max(...c))]--;
       while (c.reduce((a, b) => a + b, 0) < N) { let k = 0, best = -Infinity; wn.forEach((x, j) => { if (x - c[j] / N > best) { best = x - c[j] / N; k = j; } }); c[k]++; }
