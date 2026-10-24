@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="ab729e5654b3"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="f479e82729a8"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -149,6 +149,7 @@ small.warn { color: #d9a441; }
 .nbaleaders ol { margin: 0; padding-left: 18px; font-size: 13.5px; } .nbaleaders li { display: flex; justify-content: space-between; gap: 8px; } .nbaleaders li small { color: var(--muted); }
 .nbaform { display: grid; gap: 8px; max-width: 760px; } .nbaform label { display: flex; gap: 8px; align-items: center; } .nbaform input[type=number] { width: 80px; }
 body.nbasd .clonly, body:not(.nbasd) .sdonly, body:not(.nbasd) .sdcol { display: none; }
+body.nbati .clonly, body.nbati .sdonly, body.nbati .sdcol, body.nbati .notiers { display: none !important; }
 .nbaflag { border-left: 3px solid var(--steel); padding-left: 10px; }
 .rpbanner { margin: 0 0 12px; padding: 10px 14px; border: 1px solid var(--steel); border-radius: 10px; background: var(--plate); font-size: 13.5px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .rpbanner b { color: var(--steel); } .rpbanner .btn { margin-left: auto; }
@@ -625,8 +626,8 @@ td.lev { color: var(--steel); }
       <li><b>Upload.</b> DraftKings → <b>Lineups → Edit Entries → Upload</b>, pick the filled file.</li></ol>
       <div id="nbaDkResult" aria-live="polite"></div>
       <p class="note">New entries without an entries file: <b>Download for DraftKings</b> under your lineups gives DraftKings' <b>Upload Lineups</b> format (no entry IDs). <a class="btn small" href="https://www.draftkings.com/lineup/upload" target="_blank" rel="noopener">Open DraftKings upload</a></p>
-      <div class="toolbar"><button type="button" class="btn small" id="nbaCsv2">New-lineup file (Upload Lineups page only)</button><span class="status" id="nbaCsv2s"></span></div>
-      <div class="appbox"><b>NBA late swap.</b> After the first games tip off, download your entries again from DraftKings (Lineups → Edit Entries), choose the file here and press the button. FORGE keeps every player whose game has started and re-picks the open spots from the newest projections, same salary cap and positions. Pick the Classic slate you entered at the top first.
+      <div class="toolbar"><button type="button" class="btn small notiers" id="nbaCsv2">New-lineup file (Upload Lineups page only)</button><span class="status" id="nbaCsv2s"></span></div>
+      <div class="appbox notiers"><b>NBA late swap.</b> After the first games tip off, download your entries again from DraftKings (Lineups → Edit Entries), choose the file here and press the button. FORGE keeps every player whose game has started and re-picks the open spots from the newest projections, same salary cap and positions. Pick the Classic slate you entered at the top first.
         <div class="toolbar" style="margin-top:8px"><label class="btn filebtn"><input type="file" id="nbaLsFile">Choose DKEntries file</label><button class="btn primary" type="button" id="nbaLsRun">Late swap my NBA entries</button><span class="status" id="nbaLsStatus" role="status"></span></div><div id="nbaLsOut"></div></div></div>
     <div class="nfl-only">
     <p class="lede">Get your Builder lineups into DraftKings from your phone. Use your phone's web browser for DraftKings here, not the DraftKings app: the app can't take a file, the website can.</p>
@@ -774,12 +775,12 @@ td.lev { color: var(--steel); }
   const kickLocal = s => new Date(s.kickoff_utc).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' });
   function renderPicker() {     // 2026-10-21 (FORGE): per sport, a Classic row (main / early / late slates) and a Showdown row (every game DraftKings offers)
     const el = $('#slatePicker'); const L = IDX.filter(x => active(x) && sportOf(x) === SPORT).sort((a, b) => new Date(a.kickoff_utc) - new Date(b.kickoff_utc));
-    const isSD = x => String(x.kind).includes('showdown'), C = L.filter(x => !isSD(x)), S = L.filter(isSD);
+    const isSD = x => String(x.kind).includes('showdown'), isTI = x => String(x.kind).includes('tiers'), C = L.filter(x => !isSD(x) && !isTI(x)), S = L.filter(isSD), TI = L.filter(isTI);
     const chip = x => { const sd = isSD(x), nba = sportOf(x) === 'NBA';
-      const top = sd ? (x.game || '').replace('@', ' @ ') : (x.slate_name || (nba ? 'Classic' : 'Main slate')), mid = sd ? (nba ? 'Showdown' : (x.label || 'Showdown')) : (x.game || '');
+      const top = sd ? (x.game || '').replace('@', ' @ ') : String(x.kind).includes('tiers') ? 'Tiers' : (x.slate_name || (nba ? 'Classic' : 'Main slate')), mid = sd ? (nba ? 'Showdown' : (x.label || 'Showdown')) : (x.game || '');
       return `<button type="button" class="slate-chip ${x.status}" data-id="${x.id}" aria-pressed="${x.id === CUR}"><b>${top}</b><span>${mid}</span><small>${kickLocal(x)}${x.status === 'live' ? ' · locked' : x.status === 'complete' ? ' · final' : ''}</small></button>`; };
     el.hidden = !L.length;
-    el.innerHTML = (C.length ? `<div class="pickrow"><span class="pklab">Classic</span><div class="pkchips">${C.map(chip).join('')}</div></div>` : '') + (S.length ? `<div class="pickrow"><span class="pklab">Showdown</span><div class="pkchips">${S.map(chip).join('')}</div></div>` : '');
+    el.innerHTML = (C.length ? `<div class="pickrow"><span class="pklab">Classic</span><div class="pkchips">${C.map(chip).join('')}</div></div>` : '') + (S.length ? `<div class="pickrow"><span class="pklab">Showdown</span><div class="pkchips">${S.map(chip).join('')}</div></div>` : '') + (TI.length ? `<div class="pickrow"><span class="pklab">Tiers</span><div class="pkchips">${TI.map(chip).join('')}</div></div>` : '');
     $$('.slate-chip', el).forEach(b => b.onclick = () => loadSlate(b.dataset.id));
     const on = el.querySelector('[aria-pressed="true"]'); if (on) { const row = on.parentElement, r0 = row.getBoundingClientRect(), r1 = on.getBoundingClientRect(); row.scrollLeft = Math.max(0, row.scrollLeft + (r1.left - r0.left) - (row.clientWidth - on.offsetWidth) / 2); }
   }
@@ -789,7 +790,7 @@ td.lev { color: var(--steel); }
   function renderSports() { $$('#sportPicker button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sport === SPORT))); }
   $$('#sportPicker button').forEach(b => b.onclick = () => { if (SPORT === b.dataset.sport) return; SPORT = b.dataset.sport; LS.set('forge_sport', SPORT); renderSports();
     const d = defaultSlate(); if (d && sportOf(d) === SPORT) loadSlate(d.id); else { renderPicker(); document.body.classList.toggle('nba', SPORT === 'NBA'); if (SPORT === 'NBA') { $('#nbaLeaders').innerHTML = '<p class="note">No NBA slate published yet.</p>'; $('#nbaCount').textContent = 'No NBA slate published yet.'; } } });
-  function active(x) { if (x.status === 'complete') return false; return Date.now() < new Date(x.kickoff_utc).getTime() + (x.kind === 'classic' ? 12 : 4.5) * 3600e3; }   // live window: Showdown 4.5 h after kickoff, Classic main slate 12 h
+  function active(x) { if (x.status === 'complete') return false; return Date.now() < new Date(x.kickoff_utc).getTime() + (x.kind === 'classic' || String(x.kind).includes('tiers') || x.kind === 'nba_classic' ? 12 : 4.5) * 3600e3; }   // live window: Showdown 4.5 h after kickoff, Classic main slate 12 h
   function defaultSlate() { const k = x => new Date(x.kickoff_utc).getTime(), S = IDX.filter(x => sportOf(x) === SPORT).sort((a, b) => k(a) - k(b)), soon = S.filter(x => active(x) && k(x) > Date.now()), up = S.filter(active);   // next slate that has not locked yet, then a live one
     return (soon[0] || up[up.length - 1] || S[S.length - 1] || IDX[IDX.length - 1]); }
   async function loadSlate(id) {
@@ -888,8 +889,8 @@ td.lev { color: var(--steel); }
     $('#nflLeaders').innerHTML = body ? body + `<p class="note" style="grid-column:1/-1">Chance to lead ${isC ? 'the whole main slate' : 'the game'} in that stat, from FORGE's stat simulation: 10,000 games where every player's stats are played out together, built from the production behind FORGE's projections (early version, research not picks). Number next to the name = his average in the simulation${L.scrim && L.scrim.some(r => r.partial) ? '; * = a running back with only one of his two yardage lines posted' : ''}. Anytime touchdown = the sportsbook's own chance, with the bookmaker's margin removed. Only players with a posted line are counted.</p>` : '<p class="note">No player prop lines posted for this slate yet. They usually appear a day or two before kickoff.</p>';
   }
   function init(data, meta) {
-    meta = meta || {}; const isNBA = sportOf(data.slate); document.body.classList.toggle('nba', isNBA === 'NBA'); document.body.classList.remove('nbasd');
-    if (isNBA === 'NBA') { D = data; return initNBA(data, meta); }
+    meta = meta || {}; const isNBA = sportOf(data.slate), isTI = String((data.slate || {}).kind || '').includes('tiers'); document.body.classList.toggle('nba', isNBA === 'NBA' || isTI); document.body.classList.remove('nbasd'); document.body.classList.toggle('nbati', isTI);
+    if (isNBA === 'NBA' || isTI) { D = data; return initNBA(data, meta); }
     renderNFLProps(data);
     const isC = data.slate && data.slate.kind === 'classic'; document.body.classList.toggle('classic', isC);
     setTimeout(() => { if (typeof DKFILE !== 'undefined' && DKFILE) fillDK(DKFILE); renderManual(); emFill(); }, 0);   // re-check a loaded entries file against the newly picked game
@@ -1974,15 +1975,15 @@ td.lev { color: var(--steel); }
   const NSLOT = ['PG', 'SG', 'SF', 'PF', 'C', 'G', 'F', 'UTIL'], NEL = { PG: ['PG'], SG: ['SG'], SF: ['SF'], PF: ['PF'], C: ['C'], G: ['PG', 'SG'], F: ['SF', 'PF'], UTIL: ['PG', 'SG', 'SF', 'PF', 'C'] };
   function initNBA(data, meta) {
     const s = data.slate, P = data.players, SD = s.kind === 'nba_showdown'; NB.out.clear(); NBADKONLY = null; NB.result = []; document.body.classList.toggle('nbasd', SD);
-    $('#nbaBTitle').textContent = SD ? 'Builder · NBA Showdown (Captain + 5 UTIL)' : 'Builder · NBA Classic'; $('#nbaOut').hidden = true; $('#nbaStatus').textContent = '';
+    const TI = String(s.kind).includes('tiers'); $('#nbaBTitle').textContent = TI ? `Builder · ${s.sport} Tiers (one player from each tier, no salary cap)` : SD ? 'Builder · NBA Showdown (Captain + 5 UTIL)' : 'Builder · NBA Classic'; $('#nbaOut').hidden = true; $('#nbaStatus').textContent = '';
     if (SD) { const [a, h] = (s.game_list || [''])[0].split('@'); $('#tAway').textContent = a; $('#tAt').textContent = '@'; $('#tHome').textContent = h; }
-    else { $('#tAway').textContent = 'NBA'; $('#tAt').textContent = '·'; $('#tHome').textContent = s.games + ' games'; }
+    else { $('#tAway').textContent = TI ? s.sport + ' Tiers' : 'NBA'; $('#tAt').textContent = '·'; $('#tHome').textContent = s.games + ' games'; }
     $('#kick').textContent = 'First game ' + new Date(s.kickoff_utc).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' · data built ' + s.built_utc;
     $('#fresh').textContent = s.odds_file ? 'FanDuel props snapshot ' + s.odds_file.replace('.json', '') : '';
     $('#mSpread').textContent = Object.keys(data.game_lines || {}).length + '/' + s.games; $('#lSpread').textContent = 'Games with lines';
     $('#mTotal').textContent = P.filter(p => p.proj != null).length; $('#lTotal').textContent = 'Projected players'; $('#mWeek').textContent = '—';
-    $('#statusPill').className = 'pill hot'; $('#statusText').textContent = (meta.status === 'live') ? 'Locked' : 'NBA · unproven';
-    P.forEach(p => { p.value = p.proj == null ? null : p.proj / (p.sal / 1000); if (p.proj == null || p.source === 'dk average' || NBOUT(p)) NB.out.add(p.name);   /* (2026-10-22) DK-average stand-ins are shown but start Out */ });
+    $('#statusPill').className = 'pill hot'; $('#statusText').textContent = (meta.status === 'live') ? 'Locked' : (TI ? s.sport + ' Tiers · unproven' : 'NBA · unproven'); if (TI) $('#fresh').textContent = s.model || '';
+    P.forEach(p => { p.value = p.proj == null || !p.sal ? null : p.proj / (p.sal / 1000); if (p.proj == null || p.source === 'dk average' || NBOUT(p)) NB.out.add(p.name);   /* (2026-10-22) DK-average stand-ins are shown but start Out */ });
     const L = data.leaders || {}, pc = v => (100 * v).toFixed(v < 0.1 ? 1 : 0) + '%';
     const card = (k, lab, team) => L[k] ? `<div class="card"><h4>${lab}</h4><ol>${L[k].slice(0, 5).map(r => `<li><span>${team ? r.team : r.name} <small>${team ? '' : r.team + ' · '}${r.mean}</small></span><b>${pc(r.p_lead)}</b></li>`).join('')}</ol></div>` : '';
     $('#nbaCptPool').innerHTML = SD ? card('dk', 'Captain pool · chance to be the top DraftKings scorer') : '';
@@ -1997,7 +1998,7 @@ td.lev { color: var(--steel); }
     const q = ($('#nbaSearch').value || '').toLowerCase(), g = $('#nbaGame').value;
     const R = D.players.filter(p => (!q || p.name.toLowerCase().includes(q)) && (!g || p.game === g)).sort((a, b) => { const x = a[NB.sort], y = b[NB.sort]; if (x == null) return 1; if (y == null) return -1; return (x > y ? 1 : x < y ? -1 : 0) * NB.dir; });
     $('#nbaCount').textContent = `${R.length} players`;
-    $('#nbaTable tbody').innerHTML = R.map(p => `<tr><td class="who"><b>${p.name}</b>${p.status ? ` <span class="tag">${esc(p.status)}</span>` : ''}${p.source === 'dk average' ? ' <small class="dim">DK avg stand-in</small>' : (p.proj == null ? ' <small class="dim">no props</small>' : '')}${p.why ? `<br><small class="dim">Why no line: ${esc(p.why)}</small>` : ''}${p.role ? `<br><small class="warn">⚑ ${esc(p.role)}</small>` : ''}</td><td><span class="pos">${p.pos}</span></td><td>${p.team}</td><td><small>${p.game}</small></td><td class="n">${money(p.sal)}</td><td class="n"><b>${fmt(p.proj)}</b></td><td class="n">${fmt(p.value, 2)}</td>
+    $('#nbaTable tbody').innerHTML = R.map(p => `<tr><td class="who"><b>${p.name}</b>${p.status ? ` <span class="tag">${esc(p.status)}</span>` : ''}${p.source === 'dk average' ? ' <small class="dim">DK avg stand-in</small>' : (p.proj == null ? ' <small class="dim">no props</small>' : '')}${p.why ? `<br><small class="dim">Why no line: ${esc(p.why)}</small>` : ''}${p.role ? `<br><small class="warn">⚑ ${esc(p.role)}</small>` : ''}</td><td><span class="pos">${p.pos}</span>${p.rpos ? ` <small>${p.rpos}</small>` : ''}</td><td>${p.team}</td><td><small>${p.game}</small></td><td class="n">${p.sal ? money(p.sal) : '—'}</td><td class="n"><b>${fmt(p.proj)}</b></td><td class="n">${fmt(p.value, 2)}</td>
       ${['pts', 'reb', 'ast', 'tpm', 'stl', 'blk'].map(k => `<td class="n">${fmt(p[k])}</td>`).join('')}<td class="n">${p.dd == null ? '—' : fmt(100 * p.dd, 0) + '%'}</td><td class="n sdcol">${p.cpt_sal ? money(p.cpt_sal) : '—'}</td><td class="n sdcol">${p.p_top == null ? '—' : fmt(100 * p.p_top, 1) + '%'}</td>
       <td><input type="checkbox" data-n="${p.name}" ${NB.out.has(p.name) ? 'checked' : ''} ${p.proj == null ? 'disabled' : ''} aria-label="Exclude ${p.name}"></td></tr>`).join('');
     $$('#nbaTable tbody input[type=checkbox]').forEach(cb => cb.onchange = () => { cb.checked ? NB.out.add(cb.dataset.n) : NB.out.delete(cb.dataset.n); });
@@ -2008,6 +2009,7 @@ td.lev { color: var(--steel); }
     let g; try { g = await glpk(); } catch (e) { st.className = 'status err'; st.textContent = 'The optimizer could not load: ' + e.message; return; }
     const N = Math.max(1, Math.min(150, parseInt($('#nbaN').value) || 20)), uniq = Math.max(1, Math.min(6, parseInt($('#nbaUniq').value) || 2)), capP = Math.max(1, Math.ceil(N * Math.min(100, Math.max(10, parseFloat($('#nbaExp').value) || 100)) / 100));
     if (D.slate.kind === 'nba_showdown') return nbaShowdown(g, st, t0, N, uniq, capP);
+    if (String(D.slate.kind).includes('tiers')) return buildTiers(st, t0, N, uniq, capP);
     const P = D.players.map((p, i) => ({ ...p, i })).filter(p => p.proj != null && !NB.out.has(p.name) && !NBOUT(p)), GL = D.game_lines || {};
     const stackG = $('#nbaStack').checked ? Object.entries(GL).filter(([k, v]) => v.home_spread != null && Math.abs(v.home_spread) <= 7).sort((a, b) => (b[1].total || 0) - (a[1].total || 0)).slice(0, 3).map(x => x[0]) : [];
     const blowG = $('#nbaBlow').checked ? Object.entries(GL).filter(([k, v]) => v.home_spread != null && Math.abs(v.home_spread) >= 9).map(x => x[0]) : [];
@@ -2039,6 +2041,30 @@ td.lev { color: var(--steel); }
     $('#nbaGrid').innerHTML = chosen.map((c, i) => `<article class="lu"><header><span>#${i + 1}</span><span><b>${fmt(c.s)}</b> pts · <b>${money(c.lu.reduce((t, p) => t + p.sal, 0))}</b></span></header><ol>${c.lu.map((p, j) => `<li><span>${NSLOT[j]} ${p.name}</span><span class="p">${p.team} · ${p.game}</span></li>`).join('')}</ol></article>`).join('');
     $('#nbaOut').hidden = false;
     logBuild('nba_classic', { n: N, uniq, exp: capP, stack: stackG, blowout: blowG, outs: [...NB.out] }, chosen.map(c => ({ players: c.lu.map(p => p.name) })));
+  }
+
+  // ---- Tiers (2026-10-24, FORGE): one player from each tier, no salary. Every combination is scored (sum of FORGE projections; tiers hold ~5-7 players,
+  // so a few thousand to ~100k combinations), then the best are taken in order under "min players different" and the exposure cap. OUT / no-projection out.
+  function buildTiers(st, t0, N, uniq, capP) {
+    const T = D.slate.tiers || [...new Set(D.players.map(p => p.pos))].sort((a, b) => +a.slice(1) - +b.slice(1));
+    const by = T.map(t => D.players.map((p, i) => ({ ...p, i })).filter(p => p.pos === t && p.proj != null && !NB.out.has(p.name) && !NBOUT(p)).sort((a, b) => b.proj - a.proj));
+    const empty = T.filter((t, j) => !by[j].length); if (empty.length) { st.className = 'status err'; st.textContent = `No playable player in ${empty.join(', ')} (all OUT or without a projection).`; return; }
+    let combos = [[]]; for (const L of by) { const nx = []; for (const c of combos) for (const p of L) nx.push([...c, p]); combos = nx; if (combos.length > 2e6) break; }
+    combos = combos.map(c => ({ lu: c, s: c.reduce((t, p) => t + p.proj, 0) })).sort((a, b) => b.s - a.s);
+    const chosen = [], cnt = {}, nT = T.length;
+    for (const c of combos) {
+      if (chosen.length >= N) break;
+      if (c.lu.some(p => (cnt[p.i] || 0) >= capP)) continue;
+      const ids = new Set(c.lu.map(p => p.i)); if (chosen.some(x => c.lu.filter(p => x.ids.has(p.i)).length > nT - uniq)) continue;
+      chosen.push({ lu: c.lu, ids, s: c.s }); c.lu.forEach(p => cnt[p.i] = (cnt[p.i] || 0) + 1);
+    }
+    if (!chosen.length) { st.className = 'status err'; st.textContent = 'No lineup fits these rules.'; return; }
+    NB.result = chosen; st.className = 'status'; st.textContent = `Forged ${chosen.length} of ${N} Tiers lineups in ${((performance.now() - t0) / 1000).toFixed(1)} s from ${combos.length.toLocaleString('en-US')} combinations` + (chosen.length < N ? ` · stopped at ${chosen.length}: with "min players different" ${uniq} only ${chosen.length} fit; lower it for more.` : '');
+    const ex = {}; chosen.forEach(c => c.lu.forEach(p => ex[p.name] = (ex[p.name] || 0) + 1));
+    $('#nbaExpo').innerHTML = Object.entries(ex).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span class="chip">${k} <b>${Math.round(100 * v / chosen.length)}%</b></span>`).join('');
+    $('#nbaGrid').innerHTML = chosen.map((c, i) => `<article class="lu"><header><span>#${i + 1}</span><span><b>${fmt(c.s)}</b> pts</span></header><ol>${c.lu.map((p, j) => `<li><span>${T[j]} ${p.name}</span><span class="p">${p.team} · ${fmt(p.proj)}</span></li>`).join('')}</ol></article>`).join('');
+    $('#nbaOut').hidden = false;
+    logBuild(D.slate.kind, { n: N, uniq, exp: capP, outs: [...NB.out] }, chosen.map(c => ({ players: c.lu.map(p => p.name) })));
   }
 
   // ---- NBA late swap (2026-10-21, FORGE: "FORGE must contain late swap"): keep players whose game started, re-optimise the open slots (GLPK)
@@ -2131,17 +2157,18 @@ td.lev { color: var(--steel); }
     const res = $('#nbaDkResult'); let PICK = ''; const say = h => res.innerHTML = PICK + h;
     res.onchange = ev => { const t = ev.target; if (t && t.dataset && t.dataset.ndkc !== undefined) { NBADKONLY = new Set([...res.querySelectorAll('[data-ndkc]')].filter(x => x.checked).map(x => x.dataset.ndkc)); nbaFillDK(NBADK); } };
     try {
-      const rows = csvParse(text.replace(/^﻿/, '')); const hdr = rows[0] || []; const sdF = hdr.includes('CPT'), clF = hdr.includes('PG');
-      if (!sdF && !clF) return say('<div class="err">That doesn\'t look like an NBA DraftKings entries file (no PG or CPT columns). Download it from Lineups → Edit Entries.</div>');
-      const sd = D.slate.kind === 'nba_showdown';
-      if (sd !== sdF) return say(`<div class="err">This is an NBA ${sdF ? 'Showdown' : 'Classic'} file, but the slate picked at the top is ${sd ? 'a Showdown' : 'Classic'}. Pick the matching slate first.</div>`);
-      const nS = sd ? 6 : 8; let pr = -1, pc = -1;
+      const rows = csvParse(text.replace(/^﻿/, '')); const hdr = rows[0] || []; const sdF = hdr.includes('CPT'), clF = hdr.includes('PG'), tiF = hdr.includes('T1');
+      if (!sdF && !clF && !tiF) return say('<div class="err">That doesn\'t look like a DraftKings entries file for this page (no PG, CPT or T1 columns). Download it from Lineups → Edit Entries.</div>');
+      const sd = D.slate.kind === 'nba_showdown', ti = String(D.slate.kind).includes('tiers'), fk = tiF ? 'Tiers' : sdF ? 'Showdown' : 'Classic', sk = ti ? 'Tiers' : sd ? 'Showdown' : 'Classic';
+      if (fk !== sk) return say(`<div class="err">This is a ${fk} entries file, but the slate picked at the top is ${sk}. Pick the matching slate first.</div>`);
+      const TS = ti ? hdr.filter(h => /^T\d+$/.test(h)) : null; if (ti && TS.join() !== (D.slate.tiers || []).join()) return say(`<div class="err">This file's tiers (${TS.join(', ')}) don't match the slate picked at the top (${(D.slate.tiers || []).join(', ')}). Pick the matching Tiers slate.</div>`);
+      const nS = ti ? TS.length : sd ? 6 : 8; let pr = -1, pc = -1;
       for (let i = 0; i < rows.length && pr < 0; i++) { const j = rows[i].indexOf('Name + ID'); if (j >= 0) { pr = i; pc = j; } }
       if (pr < 0) return say('<div class="err">The player list is missing from this file. Download a fresh copy from DraftKings.</div>');
       const pool = {};
       for (let i = pr + 1; i < rows.length; i++) { const r = rows[i]; const nid = (r[pc] || '').trim(); if (!nid) continue;
         const nm = (r[pc + 1] || '').trim(), rp = (r[pc + 3] || '').trim(), sal = +r[pc + 4] || 0;
-        const key = sd ? nm + '|' + (rp === 'CPT' ? 'CPT' : 'UTIL') : nm; pool[key] = { nid, sal, rp, pos: (r[pc - 1] || '').trim() }; }
+        const key = sd ? nm + '|' + (rp === 'CPT' ? 'CPT' : 'UTIL') : nm; pool[key] = { nid, sal: ti ? 0 : sal, rp, pos: (r[pc - 1] || '').trim() }; }
       const all = rows.slice(1).filter(r => /^\d+$/.test((r[0] || '').trim()) && (r[1] || '').trim());
       const cn = [...new Set(all.map(r => r[1].trim()))], cc = {}; all.forEach(r => cc[r[1].trim()] = (cc[r[1].trim()] || 0) + 1);
       if (!NBADKONLY || !cn.some(c => NBADKONLY.has(c))) NBADKONLY = new Set(cn);
@@ -2163,7 +2190,8 @@ td.lev { color: var(--steel); }
         const names = lu.lu.map(p => p.name);
         const ids = names.map((n, j) => pool[sd ? n + '|' + (j ? 'UTIL' : 'CPT') : n]);
         const miss = names.filter((n, j) => !ids[j]); if (miss.length) { errs.push(`${miss.join(', ')} not in your file's player list`); continue; }
-        if (!sd) { const bad = NSLOT.filter((sl, j) => !NEL[sl].some(ps => (ids[j].pos || '').split('/').includes(ps))); if (bad.length) { errs.push(`${names.join(', ')}: slot ${bad.join(', ')} not allowed for that player`); continue; } }
+        if (ti) { const bad = TS.filter((t, j) => ids[j].rp !== t); if (bad.length) { errs.push(`${names.join(', ')}: tier ${bad.join(', ')} does not match the file`); continue; } }
+        else if (!sd) { const bad = NSLOT.filter((sl, j) => !NEL[sl].some(ps => (ids[j].pos || '').split('/').includes(ps))); if (bad.length) { errs.push(`${names.join(', ')}: slot ${bad.join(', ')} not allowed for that player`); continue; } }
         const sal = ids.reduce((t, e) => t + e.sal, 0); if (sal > 50000) { errs.push(`lineup over the cap ($${sal})`); continue; }
         if (new Set(names).size !== nS) { errs.push('a player appears twice'); continue; }
         const outP = names.filter(n => /^(OUT|O|INJ)$/.test(status[n] || '')); if (outP.length) { errs.push(`${outP.join(', ')} is ruled out`); continue; }
@@ -2172,9 +2200,9 @@ td.lev { color: var(--steel); }
       if (errs.length) return say('<div class="err">Not filled. Fix this first:</div><ul>' + [...new Set(errs)].slice(0, 8).map(e => `<li>${e}</li>`).join('') + '</ul>');
       if (!out.length) return say(`<div class="err">You built ${L.length} lineups; the selected entries need ${ent.length}. Build more lineups first.</div>`);
       const csv = [hdr.slice(0, 4 + nS).map(csvCell).join(','), ...out.map(r => r.map(x => csvCell(String(x))).join(','))].join('\r\n') + '\r\n';
-      const fname = `DKEntries_FORGE_NBA_${D.slate.id || 'slate'}.csv`;
+      const fname = `DKEntries_FORGE_${D.slate.id || 'slate'}.csv`;
       logBuild('nba_export', { fname, skipped: skipped.length, contests: plan }, out.map(o => ({ entry: o[0], contest: o[1] })));
-      say(`<div class="ok">✓ ${out.length} entries filled with ${out.length} different lineups, checked against DraftKings' player list (IDs, slots, $50,000).</div>${skipped.length ? `<p class="note"><b>${skipped.length} selected entries have no lineup yet</b>: FORGE could make only ${L.length} different lineups (${esc($('#nbaStatus').textContent)}). They are left out of the file and stay as they are on DraftKings; choose the file again later when more lines are posted.</p>` : ''}
+      say(`<div class="ok">✓ ${out.length} entries filled with ${out.length} different lineups, checked against DraftKings' player list (IDs, ${ti ? 'tiers' : 'slots, $50,000'}).</div>${skipped.length ? `<p class="note"><b>${skipped.length} selected entries have no lineup yet</b>: FORGE could make only ${L.length} different lineups (${esc($('#nbaStatus').textContent)}). They are left out of the file and stay as they are on DraftKings; choose the file again later when more lines are posted.</p>` : ''}
         <div class="tbl-wrap"><table><thead><tr><th>Contest</th><th class="n">Entries filled</th></tr></thead><tbody>${Object.entries(plan).map(([c, v]) => `<tr><td>${c}</td><td class="n">${v}</td></tr>`).join('')}</tbody></table></div>
         <div class="toolbar"><button class="btn primary" type="button" id="nbaDkDl">Download filled file</button><button class="btn small" type="button" id="nbaDkCopy">Copy instead</button></div>
         <p class="note">Then DraftKings → Lineups → Edit Entries → Upload, and pick ${fname}.</p>`);
