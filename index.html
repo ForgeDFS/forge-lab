@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="bdc35bd1f05d"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="fd9438b5c03a"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
 <title>FORGE DFS Lab</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -620,9 +620,12 @@ td.lev { color: var(--steel); }
 
   <section class="panel" id="p-dk" hidden>
     <div class="nba-only"><ol class="steps">
-      <li><b>Build.</b> In <b>Build</b>, press <b>Forge NBA lineups</b> (FORGE's default settings are already set).</li>
-      <li><b>Download.</b> Press <b>Download for DraftKings</b> under your lineups. The file is in DraftKings' upload format with player IDs.</li>
-      <li><b>Upload.</b> On the DraftKings website open <b>Lineups → Upload Lineups</b> for this slate and pick the file. <a class="btn small" href="https://www.draftkings.com/lineup/upload" target="_blank" rel="noopener">Open DraftKings upload</a></li></ol>
+      <li><b>Build.</b> In <b>Build</b>, press <b>Forge NBA lineups</b> (FORGE's default settings are already set). Build at least as many lineups as the entries you want filled.</li>
+      <li><b>Get your entries file.</b> On DraftKings: <b>Lineups → Edit Entries → Download</b> for this slate (it lists every contest you joined).</li>
+      <li><b>Fill it here.</b> <label class="btn primary filebtn"><input type="file" id="nbaDkFile">Choose your DKEntries file</label> Then tick the contests to fill.</li>
+      <li><b>Upload.</b> DraftKings → <b>Lineups → Edit Entries → Upload</b>, pick the filled file.</li></ol>
+      <div id="nbaDkResult" aria-live="polite"></div>
+      <p class="note">New entries without an entries file: <b>Download for DraftKings</b> under your lineups gives DraftKings' <b>Upload Lineups</b> format (no entry IDs). <a class="btn small" href="https://www.draftkings.com/lineup/upload" target="_blank" rel="noopener">Open DraftKings upload</a></p>
       <div class="toolbar"><button type="button" class="btn primary" id="nbaCsv2">Download my NBA lineups</button><span class="status" id="nbaCsv2s"></span></div>
       <div class="appbox"><b>NBA late swap.</b> After the first games tip off, download your entries again from DraftKings (Lineups → Edit Entries), choose the file here and press the button. FORGE keeps every player whose game has started and re-picks the open spots from the newest projections, same salary cap and positions. Pick the Classic slate you entered at the top first.
         <div class="toolbar" style="margin-top:8px"><label class="btn filebtn"><input type="file" id="nbaLsFile">Choose DKEntries file</label><button class="btn primary" type="button" id="nbaLsRun">Late swap my NBA entries</button><span class="status" id="nbaLsStatus" role="status"></span></div><div id="nbaLsOut"></div></div></div>
@@ -2119,6 +2122,59 @@ td.lev { color: var(--steel); }
     $('#nbaOut').hidden = false;
     logBuild('nba_showdown', { n: N, uniq, exp: capP, top3: !!pool, cpt_caps: pool ? Object.fromEntries([...pool].map(i => [D.players[i].name, wcap[i]])) : null, outs: [...NB.out] }, chosen.map(c => ({ cpt: c.lu[0].name, flex: c.lu.slice(1).map(p => p.name) })));
   }
+
+  // ---- NBA DraftKings entries file (2026-10-24, FORGE: "just like NFL: read my entries file, let me choose which contests"): fills Edit Entries rows with
+  // the Builder's NBA lineups (20 distinct by default), checked against the file's own player list (IDs, roster slots, $50,000) and FORGE's OUT list
+  let NBADK = null, NBADKONLY = null;
+  function nbaFillDK(text) {
+    const res = $('#nbaDkResult'); let PICK = ''; const say = h => res.innerHTML = PICK + h;
+    res.onchange = ev => { const t = ev.target; if (t && t.dataset && t.dataset.ndkc !== undefined) { NBADKONLY = new Set([...res.querySelectorAll('[data-ndkc]')].filter(x => x.checked).map(x => x.dataset.ndkc)); nbaFillDK(NBADK); } };
+    try {
+      const rows = csvParse(text.replace(/^﻿/, '')); const hdr = rows[0] || []; const sdF = hdr.includes('CPT'), clF = hdr.includes('PG');
+      if (!sdF && !clF) return say('<div class="err">That doesn\'t look like an NBA DraftKings entries file (no PG or CPT columns). Download it from Lineups → Edit Entries.</div>');
+      const sd = D.slate.kind === 'nba_showdown';
+      if (sd !== sdF) return say(`<div class="err">This is an NBA ${sdF ? 'Showdown' : 'Classic'} file, but the slate picked at the top is ${sd ? 'a Showdown' : 'Classic'}. Pick the matching slate first.</div>`);
+      const nS = sd ? 6 : 8; let pr = -1, pc = -1;
+      for (let i = 0; i < rows.length && pr < 0; i++) { const j = rows[i].indexOf('Name + ID'); if (j >= 0) { pr = i; pc = j; } }
+      if (pr < 0) return say('<div class="err">The player list is missing from this file. Download a fresh copy from DraftKings.</div>');
+      const pool = {};
+      for (let i = pr + 1; i < rows.length; i++) { const r = rows[i]; const nid = (r[pc] || '').trim(); if (!nid) continue;
+        const nm = (r[pc + 1] || '').trim(), rp = (r[pc + 3] || '').trim(), sal = +r[pc + 4] || 0;
+        const key = sd ? nm + '|' + (rp === 'CPT' ? 'CPT' : 'UTIL') : nm; pool[key] = { nid, sal, rp, pos: (r[pc - 1] || '').trim() }; }
+      const all = rows.slice(1).filter(r => /^\d+$/.test((r[0] || '').trim()) && (r[1] || '').trim());
+      const cn = [...new Set(all.map(r => r[1].trim()))], cc = {}; all.forEach(r => cc[r[1].trim()] = (cc[r[1].trim()] || 0) + 1);
+      if (!NBADKONLY || !cn.some(c => NBADKONLY.has(c))) NBADKONLY = new Set(cn);
+      PICK = `<div class="dkpick"><p class="note"><b>Which contests should these lineups go into?</b> Unticked entries stay as they are on DraftKings and are left out of the file.</p>${cn.map(c => `<label style="display:block;margin:4px 0"><input type="checkbox" data-ndkc="${c.replace(/"/g, '&quot;')}" ${NBADKONLY.has(c) ? 'checked' : ''}> ${c} <span class="note">(${cc[c]} entries)</span></label>`).join('')}</div>`;
+      const ent = all.filter(r => NBADKONLY.has(r[1].trim()));
+      if (!ent.length) return say('<div class="err">No entries selected.</div>');
+      const L = NB.result || []; if (!L.length) return say('<div class="err">Build your NBA lineups first: Build → Forge NBA lineups (set the number of lineups to at least ' + ent.length + ').</div>');
+      const status = {}; D.players.forEach(p => status[p.name] = (p.status || '').toUpperCase());
+      const out = [], errs = [], skipped = [], plan = {}; let k = 0;
+      for (const r of ent) {
+        const c = r[1].trim(); const lu = L[k++]; if (!lu) { skipped.push(r[0]); continue; }
+        const names = lu.lu.map(p => p.name);
+        const ids = names.map((n, j) => pool[sd ? n + '|' + (j ? 'UTIL' : 'CPT') : n]);
+        const miss = names.filter((n, j) => !ids[j]); if (miss.length) { errs.push(`${miss.join(', ')} not in your file's player list`); continue; }
+        if (!sd) { const bad = NSLOT.filter((sl, j) => !NEL[sl].some(ps => (ids[j].pos || '').split('/').includes(ps))); if (bad.length) { errs.push(`${names.join(', ')}: slot ${bad.join(', ')} not allowed for that player`); continue; } }
+        const sal = ids.reduce((t, e) => t + e.sal, 0); if (sal > 50000) { errs.push(`lineup over the cap ($${sal})`); continue; }
+        if (new Set(names).size !== nS) { errs.push('a player appears twice'); continue; }
+        const outP = names.filter(n => /^(OUT|O|INJ)$/.test(status[n] || '')); if (outP.length) { errs.push(`${outP.join(', ')} is ruled out`); continue; }
+        out.push([r[0], r[1], r[2], r[3], ...ids.map(e => e.nid)]); plan[c] = (plan[c] || 0) + 1;
+      }
+      if (errs.length) return say('<div class="err">Not filled. Fix this first:</div><ul>' + [...new Set(errs)].slice(0, 8).map(e => `<li>${e}</li>`).join('') + '</ul>');
+      if (!out.length) return say(`<div class="err">You built ${L.length} lineups; the selected entries need ${ent.length}. Build more lineups first.</div>`);
+      const csv = [hdr.slice(0, 4 + nS).map(csvCell).join(','), ...out.map(r => r.map(x => csvCell(String(x))).join(','))].join('\r\n') + '\r\n';
+      const fname = `DKEntries_FORGE_NBA_${D.slate.id || 'slate'}.csv`;
+      logBuild('nba_export', { fname, skipped: skipped.length, contests: plan }, out.map(o => ({ entry: o[0], contest: o[1] })));
+      say(`<div class="ok">✓ ${out.length} entries filled with ${out.length} different lineups, checked against DraftKings' player list (IDs, slots, $50,000).</div>${skipped.length ? `<p class="note"><b>${skipped.length} selected entries have no lineup yet</b> (you built ${L.length}); they are left out of the file. Build more lineups to fill them.</p>` : ''}
+        <div class="tbl-wrap"><table><thead><tr><th>Contest</th><th class="n">Entries filled</th></tr></thead><tbody>${Object.entries(plan).map(([c, v]) => `<tr><td>${c}</td><td class="n">${v}</td></tr>`).join('')}</tbody></table></div>
+        <div class="toolbar"><button class="btn primary" type="button" id="nbaDkDl">Download filled file</button><button class="btn small" type="button" id="nbaDkCopy">Copy instead</button></div>
+        <p class="note">Then DraftKings → Lineups → Edit Entries → Upload, and pick ${fname}.</p>`);
+      $('#nbaDkDl').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = fname; document.body.appendChild(a); a.click(); setTimeout(() => a.remove(), 500); };
+      $('#nbaDkCopy').onclick = e => copy(csv, e.currentTarget);
+    } catch (e) { say('<div class="err">Could not read that file (' + e.message + ').</div>'); }
+  }
+  $('#nbaDkFile').addEventListener('change', async ev => { const f = ev.target.files[0]; if (!f) return; NBADK = await f.text(); NBADKONLY = null; ev.target.value = ''; nbaFillDK(NBADK); });
   $('#nbaCsv2').addEventListener('click', () => { if (NB.result && NB.result.length) $('#nbaCsv').click(); else $('#nbaCsv2s').textContent = 'No NBA lineups yet: press Forge NBA lineups in Build first.'; });
   $('#nbaCsv').addEventListener('click', () => {
     const sd = D.slate.kind === 'nba_showdown';
