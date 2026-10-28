@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="5289706edcfe"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="c55205b73c1f"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -463,6 +463,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
 .chg { margin-top: 10px; }
 
 /* player table fits laptops; narrower screens switch column groups */
+#nbaTable td.who, #nbaBTable td.who { white-space: normal; min-width: 170px; max-width: 260px; line-height: 17px; }
 #ptable td.who { white-space: normal; min-width: 170px; max-width: 290px; line-height: 17px; }
 #ptable .lines { white-space: normal; }
 @media (max-width: 1100px) {
@@ -583,11 +584,11 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
       <div class="tbl-wrap"><table id="ctable"><thead><tr><th>Player</th><th>Pos</th><th class="n sort" data-k="sal">Salary</th><th class="n sort" data-k="proj">Proj</th><th class="n sort" data-k="value">Pts / $1K</th><th>DK lines</th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="nba-only" id="nbaPlayersBox">
-    <p class="note nbaflag"><b>NBA v0 · unproven.</b> Projections come from tonight's FanDuel player props turned into DraftKings points; No NBA backtest yet. Turnovers are estimated (10% of points + assists) because FanDuel does not price them.</p>
+    <p class="note nbaflag"><b>Engine</b> = FORGE's own projection from box scores (minutes × per-minute rates × pace × opponent × chance to play) for every player and every DraftKings stat; <i>italic</i> steals/blocks = no line posted, engine number. Shown for reference tonight: on the 7 past nights it did not yet beat the betting lines or the DraftKings average, so builds still use Proj. <b>NBA v0 · unproven.</b> Projections come from tonight's FanDuel player props turned into DraftKings points; No NBA backtest yet. Turnovers are estimated (10% of points + assists) because FanDuel does not price them.</p>
     <div class="nbaleaders" id="nbaCptPool"></div>
     
     <div class="toolbar"><input type="search" id="nbaSearch" placeholder="Search players" aria-label="Search players"><select id="nbaGame" aria-label="Game"></select><span class="note" id="nbaCount"></span></div>
-    <div class="tbl-wrap"><table id="nbaTable"><thead><tr><th data-k="name">Player</th><th>Pos</th><th data-k="team">Team</th><th data-k="game">Game</th><th class="n" data-k="sal">Salary</th><th class="n" data-k="proj">Proj</th><th class="n" data-k="value">Value</th><th class="n" data-k="pts">PTS</th><th class="n" data-k="reb">REB</th><th class="n" data-k="ast">AST</th><th class="n" data-k="tpm">3PM</th><th class="n" data-k="stl">STL</th><th class="n" data-k="blk">BLK</th><th class="n" data-k="dd">DD%</th><th class="n sdcol" data-k="cpt_sal">CPT $</th><th class="n sdcol" data-k="p_top">Top scorer</th><th>Out</th></tr></thead><tbody></tbody></table></div>
+    <div class="tbl-wrap"><table id="nbaTable"><thead><tr><th data-k="name">Player</th><th>Pos</th><th data-k="team">Team</th><th data-k="game">Game</th><th class="n" data-k="sal">Salary</th><th class="n" data-k="proj">Proj</th><th class="n" data-k="value">Value</th><th class="n" data-k="pts">PTS</th><th class="n" data-k="reb">REB</th><th class="n" data-k="ast">AST</th><th class="n" data-k="tpm">3PM</th><th class="n" data-k="stl">STL</th><th class="n" data-k="blk">BLK</th><th class="n" title="Turnovers: FORGE engine (no book posts them)">TOV</th><th class="n" data-k="dd">DD%</th><th class="n" title="FORGE's own engine: box scores x minutes x pace x opponent, every stat. Shown for reference; not used in builds yet">Engine</th><th class="n" title="Chance he plays (FORGE engine)">Plays</th><th class="n sdcol" data-k="cpt_sal">CPT $</th><th class="n sdcol" data-k="p_top">Top scorer</th><th>Out</th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="sd-only">
     <details class="about"><summary>About these numbers</summary>
@@ -2312,7 +2313,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     const R = D.players.filter(p => (!q || p.name.toLowerCase().includes(q)) && (!g || p.game === g)).sort((a, b) => { const x = a[NB.sort], y = b[NB.sort]; if (x == null) return 1; if (y == null) return -1; return (x > y ? 1 : x < y ? -1 : 0) * NB.dir; });
     $('#nbaCount').textContent = `${R.length} players`;
     $('#nbaTable tbody').innerHTML = R.map(p => `<tr><td class="who"><b>${p.name}</b>${p.status ? ` <span class="tag">${esc(p.status)}</span>` : ''}${p.source === 'dk average' ? ' <small class="dim">DK avg stand-in</small>' : (p.proj == null ? ' <small class="dim">no props</small>' : '')}${p.why ? `<br><small class="dim">Why no line: ${esc(p.why)}</small>` : ''}${p.role ? `<br><small class="warn">⚑ ${esc(p.role)}</small>` : ''}</td><td><span class="pos">${p.pos}</span>${p.rpos ? ` <small>${p.rpos}</small>` : ''}</td><td>${p.team}</td><td><small>${p.game}</small></td><td class="n">${p.sal ? money(p.sal) : '—'}</td><td class="n"><b>${fmt(p.proj)}</b></td><td class="n">${fmt(p.value, 2)}</td>
-      ${['pts', 'reb', 'ast', 'tpm', 'stl', 'blk'].map(k => `<td class="n">${fmt(p[k])}</td>`).join('')}<td class="n">${p.dd == null ? '—' : fmt(100 * p.dd, 0) + '%'}</td><td class="n sdcol">${p.cpt_sal ? money(p.cpt_sal) : '—'}</td><td class="n sdcol">${p.p_top == null ? '—' : fmt(100 * p.p_top, 1) + '%'}</td>
+      ${['pts', 'reb', 'ast', 'tpm', 'stl', 'blk'].map(k => `<td class="n">${p[k] != null ? fmt(p[k]) : (p.eng && p.eng[k] != null ? `<i class="dim" title="No line posted: FORGE engine number (display only)">${fmt(p.eng[k])}</i>` : '—')}</td>`).join('')}<td class="n">${p.eng ? fmt(p.eng.tov) : '—'}</td><td class="n">${p.dd == null ? '—' : fmt(100 * p.dd, 0) + '%'}</td><td class="n" title="${p.eng && p.eng.note ? esc(p.eng.note) : 'FORGE engine'}">${p.eng ? fmt(p.eng.proj) + (p.eng.note ? '*' : '') : '—'}</td><td class="n">${p.eng ? Math.round(100 * p.eng.play) + '%' : '—'}</td><td class="n sdcol">${p.cpt_sal ? money(p.cpt_sal) : '—'}</td><td class="n sdcol">${p.p_top == null ? '—' : fmt(100 * p.p_top, 1) + '%'}</td>
       <td><input type="checkbox" data-n="${p.name}" ${NB.out.has(p.name) ? 'checked' : ''} ${p.proj == null ? 'disabled' : ''} aria-label="Exclude ${p.name}"></td></tr>`).join('');
     $$('#nbaTable tbody input[type=checkbox]').forEach(cb => cb.onchange = () => { cb.checked ? (NB.out.add(cb.dataset.n), NB.lock.delete(cb.dataset.n)) : NB.out.delete(cb.dataset.n); renderNBABuild(); });
   }
