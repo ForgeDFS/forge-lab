@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="ede8f8d8a929"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="5289706edcfe"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -298,6 +298,8 @@ details.about p:last-child { margin-bottom: 0; }
 .nbaform > label:not(.check) { display: flex; justify-content: space-between; gap: 12px; align-items: center; font-size: 13px; color: var(--ink-2); max-width: 360px; }
 .nbaform input[type=number] { width: 88px; }
 .nbaform .toolbar { margin: 4px 0 0; }
+.controls.nbaform { max-width: none; margin: 0; }
+#nbaBTable .projin { width: 72px !important; }
 .nbaflag { border: 1px solid var(--line); border-left: 3px solid var(--brand); background: var(--surface); border-radius: var(--r-md); padding: 9px 12px; margin: 0 0 16px; }
 
 /* lineup cards */
@@ -727,7 +729,9 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     </div>
     <div class="nba-only" id="nbaBuildBox">
     <h3 class="subh" id="nbaBTitle">Builder · NBA Classic</h3>
-    <div class="nbaform">
+    <div class="builder">
+    <div class="controls nbaform">
+      <h3>Rules</h3>
       <label>Lineups <input type="number" id="nbaN" min="1" max="150" value="20"></label>
       <label>Min players different <input type="number" id="nbaUniq" min="1" max="6" value="2"></label>
       <label>Max exposure % <input type="number" id="nbaExp" min="10" max="100" value="100"></label>
@@ -735,9 +739,16 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
       <label class="check clonly"><input type="checkbox" id="nbaStack"> Game stack: 3+ players from one of the 3 highest-total close games (spread 7 or less)</label>
       <label class="check clonly"><input type="checkbox" id="nbaBlow"> At most 1 player from likely blowouts (spread 9+)</label>
       <p class="note">Both rules start off (FORGE's NBA default since 10/22: highest projection, no forced stack). On the only graded night so far (10/21 main slate) projection-only lineups returned +335% vs +45% with the forced stack. One night is thin: all four rules are graded every night.</p>
-      <div class="toolbar"><button type="button" class="btn primary" id="nbaRun">Forge NBA lineups</button><span class="status" id="nbaStatus" role="status"></span></div>
+      <label class="check clonly" id="nbaVaryBox" hidden><input type="checkbox" id="nbaVary" checked> <span id="nbaVaryLab">Fresh set every press: projections jittered 5% each time, so you and a friend (or two contests) get different lineups. Tested on 7 past nights: 5 of 5 draws profitable, average +68% vs +47% for the exact set; two presses share about 1 of 20 lineups.</span></label>
+      <button type="button" class="btn primary" id="nbaRun">Forge NBA lineups</button><span class="status" id="nbaStatus" role="status"></span>
     </div>
-    <div id="nbaOut" hidden><div class="toolbar"><h3>Your lineups</h3><button type="button" class="btn small" id="nbaCsv">Download for DraftKings</button></div><div class="expo" id="nbaExpo"></div><div class="grid" id="nbaGrid"></div></div>
+    <div style="min-width:0">
+      <div class="toolbar"><input type="search" id="nbaBSearch" placeholder="Search players" aria-label="Search players"><select id="nbaBGame" aria-label="Game"></select><button class="btn small" id="nbaBReset" type="button">Reset</button><span class="note" id="nbaBCount"></span></div>
+      <p class="note" style="margin:-4px 0 10px">Lock = in every lineup. Out = never used. <span class="sdonly">CPT pool = only these can captain (none ticked = FORGE's 3 likeliest top scorers).</span> Type over a projection to use your own number. Players without a betting line start Out; untick to use their DraftKings average.</p>
+      <div class="tbl-wrap"><table id="nbaBTable"><thead><tr><th>Player</th><th class="n" id="nbaBSalH">Salary</th><th class="n">Proj</th><th class="sdonly">CPT pool</th><th>Lock</th><th>Out</th></tr></thead><tbody></tbody></table></div>
+      <div id="nbaOut" hidden><div class="toolbar" style="margin-top:16px"><h3>Your lineups</h3><button type="button" class="btn small" id="nbaCsv">Download for DraftKings</button></div><div class="expo" id="nbaExpo"></div><div class="grid" id="nbaGrid"></div></div>
+    </div>
+    </div>
     </div>
     <div id="copyBox" hidden><p class="note">Copy didn't go through on this device. Select the text below and copy it.</p><textarea id="copyText" readonly></textarea></div>
   </section>
@@ -831,6 +842,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     <div id="entSum"></div>
     <div class="appbox owner-only" id="stBox"><b>Send contest standings to FORGE.</b> After a contest ends, download its standings on DraftKings (the contest page, then Export / Download standings), then tap Share and pick FORGE, or choose the file here. FORGE archives it, grades every build and learns from it on its own.
       <div class="toolbar" style="margin-top:8px"><label class="btn filebtn"><input type="file" id="stFile" accept=".zip,.csv">Choose standings file</label><span class="status" id="stStatus" role="status"></span></div></div>
+    <section class="nba-only"><h3 class="subh">What FORGE is learning · NBA</h3><div id="learnNba"><p class="note">Loading…</p></div></section>
     <h3 class="subh">What everyone's builds are teaching FORGE</h3>
     <div id="learnBox"><p class="note">Loading…</p></div>
     <h3 class="subh">Backtest: today's FORGE Pick</h3>
@@ -2120,6 +2132,20 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
   const ordn = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th'));
   const selName = s => s === 'DREW-SET' ? "FORGE's entered set" : setInfo(s).name;
   async function renderRecord() {
+    getJSON('learn_nba').then(L => {      // (2026-10-28) NBA learning loop: tools/nba_learn.py, rules knowledge/nba_learn_rules.json
+      const I = L.items || {}, f2 = v => v == null ? '—' : (+v).toFixed(2), pc = v => v == null ? '—' : (v > 0 ? '+' : '') + (+v).toFixed(1) + '%';
+      const row = (lab, what, val, st) => `<tr><td class="who"><b>${lab}</b><small>${what}</small></td><td>${val}</td><td>${esc(st || '')}</td></tr>`;
+      const A = Object.fromEntries((L.arms || []).map(a => [a.arm, a]));
+      $('#learnNba').innerHTML = `<p class="lede">After every NBA Classic night with results, FORGE re-scores its projections, its ownership guess and every way of building the 20 against the real contest, then checks each idea against a rule written before any result existed. ${L.slates} nights so far; updated ${esc(L.updated_utc)} UTC. Ideas that would change your lineups wait for a decision; the rest switch on by themselves.</p>
+        <div class="tbl-wrap"><table><thead><tr><th>Idea</th><th>So far</th><th>Status</th></tr></thead><tbody>
+        ${row('Projection level', 'actual ≈ ' + f2(L.calibration && L.calibration.a) + ' + ' + f2(L.calibration && L.calibration.b) + ' × projection', I.R1_level ? 'miss ' + f2(I.R1_level.mae_r1) + ' vs ' + f2(I.R1_level.mae_raw) + ' pts' : '—', I.R1_level && I.R1_level.status)}
+        ${row('Steals + blocks fill', 'box-score averages when no line is posted', I.P2_stlblk ? 'miss ' + f2(I.P2_stlblk.mae_p2) + ' vs ' + f2(I.P2_stlblk.mae_raw) + ' · better ' + I.P2_stlblk.better_on + ' of ' + I.P2_stlblk.slates : '—', I.P2_stlblk && I.P2_stlblk.status)}
+        ${row('Ownership model', 'vs the simple points-per-dollar rule', I.O1_own ? 'miss ' + f2(I.O1_own.mae_o1) + ' vs ' + f2(I.O1_own.mae_o0) + ' pts · better ' + I.O1_own.better_on + ' of ' + I.O1_own.slates : '—', I.O1_own && I.O1_own.status)}
+        ${row('Spread the 20 out', 'min 3 different, max 50% per player', I.A1_spread ? pc(I.A1_spread.roi) + ' vs current ' + pc(I.A1_spread.roi_a0) : '—', I.A1_spread && I.A1_spread.status)}
+        ${row('Build on the steals/blocks fill', '', I.A5_p2build ? pc(I.A5_p2build.roi) + ' vs current ' + pc(I.A5_p2build.roi_a0) : '—', I.A5_p2build && I.A5_p2build.status)}
+        ${row('Fresh set every press', 'projections jittered ' + (I.V_variety ? Math.round(100 * I.V_variety.s) + '%' : ''), I.V_variety ? 'average ' + pc(I.V_variety.mean_roi) + ' · ' + I.V_variety.seeds_positive + ' of ' + I.V_variety.seeds + ' draws positive' : '—', I.V_variety && I.V_variety.status)}
+        </tbody></table></div><p class="note">Returns count every prize. Current method (max projection, 20 different): ${A.A0 ? pc(A.A0.roi) + ' over ' + L.slates + ' nights (' + pc(A.A0.roi_wo_top) + ' without its single biggest prize)' : '—'}. Development-size sample: read as direction, not proof.</p>`;
+    }).catch(() => { $('#learnNba').innerHTML = '<p class="note">The NBA learning log starts with the next graded night.</p>'; });
     getJSON('learn').then(L => {
       const G = (L.groups || []).filter(g => g.builds > 0), row = g => `<tr><td>${g.group}</td><td class="n">${g.builds}</td><td class="n">${g.slates}</td><td class="n">${g.lineups}</td><td class="n ${g.roi >= 0 ? 'netpos' : 'netneg'}">${g.roi == null ? '—' : sgn(g.roi) + '%'}</td><td class="n">${g.cash == null ? '—' : g.cash + '%'}</td><td class="n">${g.top1}</td><td class="n">${g.slates_compared ? g.ahead_of_forge_pick + ' of ' + g.slates_compared : '—'}</td></tr>`;
       $('#learnBox').innerHTML = `<p class="lede">Every set built on this site, by anyone, any size, is saved with its settings and graded on the real contest results once they're in: ${L.builds} builds on ${L.slates} slates so far. Grouped by settings, every prize counted in full.</p>`
@@ -2235,10 +2261,32 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
   // ---------------------------------------------------------------- NBA v0 (2026-10-21): projections from props, leaderboards, Classic builder (GLPK)
   const NBOUT = p => /^(OUT|O|IR|INJ|D|SUSP)$/i.test(String(p.status || '').trim());   // (2026-10-24) DK/ESPN ruled-out statuses: never built, never filled
   let NBADK = null, NBADKONLY = null;
-  const NB = { sort: 'proj', dir: -1, out: new Set(), result: [] };
+  const NB = { sort: 'proj', dir: -1, out: new Set(), result: [], lock: new Set(), cpt: new Set(), proj: {}, vz: null };
+  // (2026-10-28, FORGE) the Build tab lists every player: lock / out / captain pool / own projection. PJ = the projection the builders use.
+  const PJ = p => (NB.proj[p.name] != null ? NB.proj[p.name] : p.proj), QJ = p => { const v = PJ(p); return v == null ? null : v * ((NB.vz && NB.vz[p.name]) || 1); };
+  const VARY_S = 0.05;      // built-in variety for the NBA Classic default (NBA-C2 addendum C, passed 2026-10-28: 5 of 5 draws profitable on 7 past nights; 10% failed)
+  function gauss() { const u = new Uint32Array(2); crypto.getRandomValues(u); const a = (u[0] + 1) / 4294967297, b = u[1] / 4294967296; return Math.sqrt(-2 * Math.log(a)) * Math.cos(2 * Math.PI * b); }
+  function renderNBABuild() {
+    if (!D || !D.players) return; const q = ($('#nbaBSearch').value || '').toLowerCase(), g = $('#nbaBGame').value, ti = String(D.slate.kind).includes('tiers');
+    const R = D.players.filter(p => p.proj != null && (!q || p.name.toLowerCase().includes(q)) && (!g || p.game === g)).sort((a, b) => ti ? (a.pos.localeCompare(b.pos) || PJ(b) - PJ(a)) : (b.sal - a.sal) || (PJ(b) - PJ(a)));
+    $('#nbaBSalH').textContent = ti ? 'Tier' : 'Salary'; $('#nbaBCount').textContent = `${R.length} players · ${NB.lock.size} locked · ${R.filter(p => NB.out.has(p.name)).length} out`;
+    $('#nbaBTable tbody').innerHTML = R.map(p => { const ruled = NBOUT(p), e = esc(p.name);
+      return `<tr><td class="who"><b>${e}</b>${p.status ? ` <span class="tag${ruled ? ' out' : ''}">${esc(p.status)}</span>` : ''}${p.source === 'dk average' ? ' <span class="tag steel">DK avg</span>' : ''}<small>${esc([p.team, p.rpos || p.pos, p.game].filter(Boolean).join(' · '))}</small></td>
+      <td class="n">${ti ? esc(p.pos) : money(p.sal)}</td><td class="n"><input type="number" class="projin" step="0.1" data-pj="${e}" value="${fmt(PJ(p))}" aria-label="Projection for ${e}"></td>
+      <td class="sdonly"><input type="checkbox" data-bc="${e}" ${NB.cpt.has(p.name) ? 'checked' : ''} ${ruled ? 'disabled' : ''} aria-label="Captain pool: ${e}"></td>
+      <td><input type="checkbox" data-bl="${e}" ${NB.lock.has(p.name) ? 'checked' : ''} ${ruled ? 'disabled' : ''} aria-label="Lock ${e}"></td>
+      <td><input type="checkbox" data-bo="${e}" ${NB.out.has(p.name) ? 'checked' : ''} ${ruled ? 'disabled' : ''} aria-label="Exclude ${e}"></td></tr>`; }).join('');
+    const un = s => s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+    $$('#nbaBTable [data-bl]').forEach(c => c.onchange = () => { const n = un(c.dataset.bl); if (c.checked) { NB.lock.add(n); NB.out.delete(n); } else NB.lock.delete(n); renderNBABuild(); renderNBATable(); });
+    $$('#nbaBTable [data-bo]').forEach(c => c.onchange = () => { const n = un(c.dataset.bo); if (c.checked) { NB.out.add(n); NB.lock.delete(n); NB.cpt.delete(n); } else NB.out.delete(n); renderNBABuild(); renderNBATable(); });
+    $$('#nbaBTable [data-bc]').forEach(c => c.onchange = () => { const n = un(c.dataset.bc); c.checked ? NB.cpt.add(n) : NB.cpt.delete(n); });
+    $$('#nbaBTable [data-pj]').forEach(c => c.onchange = () => { const n = un(c.dataset.pj), v = parseFloat(c.value), p = D.players.find(x => x.name === n); if (!Number.isNaN(v) && p && Math.abs(v - p.proj) > 0.005) NB.proj[n] = v; else delete NB.proj[n]; });
+  }
+  $('#nbaBSearch').addEventListener('input', renderNBABuild); $('#nbaBGame').addEventListener('change', renderNBABuild);
+  $('#nbaBReset').addEventListener('click', () => { NB.lock.clear(); NB.cpt.clear(); NB.proj = {}; NB.out.clear(); D.players.forEach(p => { if (p.proj == null || p.source === 'dk average' || NBOUT(p)) NB.out.add(p.name); }); renderNBABuild(); renderNBATable(); });
   const NSLOT = ['PG', 'SG', 'SF', 'PF', 'C', 'G', 'F', 'UTIL'], NEL = { PG: ['PG'], SG: ['SG'], SF: ['SF'], PF: ['PF'], C: ['C'], G: ['PG', 'SG'], F: ['SF', 'PF'], UTIL: ['PG', 'SG', 'SF', 'PF', 'C'] };
   function initNBA(data, meta) {
-    const s = data.slate, P = data.players, SD = s.kind === 'nba_showdown'; NB.out.clear(); NBADKONLY = null; NB.result = []; document.body.classList.toggle('nbasd', SD);
+    const s = data.slate, P = data.players, SD = s.kind === 'nba_showdown'; NB.out.clear(); NB.lock.clear(); NB.cpt.clear(); NB.proj = {}; NBADKONLY = null; NB.result = []; document.body.classList.toggle('nbasd', SD);
     const TI = String(s.kind).includes('tiers'); $('#nbaBTitle').textContent = TI ? `Builder · ${s.sport} Tiers (one player from each tier, no salary cap)` : SD ? 'Builder · NBA Showdown (Captain + 5 UTIL)' : 'Builder · NBA Classic'; $('#nbaOut').hidden = true; $('#nbaStatus').textContent = '';
     if (SD) { const [a, h] = (s.game_list || [''])[0].split('@'); $('#tAway').textContent = a; $('#tAt').textContent = '@'; $('#tHome').textContent = h; }
     else { $('#tAway').textContent = TI ? s.sport + ' Tiers' : 'NBA'; $('#tAt').textContent = '·'; $('#tHome').textContent = s.games + ' games'; }
@@ -2256,7 +2304,8 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     const games = [...new Set(P.map(p => p.game))].sort(); $('#nbaGame').innerHTML = '<option value="">All games</option>' + games.map(g => { const gl = (data.game_lines || {})[g]; return `<option value="${g}">${g}${gl && gl.total ? ' · total ' + gl.total + ', home ' + (gl.home_spread > 0 ? '+' : '') + gl.home_spread : ''}</option>`; }).join('');
     $('#nbaSearch').oninput = renderNBATable; $('#nbaGame').onchange = renderNBATable;
     $$('#nbaTable th[data-k]').forEach(th => th.onclick = () => { const k = th.dataset.k; NB.dir = NB.sort === k ? -NB.dir : -1; NB.sort = k; renderNBATable(); });
-    renderNBATable();
+    renderNBATable(); $('#nbaBGame').innerHTML = $('#nbaGame').innerHTML; $('#nbaBSearch').value = ''; renderNBABuild();
+    $('#nbaVaryBox').hidden = !(VARY_S && s.kind === 'nba_classic');
   }
   function renderNBATable() {
     const q = ($('#nbaSearch').value || '').toLowerCase(), g = $('#nbaGame').value;
@@ -2265,16 +2314,17 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     $('#nbaTable tbody').innerHTML = R.map(p => `<tr><td class="who"><b>${p.name}</b>${p.status ? ` <span class="tag">${esc(p.status)}</span>` : ''}${p.source === 'dk average' ? ' <small class="dim">DK avg stand-in</small>' : (p.proj == null ? ' <small class="dim">no props</small>' : '')}${p.why ? `<br><small class="dim">Why no line: ${esc(p.why)}</small>` : ''}${p.role ? `<br><small class="warn">⚑ ${esc(p.role)}</small>` : ''}</td><td><span class="pos">${p.pos}</span>${p.rpos ? ` <small>${p.rpos}</small>` : ''}</td><td>${p.team}</td><td><small>${p.game}</small></td><td class="n">${p.sal ? money(p.sal) : '—'}</td><td class="n"><b>${fmt(p.proj)}</b></td><td class="n">${fmt(p.value, 2)}</td>
       ${['pts', 'reb', 'ast', 'tpm', 'stl', 'blk'].map(k => `<td class="n">${fmt(p[k])}</td>`).join('')}<td class="n">${p.dd == null ? '—' : fmt(100 * p.dd, 0) + '%'}</td><td class="n sdcol">${p.cpt_sal ? money(p.cpt_sal) : '—'}</td><td class="n sdcol">${p.p_top == null ? '—' : fmt(100 * p.p_top, 1) + '%'}</td>
       <td><input type="checkbox" data-n="${p.name}" ${NB.out.has(p.name) ? 'checked' : ''} ${p.proj == null ? 'disabled' : ''} aria-label="Exclude ${p.name}"></td></tr>`).join('');
-    $$('#nbaTable tbody input[type=checkbox]').forEach(cb => cb.onchange = () => { cb.checked ? NB.out.add(cb.dataset.n) : NB.out.delete(cb.dataset.n); });
+    $$('#nbaTable tbody input[type=checkbox]').forEach(cb => cb.onchange = () => { cb.checked ? (NB.out.add(cb.dataset.n), NB.lock.delete(cb.dataset.n)) : NB.out.delete(cb.dataset.n); renderNBABuild(); });
   }
   $('#nbaRun').addEventListener('click', () => nbaBuild());
   async function nbaBuild() {
     const st = $('#nbaStatus'), t0 = performance.now(); st.className = 'status'; st.textContent = 'Building…';
     let g; try { g = await glpk(); } catch (e) { st.className = 'status err'; st.textContent = 'The optimizer could not load: ' + e.message; return; }
     const N = Math.max(1, Math.min(150, parseInt($('#nbaN').value) || 20)), uniq = Math.max(1, Math.min(6, parseInt($('#nbaUniq').value) || 2)), capP = Math.max(1, Math.ceil(N * Math.min(100, Math.max(10, parseFloat($('#nbaExp').value) || 100)) / 100));
+    NB.vz = null; if (VARY_S && D.slate.kind === 'nba_classic' && $('#nbaVary').checked) { NB.vz = {}; D.players.forEach(p => NB.vz[p.name] = Math.max(0.2, 1 + VARY_S * gauss())); }   // fresh draw every press
     if (D.slate.kind === 'nba_showdown') return nbaShowdown(g, st, t0, N, uniq, capP);
     if (String(D.slate.kind).includes('tiers')) return buildTiers(st, t0, N, uniq, capP);
-    const P = D.players.map((p, i) => ({ ...p, i })).filter(p => p.proj != null && !NB.out.has(p.name) && !NBOUT(p)), GL = D.game_lines || {};
+    const P = D.players.map((p, i) => ({ ...p, i, q: QJ(p) })).filter(p => p.proj != null && !NB.out.has(p.name) && !NBOUT(p)), GL = D.game_lines || {};
     const stackG = $('#nbaStack').checked ? Object.entries(GL).filter(([k, v]) => v.home_spread != null && Math.abs(v.home_spread) <= 7).sort((a, b) => (b[1].total || 0) - (a[1].total || 0)).slice(0, 3).map(x => x[0]) : [];
     const blowG = $('#nbaBlow').checked ? Object.entries(GL).filter(([k, v]) => v.home_spread != null && Math.abs(v.home_spread) >= 9).map(x => x[0]) : [];
     const games = [...new Set(P.map(p => p.game))], xv = (p, s) => `x${p.i}_${s}`, el = (p, s) => NEL[s].some(z => p.pos.split('/').includes(z));
@@ -2284,18 +2334,18 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
       const V = [], sub = [], row = (name, vars, lo, hi) => { if (vars.length) sub.push({ name, vars, bnds: B(lo, hi) }); };
       P.forEach(p => NSLOT.forEach(s => { if (el(p, s)) V.push({ p, s, name: xv(p, s) }); }));
       NSLOT.forEach(s => row('s' + s, V.filter(v => v.s === s).map(v => ({ name: v.name, coef: 1 })), 1, 1));
-      P.forEach(p => { const vs = V.filter(v => v.p === p).map(v => ({ name: v.name, coef: 1 })); row('p' + p.i, vs, null, (cnt[p.i] || 0) >= capP ? 0 : 1); });
+      P.forEach(p => { const vs = V.filter(v => v.p === p).map(v => ({ name: v.name, coef: 1 })); row('p' + p.i, vs, NB.lock.has(p.name) ? 1 : null, NB.lock.has(p.name) ? 1 : (cnt[p.i] || 0) >= capP ? 0 : 1); });
       row('sal', V.map(v => ({ name: v.name, coef: v.p.sal })), null, 50000);
       games.forEach((gm, j) => row('gx' + j, V.filter(v => v.p.game === gm).map(v => ({ name: v.name, coef: 1 })), null, blowG.includes(gm) ? 1 : 7));   // DK: 2+ games
       const yv = stackG.map((gm, j) => 'y' + j);
       stackG.forEach((gm, j) => row('st' + j, [...V.filter(v => v.p.game === gm).map(v => ({ name: v.name, coef: 1 })), { name: 'y' + j, coef: -3 }], 0, null));
       if (yv.length) row('sty', yv.map(y => ({ name: y, coef: 1 })), 1, null);
       chosen.forEach((c, j) => row('u' + j, V.filter(v => c.ids.has(v.p.i)).map(v => ({ name: v.name, coef: 1 })), null, 8 - uniq));
-      const lp = { name: 'nba', objective: { direction: g.GLP_MAX, name: 'obj', vars: V.map(v => ({ name: v.name, coef: v.p.proj })) }, subjectTo: sub, binaries: [...V.map(v => v.name), ...yv] };
+      const lp = { name: 'nba', objective: { direction: g.GLP_MAX, name: 'obj', vars: V.map(v => ({ name: v.name, coef: v.p.q })) }, subjectTo: sub, binaries: [...V.map(v => v.name), ...yv] };
       const r = await Promise.resolve(g.solve(lp, { msglev: g.GLP_MSG_OFF, presol: true }));
       if (!r || !r.result || (r.result.status !== g.GLP_OPT && r.result.status !== g.GLP_FEAS)) break;
       const pick = V.filter(v => r.result.vars[v.name] > 0.5); if (pick.length !== 8) break;
-      const lu = NSLOT.map(s => pick.find(v => v.s === s).p); chosen.push({ lu, ids: new Set(lu.map(p => p.i)), s: lu.reduce((t, p) => t + p.proj, 0) }); lu.forEach(p => cnt[p.i] = (cnt[p.i] || 0) + 1);
+      const lu = NSLOT.map(s => pick.find(v => v.s === s).p); chosen.push({ lu, ids: new Set(lu.map(p => p.i)), s: lu.reduce((t, p) => t + PJ(p), 0) }); lu.forEach(p => cnt[p.i] = (cnt[p.i] || 0) + 1);
       if (k % 5 === 4) st.textContent = `Forging… ${k + 1} of ${N}`;
     }
     if (!chosen.length) { st.className = 'status err'; st.textContent = 'No legal lineup fits these rules.'; return; }
@@ -2304,31 +2354,31 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     $('#nbaExpo').innerHTML = Object.entries(ex).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span class="chip">${k} <b>${Math.round(100 * v / chosen.length)}%</b></span>`).join('');
     $('#nbaGrid').innerHTML = chosen.map((c, i) => `<article class="lu"><header><span>#${i + 1}</span><span><b>${fmt(c.s)}</b> pts · <b>${money(c.lu.reduce((t, p) => t + p.sal, 0))}</b></span></header><ol>${c.lu.map((p, j) => `<li><span>${NSLOT[j]} ${p.name}</span><span class="p">${p.team} · ${p.game}</span></li>`).join('')}</ol></article>`).join('');
     $('#nbaOut').hidden = false;
-    logBuild('nba_classic', { n: N, uniq, exp: capP, stack: stackG, blowout: blowG, outs: [...NB.out] }, chosen.map(c => ({ players: c.lu.map(p => p.name) })));
+    logBuild('nba_classic', { n: N, uniq, exp: capP, stack: stackG, blowout: blowG, outs: [...NB.out], locks: [...NB.lock], proj_edits: NB.proj, vary: NB.vz ? VARY_S : 0 }, chosen.map(c => ({ players: c.lu.map(p => p.name) })));
   }
 
   // ---- Tiers (2026-10-24, FORGE): one player from each tier, no salary. Every combination is scored (sum of FORGE projections; tiers hold ~5-7 players,
   // so a few thousand to ~100k combinations), then the best are taken in order under "min players different" and the exposure cap. OUT / no-projection out.
   function buildTiers(st, t0, N, uniq, capP) {
     const T = D.slate.tiers || [...new Set(D.players.map(p => p.pos))].sort((a, b) => +a.slice(1) - +b.slice(1));
-    const by = T.map(t => D.players.map((p, i) => ({ ...p, i })).filter(p => p.pos === t && p.proj != null && !NB.out.has(p.name) && !NBOUT(p)).sort((a, b) => b.proj - a.proj));
+    const by = T.map(t => { const L = D.players.map((p, i) => ({ ...p, i, q: QJ(p) })).filter(p => p.pos === t && p.proj != null && !NB.out.has(p.name) && !NBOUT(p)).sort((a, b) => b.q - a.q), lk = L.filter(p => NB.lock.has(p.name)); return lk.length ? lk : L; });
     const empty = T.filter((t, j) => !by[j].length); if (empty.length) { st.className = 'status err'; st.textContent = `No playable player in ${empty.join(', ')} (all OUT or without a projection).`; return; }
     let combos = [[]]; for (const L of by) { const nx = []; for (const c of combos) for (const p of L) nx.push([...c, p]); combos = nx; if (combos.length > 2e6) break; }
-    combos = combos.map(c => ({ lu: c, s: c.reduce((t, p) => t + p.proj, 0) })).sort((a, b) => b.s - a.s);
+    combos = combos.map(c => ({ lu: c, s: c.reduce((t, p) => t + p.q, 0) })).sort((a, b) => b.s - a.s);
     const chosen = [], cnt = {}, nT = T.length;
     for (const c of combos) {
       if (chosen.length >= N) break;
       if (c.lu.some(p => (cnt[p.i] || 0) >= capP)) continue;
       const ids = new Set(c.lu.map(p => p.i)); if (chosen.some(x => c.lu.filter(p => x.ids.has(p.i)).length > nT - uniq)) continue;
-      chosen.push({ lu: c.lu, ids, s: c.s }); c.lu.forEach(p => cnt[p.i] = (cnt[p.i] || 0) + 1);
+      chosen.push({ lu: c.lu, ids, s: c.lu.reduce((t, p) => t + PJ(p), 0) }); c.lu.forEach(p => cnt[p.i] = (cnt[p.i] || 0) + 1);
     }
     if (!chosen.length) { st.className = 'status err'; st.textContent = 'No lineup fits these rules.'; return; }
     NB.result = chosen; st.className = 'status'; st.textContent = `Forged ${chosen.length} of ${N} Tiers lineups in ${((performance.now() - t0) / 1000).toFixed(1)} s from ${combos.length.toLocaleString('en-US')} combinations` + (chosen.length < N ? ` · stopped at ${chosen.length}: with "min players different" ${uniq} only ${chosen.length} fit; lower it for more.` : '');
     const ex = {}; chosen.forEach(c => c.lu.forEach(p => ex[p.name] = (ex[p.name] || 0) + 1));
     $('#nbaExpo').innerHTML = Object.entries(ex).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span class="chip">${k} <b>${Math.round(100 * v / chosen.length)}%</b></span>`).join('');
-    $('#nbaGrid').innerHTML = chosen.map((c, i) => `<article class="lu"><header><span>#${i + 1}</span><span><b>${fmt(c.s)}</b> pts</span></header><ol>${c.lu.map((p, j) => `<li><span>${T[j]} ${p.name}</span><span class="p">${p.team} · ${fmt(p.proj)}</span></li>`).join('')}</ol></article>`).join('');
+    $('#nbaGrid').innerHTML = chosen.map((c, i) => `<article class="lu"><header><span>#${i + 1}</span><span><b>${fmt(c.s)}</b> pts</span></header><ol>${c.lu.map((p, j) => `<li><span>${T[j]} ${p.name}</span><span class="p">${p.team} · ${fmt(PJ(p))}</span></li>`).join('')}</ol></article>`).join('');
     $('#nbaOut').hidden = false;
-    logBuild(D.slate.kind, { n: N, uniq, exp: capP, outs: [...NB.out] }, chosen.map(c => ({ players: c.lu.map(p => p.name) })));
+    logBuild(D.slate.kind, { n: N, uniq, exp: capP, outs: [...NB.out], locks: [...NB.lock], proj_edits: NB.proj }, chosen.map(c => ({ players: c.lu.map(p => p.name) })));
   }
 
   // ---- NBA late swap (2026-10-21, FORGE: "FORGE must contain late swap"): keep players whose game started, re-optimise the open slots (GLPK)
@@ -2380,9 +2430,11 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
   }
 
   async function nbaShowdown(g, st, t0, N, uniq, capP) {     // NBA Showdown: 1 CPT (1.5x points, CPT salary) + 5 UTIL, both teams; FORGE default captains = weighted top 3
-    const P = D.players.map((p, i) => ({ ...p, i })).filter(p => p.proj != null && !NB.out.has(p.name) && !NBOUT(p) && p.cpt_sal);
+    const P = D.players.map((p, i) => ({ ...p, i, q: QJ(p) })).filter(p => p.proj != null && !NB.out.has(p.name) && !NBOUT(p) && p.cpt_sal);
     const teams = [...new Set(P.map(p => p.team))]; let pool = null, wcap = {};
-    if ($('#nbaTop3').checked) { const T3 = [...P].sort((a, b) => (b.p_top || 0) - (a.p_top || 0)).slice(0, 3); pool = new Set(T3.map(p => p.i));
+    const myC = P.filter(p => NB.cpt.has(p.name));
+    if (myC.length) { pool = new Set(myC.map(p => p.i)); myC.forEach(p => wcap[p.i] = N); }      // the user's own captain pool (no weighting)
+    else if ($('#nbaTop3').checked) { const T3 = [...P].sort((a, b) => (b.p_top || 0) - (a.p_top || 0)).slice(0, 3); pool = new Set(T3.map(p => p.i));
       const w = T3.map(p => p.p_top || 0), sw = w.reduce((a, b) => a + b, 0) || 1, wn = w.map(x => x / sw), c = wn.map(x => Math.max(1, Math.round(N * x)));
       if (N < 3) { c.fill(0); [...wn.keys()].sort((a, b) => wn[b] - wn[a]).slice(0, N).forEach(j => c[j] = 1); }
       while (c.reduce((a, b) => a + b, 0) > N) c[c.indexOf(Math.max(...c))]--;
@@ -2395,24 +2447,24 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
       const cv = p => 'c' + p.i, uv = p => 'u' + p.i, okC = p => !pool || (pool.has(p.i) && (ccnt[p.i] || 0) < wcap[p.i]);
       row('cpt', P.filter(okC).map(p => ({ name: cv(p), coef: 1 })), 1, 1); P.filter(p => !okC(p)).length && row('nocpt', P.filter(p => !okC(p)).map(p => ({ name: cv(p), coef: 1 })), null, 0);
       row('util', P.map(p => ({ name: uv(p), coef: 1 })), 5, 5);
-      P.forEach(p => row('one' + p.i, [{ name: cv(p), coef: 1 }, { name: uv(p), coef: 1 }], null, (cnt[p.i] || 0) >= capP ? 0 : 1));
+      P.forEach(p => row('one' + p.i, [{ name: cv(p), coef: 1 }, { name: uv(p), coef: 1 }], NB.lock.has(p.name) ? 1 : null, NB.lock.has(p.name) ? 1 : (cnt[p.i] || 0) >= capP ? 0 : 1));
       row('sal', P.flatMap(p => [{ name: cv(p), coef: p.cpt_sal }, { name: uv(p), coef: p.sal }]), null, 50000);
       teams.forEach((tm, j) => row('tm' + j, P.filter(p => p.team === tm).flatMap(p => [{ name: cv(p), coef: 1 }, { name: uv(p), coef: 1 }]), 1, 5));
       chosen.forEach((c, j) => row('u' + j, P.filter(p => c.ids.has(p.i)).flatMap(p => [{ name: cv(p), coef: 1 }, { name: uv(p), coef: 1 }]), null, 6 - uniq));
-      const lp = { name: 'nbasd', objective: { direction: g.GLP_MAX, name: 'obj', vars: P.flatMap(p => [{ name: cv(p), coef: 1.5 * p.proj }, { name: uv(p), coef: p.proj }]) }, subjectTo: sub, binaries: P.flatMap(p => [cv(p), uv(p)]) };
+      const lp = { name: 'nbasd', objective: { direction: g.GLP_MAX, name: 'obj', vars: P.flatMap(p => [{ name: cv(p), coef: 1.5 * p.q }, { name: uv(p), coef: p.q }]) }, subjectTo: sub, binaries: P.flatMap(p => [cv(p), uv(p)]) };
       const r = await Promise.resolve(g.solve(lp, { msglev: g.GLP_MSG_OFF, presol: true }));
       if (!r || !r.result || (r.result.status !== g.GLP_OPT && r.result.status !== g.GLP_FEAS)) break;
       const cp = P.find(p => r.result.vars[cv(p)] > 0.5), ut = P.filter(p => r.result.vars[uv(p)] > 0.5); if (!cp || ut.length !== 5) break;
-      const lu = [cp, ...ut]; chosen.push({ lu, ids: new Set(lu.map(p => p.i)), s: 1.5 * cp.proj + ut.reduce((t, p) => t + p.proj, 0), sal: cp.cpt_sal + ut.reduce((t, p) => t + p.sal, 0) });
+      const lu = [cp, ...ut]; chosen.push({ lu, ids: new Set(lu.map(p => p.i)), s: 1.5 * PJ(cp) + ut.reduce((t, p) => t + PJ(p), 0), sal: cp.cpt_sal + ut.reduce((t, p) => t + p.sal, 0) });
       lu.forEach(p => cnt[p.i] = (cnt[p.i] || 0) + 1); ccnt[cp.i] = (ccnt[cp.i] || 0) + 1;
     }
     if (!chosen.length) { st.className = 'status err'; st.textContent = 'No legal lineup fits these rules.'; return; }
-    NB.result = chosen; st.textContent = `Forged ${chosen.length} of ${N} lineups in ${((performance.now() - t0) / 1000).toFixed(1)} s` + (pool ? ' · captains: ' + [...pool].map(i => D.players[i].name + ' ×' + wcap[i]).join(', ') : '') + (chosen.length < N ? ` · stopped at ${chosen.length}: only ${P.length} players are in the pool (players need betting lines; OUT players and players without lines are left out), so only ${chosen.length} different lineups fit. More become possible as books post lines.` : '');
+    NB.result = chosen; st.textContent = `Forged ${chosen.length} of ${N} lineups in ${((performance.now() - t0) / 1000).toFixed(1)} s` + (pool ? ' · captains: ' + [...pool].map(i => D.players[i].name + (myC.length ? '' : ' ×' + wcap[i])).join(', ') : '') + (chosen.length < N ? ` · stopped at ${chosen.length}: only ${P.length} players are in the pool (players need betting lines; OUT players and players without lines are left out), so only ${chosen.length} different lineups fit. More become possible as books post lines.` : '');
     const ex = {}; chosen.forEach(c => c.lu.forEach(p => ex[p.name] = (ex[p.name] || 0) + 1));
     $('#nbaExpo').innerHTML = Object.entries(ex).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span class="chip">${k} <b>${Math.round(100 * v / chosen.length)}%</b></span>`).join('');
     $('#nbaGrid').innerHTML = chosen.map((c, i) => `<article class="lu"><header><span>#${i + 1}</span><span><b>${fmt(c.s)}</b> pts · <b>${money(c.sal)}</b></span></header><ol>${c.lu.map((p, j) => `<li class="${j ? '' : 'cpt'}"><span>${j ? 'UTIL' : 'CPT'} ${p.name}</span><span class="p">${p.team} · ${money(j ? p.sal : p.cpt_sal)}</span></li>`).join('')}</ol></article>`).join('');
     $('#nbaOut').hidden = false;
-    logBuild('nba_showdown', { n: N, uniq, exp: capP, top3: !!pool, cpt_caps: pool ? Object.fromEntries([...pool].map(i => [D.players[i].name, wcap[i]])) : null, outs: [...NB.out] }, chosen.map(c => ({ cpt: c.lu[0].name, flex: c.lu.slice(1).map(p => p.name) })));
+    logBuild('nba_showdown', { n: N, uniq, exp: capP, top3: !!pool && !myC.length, my_cpt: myC.map(p => p.name), locks: [...NB.lock], proj_edits: NB.proj, cpt_caps: pool ? Object.fromEntries([...pool].map(i => [D.players[i].name, wcap[i]])) : null, outs: [...NB.out] }, chosen.map(c => ({ cpt: c.lu[0].name, flex: c.lu.slice(1).map(p => p.name) })));
   }
 
   // ---- NBA DraftKings entries file (2026-10-24, FORGE: "just like NFL: read my entries file, let me choose which contests"): fills Edit Entries rows with
