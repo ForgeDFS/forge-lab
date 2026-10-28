@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="b91ea338eee1"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="285b422fbcdf"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -2318,6 +2318,17 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     $$('#nbaTable tbody input[type=checkbox]').forEach(cb => cb.onchange = () => { cb.checked ? (NB.out.add(cb.dataset.n), NB.lock.delete(cb.dataset.n)) : NB.out.delete(cb.dataset.n); renderNBABuild(); });
   }
   $('#nbaRun').addEventListener('click', () => nbaBuild());
+  // (2026-10-28, FORGE) late-swap flexibility: the same 8 players, re-seated so the latest tip-offs sit in UTIL, then G / F, earliest in PG..C;
+  // at equal tip time the pricier player takes the more flexible slot (swapping him frees the most salary). Points are unchanged.
+  function nbaFlex(lu) {
+    const W = { PG: 1, SG: 1, SF: 1, PF: 1, C: 1, G: 2, F: 2, UTIL: 3 }, key = p => (Date.parse(p.start || '') / 60000 || 0) * 1e6 + (p.sal || 0);
+    const el = (p, s) => NEL[s].some(z => String(p.pos).split('/').includes(z)); let best = null, bs = -Infinity; const cur = [], used = new Array(lu.length).fill(false);
+    (function go(k, sc) {
+      if (k === NSLOT.length) { if (sc > bs) { bs = sc; best = cur.slice(); } return; }
+      for (let j = 0; j < lu.length; j++) if (!used[j] && el(lu[j], NSLOT[k])) { used[j] = true; cur.push(lu[j]); go(k + 1, sc + W[NSLOT[k]] * key(lu[j])); cur.pop(); used[j] = false; }
+    })(0, 0);
+    return best || lu;
+  }
   async function nbaBuild() {
     const st = $('#nbaStatus'), t0 = performance.now(); st.className = 'status'; st.textContent = 'Building…';
     let g; try { g = await glpk(); } catch (e) { st.className = 'status err'; st.textContent = 'The optimizer could not load: ' + e.message; return; }
@@ -2346,7 +2357,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
       const r = await Promise.resolve(g.solve(lp, { msglev: g.GLP_MSG_OFF, presol: true }));
       if (!r || !r.result || (r.result.status !== g.GLP_OPT && r.result.status !== g.GLP_FEAS)) break;
       const pick = V.filter(v => r.result.vars[v.name] > 0.5); if (pick.length !== 8) break;
-      const lu = NSLOT.map(s => pick.find(v => v.s === s).p); chosen.push({ lu, ids: new Set(lu.map(p => p.i)), s: lu.reduce((t, p) => t + PJ(p), 0) }); lu.forEach(p => cnt[p.i] = (cnt[p.i] || 0) + 1);
+      const lu = nbaFlex(NSLOT.map(s => pick.find(v => v.s === s).p)); chosen.push({ lu, ids: new Set(lu.map(p => p.i)), s: lu.reduce((t, p) => t + PJ(p), 0) }); lu.forEach(p => cnt[p.i] = (cnt[p.i] || 0) + 1);
       if (k % 5 === 4) st.textContent = `Forging… ${k + 1} of ${N}`;
     }
     if (!chosen.length) { st.className = 'status err'; st.textContent = 'No legal lineup fits these rules.'; return; }
