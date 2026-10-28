@@ -1,419 +1,544 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="f479e82729a8"><meta http-equiv="Cache-Control" content="no-cache">
-<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#141110"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"><link rel="icon" href="icon-192.png?v=2">
-<title>FORGE DFS Lab</title>
+<meta name="forge-version" content="ede8f8d8a929"><meta http-equiv="Cache-Control" content="no-cache">
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
+<title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800;900&family=Saira:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&display=swap">
 <style>
-/* Layout: an app shell on a forge floor. Scoreboard plate up top, tabbed work surfaces below; dark-first, ember for heat and action. */
+/* FORGE design system (docs/design/system, 2026-10-28): navy-graphite grounds, FORGE blue for action and "ours", gold only for
+   FORGE's pick / captain / 70%+ / 1st, green and red only on results and always with a sign. Dark first; light is complete. */
 :root {
-  --bg: #151210; --plate: #1e1a17; --plate-2: #27221e; --line: #3a322c; --fg: #f1e9df; --muted: #a8998b;
-  --ember: #ff6b1f; --ember-ink: #1a0d05; --gold: #f1b64a; --good: #6fcf8e; --warn: #f1b64a; --bad: #ef6a5a;
-  --heat-lo: rgba(255,107,31,.10); --heat-hi: rgba(255,107,31,.55); --steel: #6aa9ff;
-  --f-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
-  --f-body: "Saira", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-  --f-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --canvas: #0B0E14; --surface: #121722; --surface-raised: #18202C; --surface-sunken: #090C12;
+  --line: #232C3A; --line-strong: #344155; --control-border: #66748A;
+  --ink: #E8EDF4; --ink-2: #AAB5C4; --ink-3: #7F8BA0;
+  --brand: #4C8DFF; --on-brand: #06101F; --brand-ink: #7AA9FF; --brand-wash: #4C8DFF1F;
+  --gold: #E9B949; --on-gold: #1A1405; --gold-ink: #F0C766; --gold-wash: #E9B9491F;
+  --pos: #3DD68C; --neg: #FF6B81; --warn: #E8C547; --out: #FF6B81; --pos-wash: #3DD68C1F; --neg-wash: #FF6B811F;
+  --focus: #7AA9FF; --nba: #F08A4B; --nfl: #C8A27A;
+  --shadow-pop: 0 12px 32px rgba(0, 0, 0, .55);
+  --font-display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --font-text: "Geist", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-data: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --r-sm: 4px; --r-md: 6px; --r-lg: 10px; --row: 34px; --tap: 44px;
   color-scheme: dark;
+  /* older names still used by a few inline styles */
+  --bg: var(--canvas); --plate: var(--surface); --plate-2: var(--surface-raised); --fg: var(--ink); --muted: var(--ink-2);
+  --ember: var(--brand); --ember-ink: var(--on-brand); --good: var(--pos); --bad: var(--neg); --steel: var(--brand-ink);
+  --f-display: var(--font-display); --f-body: var(--font-text); --f-data: var(--font-data);
 }
 @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
-  --bg: #eceae7; --plate: #f8f7f5; --plate-2: #e4e1dd; --line: #cfc9c2; --fg: #1d1a17; --muted: #6b625a;
-  --ember: #d1530f; --ember-ink: #fff6ee; --gold: #a86f08; --good: #23864a; --warn: #a86f08; --bad: #c0392b;
-  --heat-lo: rgba(209,83,15,.08); --heat-hi: rgba(209,83,15,.40); --steel: #2c66c4; color-scheme: light; } }
+  --canvas: #F4F6FA; --surface: #FFFFFF; --surface-raised: #F7F9FC; --surface-sunken: #EBEFF5;
+  --line: #DCE2EB; --line-strong: #B8C2D1; --control-border: #7C889B;
+  --ink: #0D1320; --ink-2: #445064; --ink-3: #5D6A7E;
+  --brand: #1F5FD6; --on-brand: #FFFFFF; --brand-ink: #1F5FD6; --brand-wash: #1F5FD614;
+  --gold: #E3A82B; --on-gold: #1A1405; --gold-ink: #8A6100; --gold-wash: #E3A82B1A;
+  --pos: #0A7F55; --neg: #C42350; --warn: #8A6A00; --out: #C42350; --pos-wash: #0A7F5514; --neg-wash: #C4235014;
+  --focus: #1F5FD6; --nba: #B5541A; --nfl: #7A5A33; --shadow-pop: 0 12px 32px rgba(15, 20, 25, .16); color-scheme: light; } }
 :root[data-theme="light"] {
-  --bg: #eceae7; --plate: #f8f7f5; --plate-2: #e4e1dd; --line: #cfc9c2; --fg: #1d1a17; --muted: #6b625a;
-  --ember: #d1530f; --ember-ink: #fff6ee; --gold: #a86f08; --good: #23864a; --warn: #a86f08; --bad: #c0392b;
-  --heat-lo: rgba(209,83,15,.08); --heat-hi: rgba(209,83,15,.40); --steel: #2c66c4; color-scheme: light; }
+  --canvas: #F4F6FA; --surface: #FFFFFF; --surface-raised: #F7F9FC; --surface-sunken: #EBEFF5;
+  --line: #DCE2EB; --line-strong: #B8C2D1; --control-border: #7C889B;
+  --ink: #0D1320; --ink-2: #445064; --ink-3: #5D6A7E;
+  --brand: #1F5FD6; --on-brand: #FFFFFF; --brand-ink: #1F5FD6; --brand-wash: #1F5FD614;
+  --gold: #E3A82B; --on-gold: #1A1405; --gold-ink: #8A6100; --gold-wash: #E3A82B1A;
+  --pos: #0A7F55; --neg: #C42350; --warn: #8A6A00; --out: #C42350; --pos-wash: #0A7F5514; --neg-wash: #C4235014;
+  --focus: #1F5FD6; --nba: #B5541A; --nfl: #7A5A33; --shadow-pop: 0 12px 32px rgba(15, 20, 25, .16); color-scheme: light; }
 
-* { box-sizing: border-box; }
-body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
-.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 18px 48px; }
-.mono, td.n, .n { font-family: var(--f-data); font-variant-numeric: tabular-nums; }
-h1, h2, h3 { font-family: var(--f-display); letter-spacing: .02em; text-wrap: balance; margin: 0; }
-button, input, select { font: inherit; color: inherit; }
-:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+/* ---------- base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { background: var(--canvas); -webkit-text-size-adjust: 100%; }
+body { background: var(--canvas); color: var(--ink); font-family: var(--font-text); font-size: 14px; line-height: 20px; -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 31; background: var(--surface); }
+.mono, td.n, .n { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+h1, h2, h3, h4 { font-family: var(--font-display); text-wrap: balance; margin: 0; font-weight: 700; letter-spacing: .01em; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--brand-ink); text-underline-offset: 2px; } a:hover { color: var(--ink); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+b, strong { font-weight: 600; }
+.ico { width: 1em; height: 1em; display: inline-block; vertical-align: -0.12em; flex: none; }
+.dim { color: var(--ink-2); }
+.note { font-size: 12.5px; line-height: 18px; color: var(--ink-2); }
+.note.fine { font-size: 11.5px; color: var(--ink-3); }
+.lede { color: var(--ink-2); max-width: 72ch; margin: 0 0 16px; font-size: 14px; line-height: 21px; }
+.eyebrow { font: 600 11px/14px var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+small.warn { color: var(--warn); }
+.kicker, .tico, .tshort, .glow, .sparks { display: none !important; }
+.flame { color: var(--gold-ink); margin-left: 4px; width: .8em; height: .8em; } .ingot { color: var(--ink-2); margin-left: 4px; width: .8em; height: .8em; }
 
-/* top bar */
-.bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.mark { display: flex; align-items: baseline; gap: 10px; }
-.mark h1 { font-size: 34px; font-weight: 900; letter-spacing: .14em; }
-.mark h1 span { color: var(--ember); }
-.mark small { color: var(--muted); font-family: var(--f-display); font-weight: 700; font-size: 16px; letter-spacing: .1em; text-transform: uppercase; }
-.pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 3px; font-family: var(--f-display); font-weight: 700; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; border: 1px solid var(--line); color: var(--muted); }
-.pill.hot { border-color: var(--ember); color: var(--ember); }
-.pill.ok { border-color: var(--good); color: var(--good); }
-.pill .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+/* ---------- app bar + section tabs (sticky) ---------- */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--surface); border-bottom: 1px solid var(--line); }
+.appbar { display: flex; align-items: center; gap: 16px; min-height: 56px; max-width: 1480px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.brand { appearance: none; background: none; border: 0; padding: 0; cursor: pointer; font: inherit; display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; flex: none; }
+.brand svg { width: 26px; height: 26px; color: var(--ink); }
+.wordmark { font: 800 20px/24px var(--font-display); letter-spacing: .14em; font-stretch: 118%; text-transform: uppercase; }
+.sports { display: inline-flex; padding: 3px; gap: 2px; background: var(--surface-sunken); border: 1px solid var(--line); border-radius: 999px; flex: none; }
+.sports button { appearance: none; border: 0; background: transparent; color: var(--ink-2); font: 700 12px/16px var(--font-display); letter-spacing: .1em; text-transform: uppercase; padding: 6px 14px; border-radius: 999px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; min-height: 30px; }
+.sports button::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--nfl); }
+.sports button[data-sport="NBA"]::before { background: var(--nba); }
+.sports button:hover { color: var(--ink); }
+.sports button[aria-pressed="true"] { background: var(--surface-raised); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.spacer { flex: 1; min-width: 0; }
+.stamp { font: 400 11px/14px var(--font-data); color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.pill { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: var(--r-sm); font: 600 10.5px/14px var(--font-display); letter-spacing: .08em; text-transform: uppercase; border: 1px solid var(--line-strong); color: var(--ink-2); background: var(--surface-raised); white-space: nowrap; max-width: 46vw; overflow: hidden; flex: 0 1 auto; }
+.pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+.pill.hot { color: var(--brand-ink); border-color: color-mix(in srgb, var(--brand) 55%, var(--line)); }
+.pill.ok { color: var(--ink); border-color: var(--ink-3); }
+#statusText { overflow: hidden; text-overflow: ellipsis; }
+.iconbtn { appearance: none; display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: var(--r-md); border: 1px solid var(--line-strong); background: transparent; color: var(--ink-2); cursor: pointer; flex: none; }
+.iconbtn:hover { color: var(--ink); background: var(--surface-raised); }
+.iconbtn svg { width: 17px; height: 17px; }
+.tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; max-width: 1480px; margin: 0 auto; padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { appearance: none; border: 0; background: none; color: var(--ink-2); font: 500 13.5px/18px var(--font-text); padding: 11px 10px 10px; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; display: inline-flex; gap: 6px; align-items: center; flex: none; }
+.tab:hover { color: var(--ink); }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--brand); font-weight: 600; }
+.tab .badge, .badge.count { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 999px; background: var(--gold); color: var(--on-gold); font: 600 10px/16px var(--font-data); text-align: center; }
+.tab .badge[hidden] { display: none; }
 
-/* scoreboard plate */
-.plate { margin-top: 16px; background: var(--plate); border: 1px solid var(--line); border-radius: 6px; padding: 18px 20px; display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; position: relative; overflow: hidden; }
-.plate::after { content: ""; position: absolute; inset: auto -10% -60% -10%; height: 120%; background: radial-gradient(ellipse at 50% 100%, var(--heat-lo), transparent 60%); pointer-events: none; }
-.matchup { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
-.team { font-family: var(--f-display); font-weight: 900; font-size: clamp(44px, 9vw, 76px); line-height: .9; letter-spacing: .03em; }
-.at { font-family: var(--f-display); color: var(--muted); font-size: 28px; }
-.meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-self: center; position: relative; z-index: 1; }
-.stat { border-left: 2px solid var(--line); padding-left: 10px; }
-.stat b { display: block; font-family: var(--f-data); font-size: 20px; font-weight: 500; }
-.stat span { font-family: var(--f-display); font-weight: 700; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.sub { margin-top: 6px; color: var(--muted); font-size: 13px; position: relative; z-index: 1; }
+/* ---------- page ---------- */
+.wrap { max-width: 1480px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 18px 40px; }
+.newver { margin: 0 0 14px; background: var(--brand-wash); border: 1px solid var(--brand); border-radius: var(--r-lg); padding: 8px 12px; display: flex; gap: 10px; align-items: center; justify-content: space-between; font-size: 13.5px; }
+.newver[hidden] { display: none; }
 
-/* tabs */
-.tabs { display: flex; gap: 2px; margin-top: 18px; border-bottom: 1px solid var(--line); overflow-x: auto; }
-.tab { background: none; border: 0; padding: 10px 14px; font-family: var(--f-display); font-weight: 800; font-size: 17px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; }
-.tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--ember); }
-.panel { padding-top: 18px; }
-.lede { color: var(--muted); max-width: 70ch; margin: 0 0 14px; }
+/* slate picker */
+#slatePicker { display: grid; gap: 8px; margin: 0 0 18px; } #slatePicker[hidden] { display: none; }
+.pickrow { display: flex; gap: 12px; align-items: center; min-width: 0; }
+.pklab { font: 600 11px/14px var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); min-width: 76px; flex: none; }
+.pkchips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: thin; padding: 2px 2px 4px; min-width: 0; flex: 1; scroll-snap-type: x proximity; }
+.slate-chip { flex: 0 0 auto; display: grid; gap: 1px; text-align: left; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: var(--r-md); padding: 8px 12px; cursor: pointer; min-width: 132px; max-width: 220px; scroll-snap-align: start; }
+.slate-chip:hover { border-color: var(--line-strong); background: var(--surface-raised); }
+.slate-chip b { font: 700 13px/18px var(--font-display); letter-spacing: .03em; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slate-chip span { font: 400 12px/16px var(--font-text); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slate-chip span:empty { display: none; }
+.slate-chip small { font: 400 11px/14px var(--font-data); color: var(--ink-3); white-space: nowrap; }
+.slate-chip[aria-pressed="true"] { background: var(--brand-wash); border-color: var(--brand); }
+.slate-chip.live, .slate-chip.complete { opacity: .72; }
+
+/* slate header */
+.plate { display: flex; flex-wrap: wrap; gap: 16px 28px; align-items: flex-end; justify-content: space-between; margin: 0 0 18px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+.plate > div:first-child { min-width: 0; }
+.matchup { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.team { font: 700 30px/34px var(--font-display); font-stretch: 108%; letter-spacing: .01em; }
+.at { font: 500 22px/34px var(--font-display); color: var(--ink-3); }
+.sub { margin-top: 6px; color: var(--ink-2); font-size: 13px; line-height: 18px; }
+.sub.fresh { margin-top: 2px; font: 400 11.5px/16px var(--font-data); color: var(--ink-3); }
+.meta { display: flex; gap: 0; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); overflow: hidden; }
+.stat { padding: 9px 16px; border-left: 1px solid var(--line); display: grid; gap: 2px; min-width: 96px; }
+.stat:first-child { border-left: 0; }
+.stat b { font: 600 17px/22px var(--font-data); font-variant-numeric: tabular-nums; color: var(--ink); white-space: nowrap; }
+.stat span { font: 600 10.5px/14px var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
+.rpbanner { margin: 0 0 16px; padding: 10px 14px; border: 1px solid var(--brand); border-radius: var(--r-lg); background: var(--brand-wash); font-size: 13.5px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.rpbanner b { color: var(--brand-ink); } .rpbanner .btn { margin-left: auto; }
+.rpbanner:empty { display: none !important; }
+
+/* ---------- panels, cards ---------- */
+.panel { min-width: 0; }
+.subh { font: 700 22px/28px var(--font-display); margin: 4px 0 10px; }
+h4.subh { font-size: 16px; line-height: 22px; margin: 18px 0 8px; }
+.subh2 { font: 700 16px/22px var(--font-display); margin: 24px 0 8px; }
+.card, .gcard, .tile, .fact, .start, .appbox, .qbenv, .privcard, .privhead, .ovl, details.about, details.adv, .manual, .bdown { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); }
+.pnl { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); min-width: 0; }
+.pnl-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 14px 16px 10px; flex-wrap: wrap; }
+.pnl-h h2, .pnl-h h3 { font: 700 16px/22px var(--font-display); }
+.pnl-b { padding: 0 16px 16px; }
+.pnl .tbl-wrap { border: 0; border-top: 1px solid var(--line); border-radius: 0 0 var(--r-lg) var(--r-lg); }
+.brief { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
+.brief > div, .brief > aside { display: grid; gap: 20px; min-width: 0; }
+.brief > aside { gap: 16px; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.games { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.gm { display: grid; gap: 7px; padding: 11px 13px; background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--r-md); min-width: 0; }
+.gm-t { display: flex; justify-content: space-between; align-items: baseline; font: 700 15px/20px var(--font-display); letter-spacing: .03em; }
+.gm-t i { font-style: normal; color: var(--ink-3); font-weight: 500; }
+.gm-m { display: flex; justify-content: space-between; gap: 6px; font: 400 11.5px/16px var(--font-data); color: var(--ink-2); }
+.gm-m b { color: var(--ink); font-weight: 600; }
+.gbar { position: relative; height: 6px; background: var(--surface-sunken); border-radius: var(--r-sm); overflow: hidden; }
+.gbar i { position: absolute; inset: 0 auto 0 0; background: var(--ink-3); border-radius: var(--r-sm); }
+.gbar i.hi { background: var(--brand); }
+.notice { display: grid; grid-template-columns: 18px 1fr; gap: 10px; align-items: start; padding: 11px 13px; border: 1px solid var(--line-strong); border-radius: var(--r-md); font-size: 13px; line-height: 19px; }
+.notice svg { width: 18px; height: 18px; color: var(--ink-2); margin-top: 1px; }
+.notice.out { border-color: var(--out); } .notice.out svg { color: var(--out); }
+.notice.q { border-color: var(--warn); } .notice.q svg { color: var(--warn); }
+.notice.ok svg { color: var(--ink-3); }
+.stack { display: grid; gap: 10px; }
+
+/* prop category cards */
+.props { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; align-items: start; }
+.prop { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+.prop-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 13px 16px 10px; }
+.prop-h h3 { font: 700 15px/20px var(--font-display); }
+.prop-h span { font: 500 10.5px/14px var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
+.prop.hot .prop-h { box-shadow: inset 0 -2px 0 var(--gold); }
+.prop ol { list-style: none; margin: 0; padding: 0; }
+.prop li { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 7px 16px; border-top: 1px solid var(--line); min-height: 44px; }
+.prop li.wbar { grid-template-columns: 16px minmax(0, 1fr) auto 54px; }
+.prop .rk { font: 500 11px/14px var(--font-data); color: var(--ink-3); }
+.prop .val { font: 600 14px/18px var(--font-data); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.prop .val small { display: block; font: 400 11px/14px var(--font-data); color: var(--ink-3); }
+.prop.hot .val { color: var(--gold-ink); }
+.prop-f { margin-top: auto; padding: 9px 16px; border-top: 1px solid var(--line); font-size: 11.5px; line-height: 16px; color: var(--ink-3); }
+.prop .empty { padding: 14px 16px 16px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-2); }
+.who2 { display: flex; flex-direction: column; min-width: 0; line-height: 16px; }
+.who2 b { font: 600 13.5px/18px var(--font-text); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.who2 span { font: 400 11.5px/15px var(--font-text); color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pbar { position: relative; height: 6px; background: var(--surface-sunken); border-radius: var(--r-sm); overflow: hidden; }
+.pbar i { position: absolute; inset: 0 auto 0 0; background: var(--gold); border-radius: var(--r-sm); }
+details.more { margin-top: 16px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
+details.more > summary { cursor: pointer; padding: 13px 16px; font: 700 15px/20px var(--font-display); list-style: none; display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+details.more > summary::-webkit-details-marker { display: none; }
+details.more > summary::after { content: "Show"; font: 500 12px/16px var(--font-text); color: var(--brand-ink); }
+details.more[open] > summary::after { content: "Hide"; }
+details.more > summary small { font: 400 12px/16px var(--font-text); color: var(--ink-3); margin-right: auto; padding-left: 4px; }
+details.more > .mb { padding: 0 16px 16px; border-top: 1px solid var(--line); }
+details.more .nbaleaders { margin-top: 14px; }
 
 /* tables */
-.tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--plate); }
-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-th { text-align: left; font-family: var(--f-display); font-weight: 700; font-size: 15px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding: 9px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; cursor: default; }
-th.sort { cursor: pointer; } th.sort:hover { color: var(--fg); }
-td { padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.tbl-wrap { overflow: auto; max-height: min(72vh, 780px); overscroll-behavior: contain; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
+table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+th { text-align: left; background: var(--surface-raised); color: var(--ink-3); font: 600 11px/14px var(--font-display); letter-spacing: .08em; text-transform: uppercase; padding: 9px 10px; border-bottom: 1px solid var(--line-strong); white-space: nowrap; cursor: default; }
+th small { text-transform: none; letter-spacing: 0; font-family: var(--font-text); }
+th.sort, th[data-k] { cursor: pointer; user-select: none; } th.sort:hover, th[data-k]:hover { color: var(--ink); }
+td { padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; height: var(--row); color: var(--ink); }
+tbody tr:hover td { background: var(--surface-raised); }
 tr:last-child td { border-bottom: 0; }
 td.n, th.n { text-align: right; }
-/* 2026-10-15: player column stays put while the rest of the table scrolls sideways (phones) */
-.tbl-wrap th:first-child, .tbl-wrap td:first-child { position: sticky; left: 0; z-index: 1; background: var(--plate); box-shadow: 1px 0 0 var(--line); }
-@media (max-width: 640px) {
-  .tbl-wrap td:first-child { white-space: normal; min-width: 118px; max-width: 42vw; line-height: 1.25; }
-  .tbl-wrap td:first-child small { display: block; margin-left: 0; }
-  th, td { padding-left: 8px; padding-right: 8px; }
-}
-.pos { display: inline-block; min-width: 34px; text-align: center; font-family: var(--f-display); font-weight: 800; font-size: 13px; letter-spacing: .04em; padding: 1px 5px; border-radius: 3px; background: var(--plate-2); color: var(--muted); }
-.who b { font-weight: 600; } .who small { color: var(--muted); margin-left: 6px; font-family: var(--f-data); font-size: 11px; }
+td.n { font-size: 13px; }
+td small { color: var(--ink-3); }
+.tbl-wrap thead th { position: sticky; top: 0; z-index: 2; }
+.tbl-wrap th:first-child, .tbl-wrap td:first-child { position: sticky; left: 0; z-index: 1; background: var(--surface); box-shadow: 1px 0 0 var(--line); }
+.tbl-wrap thead th:first-child { z-index: 3; background: var(--surface-raised); }
+.tbl-wrap tbody tr:hover td:first-child { background: var(--surface-raised); }
+.pos { display: inline-block; min-width: 32px; text-align: center; font: 600 10.5px/16px var(--font-display); letter-spacing: .06em; padding: 1px 5px; border-radius: var(--r-sm); background: var(--surface-raised); color: var(--ink-2); border: 1px solid var(--line); }
+.who b { font-weight: 600; } .who small { color: var(--ink-3); margin-left: 6px; font: 400 11px/14px var(--font-data); }
 .heat { position: relative; }
-.heat i { position: absolute; inset: 4px 0 4px auto; background: var(--heat-hi); border-radius: 2px; opacity: .55; }
+.heat i { position: absolute; inset: 5px 0 5px auto; background: var(--brand-wash); border-radius: 2px; box-shadow: inset 2px 0 0 color-mix(in srgb, var(--brand) 45%, transparent); }
 .heat span { position: relative; }
-.tag { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--gold); margin-left: 6px; }
-.tag.out { color: var(--bad); }
+.tag { font: 600 9.5px/14px var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--warn); margin-left: 6px; border: 1px solid currentColor; border-radius: var(--r-sm); padding: 0 4px; white-space: nowrap; vertical-align: 1px; }
+.tag.out { color: var(--out); background: var(--neg-wash); }
+.tag.steel { color: var(--brand-ink); }
+td.lev, .lrow .lev { color: var(--brand-ink); font-family: var(--font-data); }
+.lines { display: block; font: 400 11px/14px var(--font-data); color: var(--ink-3); margin-top: 2px; white-space: normal; }
+.mv { font: 500 11px/14px var(--font-data); margin-left: 4px; }
+.mv.up { color: var(--pos); } .mv.dn { color: var(--neg); }
+table.mini { font-size: 13px; } table.mini td, table.mini th { padding: 5px 6px; height: auto; } table.mini th { font-size: 10.5px; }
+.sumt td small { font: 400 11px/14px var(--font-data); }
+.ksum td.tot, .ksum th:last-child { font-weight: 600; } .ksum { min-width: 0; } .ksum td small { display: block; font-size: 10.5px; }
+.netpos { color: var(--pos); } .netneg { color: var(--neg); }
 
-/* lineup cards */
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
-.lu { background: var(--plate); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; min-width: 0; }
-.lu header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 12px; color: var(--muted); }
-.lu header b { font-family: var(--f-data); font-weight: 500; color: var(--fg); }
-.lu ol { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 3px; }
-.lu li { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; }
-.lu li.cpt { color: var(--ember); font-weight: 600; }
-.lu li .p { color: var(--muted); font-family: var(--f-data); font-size: 11px; }
+/* toolbars, controls */
 .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
-select, input[type="number"], input[type="text"] { background: var(--plate); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; }
-input[type="number"] { width: 84px; font-family: var(--f-data); }
+.toolbar h3 { font: 700 18px/24px var(--font-display) !important; }
+select, input[type="number"], input[type="text"], input[type="search"], input[type="password"] { height: 36px; background: var(--surface-sunken); border: 1px solid var(--control-border); border-radius: var(--r-md); padding: 0 10px; color: var(--ink); min-width: 0; max-width: 100%; }
+input[type="number"] { width: 88px; font-family: var(--font-data); }
+input[type="search"] { width: 200px; }
+#cSearch, #cbSearch { width: 170px; height: 32px; font-size: 13px; }
+input[type="range"] { accent-color: var(--brand); width: 100%; }
+input[type="checkbox"] { accent-color: var(--brand); width: 16px; height: 16px; flex: none; }
+textarea { width: 100%; min-height: 130px; background: var(--surface-sunken); color: var(--ink); border: 1px solid var(--control-border); border-radius: var(--r-md); padding: 8px; font: 400 12px/16px var(--font-data); }
+.projin { width: 72px !important; height: 30px !important; }
+.btn { appearance: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 0 14px; border-radius: var(--r-md); font: 600 13px/18px var(--font-text); cursor: pointer; border: 1px solid var(--control-border); background: transparent; color: var(--ink); white-space: nowrap; text-decoration: none; }
+.btn:hover { background: var(--surface-raised); color: var(--ink); }
+.btn.primary { background: var(--brand); border-color: var(--brand); color: var(--on-brand); }
+.btn.primary:hover { filter: brightness(1.08); background: var(--brand); color: var(--on-brand); }
+.btn.small { min-height: 30px; padding: 0 10px; font-size: 12.5px; border-radius: var(--r-sm); }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.controls .btn.primary { min-height: 44px; font-size: 14px; width: 100%; }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--brand-ink); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; font-size: 12px; }
+.seg { display: inline-flex; padding: 2px; gap: 2px; background: var(--surface-sunken); border: 1px solid var(--line); border-radius: var(--r-md); max-width: 100%; }
+.seg button { appearance: none; border: 0; background: none; padding: 5px 11px; cursor: pointer; font: 500 12.5px/16px var(--font-text); color: var(--ink-2); border-radius: var(--r-sm); min-height: 28px; white-space: nowrap; }
+.seg button:hover { color: var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--surface-raised); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-strong); font-weight: 600; }
+.seg.segwrap { display: grid; grid-template-columns: 1fr 1fr; } .seg.segwrap button { white-space: normal; text-align: center; padding: 7px 8px; }
+.subnav { margin-bottom: 18px; }
+.subnav button { padding: 7px 14px; font-size: 13px; }
+.check { display: flex; gap: 9px; align-items: flex-start; font-size: 13px; line-height: 18px; cursor: pointer; } .check input { margin-top: 1px; }
+.check.mine { margin-top: 2px; }
+.field { display: grid; gap: 6px; }
+.field label { font: 500 12px/16px var(--font-text); color: var(--ink-2); }
+.field label small { color: var(--ink-3); }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.chip { display: inline-flex; align-items: center; gap: 4px; font: 400 11.5px/16px var(--font-data); padding: 2px 8px; border-radius: var(--r-sm); background: var(--surface); border: 1px solid var(--line); color: var(--ink-2); }
+.chip b { color: var(--ink); font-weight: 600; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; } .chips .chip small { color: var(--ink-3); }
 .expo { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 14px; }
-.chip { font-size: 12px; padding: 2px 8px; border-radius: 3px; background: var(--plate-2); font-family: var(--f-data); }
-.chip b { color: var(--ember); font-weight: 500; }
+.flt { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; margin: 8px 0 10px; }
+.flt select, .flt input { font-size: 12.5px; height: 30px; max-width: 170px; } .flt input { width: 76px; }
+.flt .chip { cursor: pointer; } .flt .chip.inc { border-color: var(--pos); color: var(--ink); } .flt .chip.exc { border-color: var(--neg); text-decoration: line-through; } .flt .chip.cpt { border-color: var(--gold); color: var(--gold-ink); }
+.flt .count { font: 400 12px/16px var(--font-data); color: var(--ink-3); }
+.status { font: 400 12.5px/18px var(--font-data); color: var(--ink-2); min-height: 18px; }
+.status.err { color: var(--neg); }
+.custom-note { font-size: 12px; color: var(--brand-ink); min-height: 16px; }
+.setdesc { margin: 4px 0 12px; max-width: 80ch; } .setdesc code { font: 400 11px/14px var(--font-data); color: var(--ink-3); }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); margin: 4px 0 8px; }
+.pcols { display: none; margin: 0 0 10px; }
+details.about, details.adv { margin: 0 0 14px; padding: 10px 14px; }
+details.about > summary, details.adv > summary { cursor: pointer; font-weight: 600; font-size: 13px; color: var(--ink); }
+details.about > summary small, details.adv > summary small { display: block; font-weight: 400; color: var(--ink-3); font-size: 11.5px; }
+details.about[open] > summary, details.adv[open] > summary { margin-bottom: 10px; }
+details.adv { background: var(--surface-raised); display: grid; gap: 12px; }
+details.adv[open] { padding-bottom: 14px; }
+details.adv > .field, details.adv > .check, details.adv > .note { margin-top: 10px; }
+details.about p:last-child { margin-bottom: 0; }
 
 /* builder */
-.builder { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; align-items: start; }
-.controls { background: var(--plate); border: 1px solid var(--line); border-radius: 6px; padding: 14px; display: grid; gap: 12px; position: sticky; top: env(safe-area-inset-top, 0px); }
-.controls h3 { font-size: 20px; letter-spacing: .08em; text-transform: uppercase; }
-.field { display: grid; gap: 4px; }
-.field label { font-family: var(--f-display); font-weight: 700; font-size: 14px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
-.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.check { display: flex; gap: 8px; align-items: center; font-size: 14px; }
-.btn { border: 1px solid var(--line); background: var(--plate-2); border-radius: 4px; padding: 8px 12px; cursor: pointer; font-weight: 600; }
-.btn:hover { border-color: var(--muted); }
-.btn.primary { background: var(--ember); border-color: var(--ember); color: var(--ember-ink); font-family: var(--f-display); font-size: 19px; letter-spacing: .1em; text-transform: uppercase; padding: 8px 16px; }
-.btn.primary:hover { filter: brightness(1.08); }
-.btn.small { padding: 3px 8px; font-size: 12px; }
-.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
-.seg button { border: 0; background: none; padding: 4px 10px; cursor: pointer; font-size: 12px; color: var(--muted); }
-.seg button[aria-pressed="true"] { background: var(--ember); color: var(--ember-ink); }
-.seg.segwrap { display: flex; flex-wrap: wrap; } .seg.segwrap button { flex: 1 1 45%; padding: 7px 8px; font-size: 12.5px; }
-.setdesc { margin: 4px 0 12px; max-width: 80ch; } .setdesc code { font-family: var(--f-data); font-size: 11px; color: var(--muted); }
-.flt { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; margin: 8px 0 10px; }
-.flt select, .flt input { font-size: 13px; max-width: 170px; } .flt input { width: 76px; }
-.flt .chip { cursor: pointer; } .flt .chip.inc { border: 1px solid var(--good, #5a9); } .flt .chip.exc { border: 1px solid var(--bad); text-decoration: line-through; } .flt .chip.cpt { border: 1px solid var(--ember); }
-.flt .count { font-family: var(--f-data); font-size: 12px; color: var(--muted); }
-/* 2026-10-21 cleanup: tables scroll on their own; collapsibles; alerts badge */
-.tbl-wrap { max-height: min(70vh, 760px); overflow: auto; overscroll-behavior: contain; }
-.tbl-wrap thead th { position: sticky; top: 0; z-index: 2; background: var(--plate); box-shadow: inset 0 -1px 0 var(--line); }
-.tbl-wrap thead th:first-child { z-index: 3; }
-details.about, details.adv { margin: 10px 0 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--plate); padding: 8px 12px; }
-details.about > summary, details.adv > summary { cursor: pointer; font-weight: 600; font-size: 13.5px; list-style-position: outside; }
-details.about > summary small, details.adv > summary small { display: block; font-weight: 400; color: var(--muted); font-size: 11.5px; }
-details.about[open] > summary, details.adv[open] > summary { margin-bottom: 8px; }
-details.adv .field:first-of-type { margin-top: 4px; }
-.note.fine { font-size: 11px; opacity: .8; }
-.tab .badge[hidden] { display: none; }
-.pickrow { display: flex; gap: 10px; align-items: center; margin: 0 0 8px; } .pklab { font: 700 11.5px var(--f-display); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); min-width: 74px; }
-.pkchips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: thin; padding-bottom: 2px; min-width: 0; flex: 1; }
-#slatePicker { display: block; overflow: visible; } #slatePicker[hidden] { display: none; }
-.sports { display: flex; gap: 6px; margin: 0 0 10px; } .sports button { font: 700 14px var(--f-display); letter-spacing: .12em; padding: 7px 18px; border-radius: 99px; border: 1px solid var(--line); background: var(--plate); color: var(--muted); cursor: pointer; }
-.sports button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.builder { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; align-items: start; }
+.controls { padding: 16px; display: grid; gap: 14px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 112px); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); max-height: calc(100vh - 128px); overflow: auto; }
+.controls h3 { font: 600 11px/14px var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.recipes { display: grid; gap: 8px; }
+.recipe { appearance: none; text-align: left; border: 1px solid var(--line); background: var(--surface-raised); border-radius: var(--r-md); padding: 10px 12px; cursor: pointer; color: var(--ink); display: grid; gap: 3px; }
+.recipe:hover { border-color: var(--line-strong); }
+.recipe b { font: 700 13.5px/18px var(--font-display); letter-spacing: .02em; }
+.recipe small { color: var(--ink-2); font-size: 12px; line-height: 17px; }
+.recipe .ev { font: 400 11px/15px var(--font-data); color: var(--ink-3); }
+.recipe[aria-pressed="true"] { border-color: var(--brand); background: var(--brand-wash); box-shadow: inset 3px 0 0 var(--brand); }
+.nbaform { display: grid; gap: 12px; max-width: 760px; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); margin-bottom: 18px; }
+.nbaform > label:not(.check) { display: flex; justify-content: space-between; gap: 12px; align-items: center; font-size: 13px; color: var(--ink-2); max-width: 360px; }
+.nbaform input[type=number] { width: 88px; }
+.nbaform .toolbar { margin: 4px 0 0; }
+.nbaflag { border: 1px solid var(--line); border-left: 3px solid var(--brand); background: var(--surface); border-radius: var(--r-md); padding: 9px 12px; margin: 0 0 16px; }
+
+/* lineup cards */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
+.lu { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 0 0 4px; min-width: 0; overflow: hidden; position: relative; }
+.lu header { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 12px; background: var(--surface-raised); border-bottom: 1px solid var(--line); font: 400 11.5px/16px var(--font-data); color: var(--ink-2); }
+.lu header b { font-family: var(--font-data); font-weight: 600; color: var(--ink); }
+.lu ol { list-style: none; margin: 0; padding: 0; display: grid; }
+.lu li { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; line-height: 18px; padding: 6px 12px; border-bottom: 1px solid var(--line); }
+.lu li:last-child { border-bottom: 0; }
+.lu li.cpt { background: var(--gold-wash); font-weight: 600; }
+.lu li.cpt .ico { color: var(--gold-ink); margin-right: 4px; }
+.lu li .slot { font: 600 10px/14px var(--font-display); letter-spacing: .08em; color: var(--gold-ink); margin-right: 4px; }
+.lu li .p { color: var(--ink-3); font: 400 11px/14px var(--font-data); white-space: nowrap; }
+.lu.forged { border-color: color-mix(in srgb, var(--gold) 50%, var(--line)); }
+.lu.forged::before { content: "FORGE pick"; position: absolute; top: 8px; right: 50%; transform: translateX(50%); font: 600 9.5px/14px var(--font-display); letter-spacing: .08em; text-transform: uppercase; padding: 1px 6px; border-radius: var(--r-sm); background: var(--gold); color: var(--on-gold); }
+.lu.done { opacity: .5; }
+.lu .tick { display: flex; gap: 8px; align-items: center; margin: 8px 12px 6px; font-size: 13px; }
+.lu .testlu { margin: 8px 12px 6px; font-size: 11.5px; min-height: 28px; }
+.badges { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 12px 4px; }
+.badge { font: 400 10.5px/16px var(--font-data); padding: 0 6px; border-radius: var(--r-sm); background: var(--surface-raised); color: var(--ink-2); border: 1px solid var(--line); }
+.badge.top { color: var(--gold-ink); border-color: color-mix(in srgb, var(--gold) 45%, var(--line)); }
+.graded { margin: 4px 12px 6px; padding-top: 6px; border-top: 1px dashed var(--line); font-size: 12px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.graded .win { color: var(--pos); font-weight: 600; } .graded .dim { color: var(--ink-3); }
+
+/* sims + tester */
+.tpick { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; margin: 8px 0 12px; } .tpick select { width: 100%; font-size: 13px; }
+.tstats { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin: 12px 0; }
+.tstats div { border: 1px solid var(--line); border-radius: var(--r-lg); padding: 12px 14px; background: var(--surface); display: grid; gap: 4px; }
+.tstats b { font: 600 22px/26px var(--font-data); font-variant-numeric: tabular-nums; } .tstats small { color: var(--ink-2); font-size: 12px; line-height: 16px; }
+.trust { display: grid; gap: 0; }
+.trust > div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-2); }
+.trust > div:first-child { border-top: 0; }
+.trust b { font: 600 14px/18px var(--font-data); color: var(--ink); white-space: nowrap; }
+.simtbl td.best { color: var(--ink); font-weight: 700; }
+.simtbl td.who { white-space: normal; min-width: 220px; max-width: 460px; line-height: 17px; padding-block: 6px; } .simtbl td.who small { display: block; margin-left: 0; }
+.empty-state { padding: 28px 20px; text-align: center; color: var(--ink-2); display: grid; gap: 8px; justify-items: center; }
+.empty-state h3 { font: 700 17px/22px var(--font-display); color: var(--ink); }
+.empty-state p { margin: 0; max-width: 60ch; font-size: 13.5px; line-height: 20px; }
+
+/* record, results */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 0 0 20px; }
+.tile { padding: 14px 16px; display: grid; gap: 5px; align-content: start; }
+.tile small { font: 600 10.5px/14px var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.tile b { font: 600 26px/30px var(--font-data); font-variant-numeric: tabular-nums; letter-spacing: -.01em; } .tile b.gain { color: var(--pos); } .tile b.loss { color: var(--neg); }
+.tile span { font-size: 12px; line-height: 16px; color: var(--ink-2); }
+.bars { display: grid; gap: 10px; max-width: 780px; }
+.barrow { display: grid; grid-template-columns: 190px minmax(0, 1fr) 72px; gap: 12px; align-items: center; }
+.track { position: relative; height: 10px; background: var(--surface-sunken); border-radius: var(--r-sm); }
+.track .zero { position: absolute; top: -4px; bottom: -4px; width: 1px; background: var(--ink-3); }
+.track .fill { position: absolute; top: 0; bottom: 0; border-radius: var(--r-sm); background: var(--ink-3); }
+.track .fill.lead { background: var(--brand); }
+.barrow .lbl { font-size: 13.5px; } .barrow .lbl small { display: block; color: var(--ink-3); font-size: 11px; }
+.temper { display: flex; gap: 5px; align-items: center; }
+.temper i { width: 22px; height: 6px; border-radius: 3px; background: var(--surface-sunken); border: 1px solid var(--line); }
+.temper i.on { background: var(--brand); border-color: var(--brand); }
+.glance { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 12px; }
+.gcard { padding: 14px 16px; min-width: 0; }
+.gcard h4 { font: 700 15px/20px var(--font-display); margin: 0 0 10px; }
+.sbar { display: grid; grid-template-columns: 120px 1fr 48px; gap: 10px; align-items: center; font-size: 13px; margin: 6px 0; }
+.sbar i { display: block; height: 6px; border-radius: 99px; background: var(--brand); } .sbar b { font: 500 12.5px/16px var(--font-data); text-align: right; }
+.lrow { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; padding: 4px 0; }
+.bdown { padding: 10px 14px; margin: 0 0 12px; } .bdown summary { cursor: pointer; font: 600 13px/18px var(--font-text); }
+.privcard, .privhead { display: flex; gap: 14px; align-items: flex-start; padding: 16px; max-width: 780px; margin-bottom: 16px; }
+.privcard > .ico, .privhead > .ico { width: 30px; height: 30px; color: var(--ink-2); } .privcard p, .privhead p { margin: 4px 0 0; color: var(--ink-2); }
+.ownernote { border: 1px dashed var(--gold); border-radius: var(--r-md); padding: 6px 10px; color: var(--gold-ink); }
+.pastrow button { white-space: nowrap; } .pastrow.on td { background: var(--brand-wash); }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 16px; }
+.fact { padding: 14px 16px; font-size: 13.5px; line-height: 20px; color: var(--ink-2); }
+.fact b { font: 700 15px/20px var(--font-display); display: block; color: var(--ink); margin-bottom: 4px; }
+
+/* NBA / NFL leader cards (chance to lead) */
+.nbaleaders { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 18px; }
+.nbaleaders .card { padding: 12px 14px; }
+.nbaleaders .card h4 { margin: 0 0 8px; font: 700 14px/18px var(--font-display); }
+.nbaleaders ol { margin: 0; padding-left: 18px; font-size: 13px; display: grid; gap: 3px; } .nbaleaders li { display: flex; justify-content: space-between; gap: 8px; } .nbaleaders li small { color: var(--ink-3); } .nbaleaders li b { font: 600 12.5px/18px var(--font-data); }
+.qbenv { padding: 12px 16px; margin: 0 0 16px; }
+.qbenv h3 { font: 700 15px/20px var(--font-display); margin-bottom: 8px; } .qbenv h3 small { font: 400 12px/16px var(--font-text); color: var(--ink-3); }
+.qbenv ol { margin: 0; padding-left: 22px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 3px 18px; font-size: 13px; }
+.qbenv small { color: var(--ink-3); }
+
+/* overlays */
+.ovl { padding: 12px 14px; }
+.ovl.hot { border-color: var(--gold); box-shadow: inset 3px 0 0 var(--gold); }
+.ovl h3 { font: 700 14.5px/20px var(--font-display); margin: 0 0 4px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.ovl h3 small { font: 400 11px/14px var(--font-data); color: var(--ink-3); }
+.ovl .row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 9px 0; border-top: 1px solid var(--line); } .ovl .row .nm { flex: 1 1 60%; }
+.ovl .row:first-of-type { border-top: 0; }
+.ovl .nm { font-weight: 600; } .ovl .ometa { flex: 1 1 100%; font: 400 11.5px/16px var(--font-data); color: var(--ink-3); }
+.ovl .val { font: 600 13px/18px var(--font-data); color: var(--gold-ink); text-align: right; white-space: nowrap; }
+.ovl a.btn { color: var(--ink); } .ovl details summary { cursor: pointer; color: var(--ink-2); font-size: 12.5px; }
+.ovl.quiet { padding: 10px 14px; }
+.ovl.quiet h3 { font: 500 13px/18px var(--font-text); color: var(--ink-2); }
+.ovl.quiet h3::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); align-self: center; flex: none; }
+
+/* DraftKings / entries */
+.appbox { border-left: 3px solid var(--brand); padding: 13px 16px; margin: 0 0 16px; max-width: 800px; line-height: 20px; font-size: 13.5px; }
+.steps { margin: 0 0 18px; padding-left: 22px; display: grid; gap: 16px; max-width: 800px; font-size: 13.5px; }
+.steps li { line-height: 20px; padding-left: 4px; } .steps li::marker { font: 600 13px var(--font-data); color: var(--brand-ink); }
+.steps .btn { margin-top: 6px; }
+.filebtn { position: relative; overflow: hidden; cursor: pointer; }
+.filebtn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.dkres { margin-top: 10px; display: grid; gap: 8px; }
+.dkres .ok { color: var(--pos); font-weight: 600; } .dkres .err { color: var(--neg); font-weight: 600; }
+.dkres table { font-size: 13px; }
+.manual { max-width: 1000px; margin-top: 8px; padding: 4px 14px 14px; }
+.manual summary { cursor: pointer; font: 600 13.5px/20px var(--font-text); padding: 8px 0; }
+.start { padding: 14px 16px; margin: 0 0 18px; display: grid; gap: 8px; border-left: 3px solid var(--brand); }
+.start h3 { font: 700 15px/20px var(--font-display); display: flex; justify-content: space-between; align-items: center; }
+.start ol { margin: 0; padding-left: 20px; color: var(--ink-2); display: grid; gap: 4px; font-size: 13.5px; }
+.start ol b { color: var(--ink); }
+.whobox { display: grid; gap: 4px; font-size: 13.5px; margin-top: 8px; } .whobox small { color: var(--ink-3); font-size: 12px; } .whobox input { height: 38px; }
+.betfoot { margin-top: 22px; color: var(--ink-3); }
+
+/* entry mode (full screen) */
+#emode { position: fixed; inset: 0; z-index: 40; background: var(--canvas); color: var(--ink); display: flex; flex-direction: column; padding: max(12px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); overflow-y: auto; }
+#emode[hidden] { display: none; }
+.em-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.em-count { font: 700 17px/22px var(--font-display); white-space: nowrap; }
+.em-contest { color: var(--ink-2); font: 600 12px/16px var(--font-display); letter-spacing: .08em; text-transform: uppercase; margin: 10px 0 6px; }
+.em-dots { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+.em-dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--line-strong); display: inline-block; }
+.em-dots i.d { background: var(--pos); } .em-dots i.c { background: var(--brand); }
+.em-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.em-list li { display: grid; grid-template-columns: 54px 1fr auto; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 12px; min-height: 60px; cursor: pointer; user-select: text; -webkit-user-select: text; }
+.em-list li .slot { font: 600 12px/16px var(--font-display); letter-spacing: .08em; color: var(--ink-3); }
+.em-list li .nm { font-size: 19px; font-weight: 600; line-height: 1.2; }
+.em-list li .nm small { display: block; font-size: 12.5px; font-weight: 400; color: var(--ink-3); margin-top: 2px; }
+.em-list li .sal { font: 400 13.5px/18px var(--font-data); color: var(--ink-2); }
+.em-list li.cap { border-color: var(--gold); background: var(--gold-wash); } .em-list li.cap .slot { color: var(--gold-ink); }
+.em-list li.ok { opacity: .45; } .em-list li.ok .nm { text-decoration: line-through; }
+.em-sum { margin: 12px 0; font: 400 13.5px/18px var(--font-data); color: var(--ink-2); }
+.em-nav { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: auto; padding-top: 8px; }
+.em-nav .btn { min-height: 52px; font-size: 15px; }
+.em-tip { color: var(--ink-3); font-size: 12.5px; text-align: center; margin: 10px 0 0; }
+
+/* sign-in */
+#gate { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 16px; background: var(--canvas); }
+#gate[hidden] { display: none; }
+.gatebox { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 28px 24px 24px; color: var(--ink); }
+.gatebrand { display: flex; align-items: center; gap: 10px; }
+.gatebrand svg { width: 28px; height: 28px; color: var(--ink); }
+.gatek { font: 600 11px/14px var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin-top: 6px; }
+.gateh { font: 700 22px/28px var(--font-display); margin: 0; }
+.gatep { color: var(--ink-2); margin: 0; font-size: 13.5px; line-height: 20px; }
+#gatePw { height: 44px; font-size: 16px; }
+.gatebox .btn.primary { min-height: 44px; }
+.gatem { min-height: 18px; font-size: 13px; color: var(--neg); }
+
+footer { margin-top: 36px; color: var(--ink-3); font-size: 12px; line-height: 18px; border-top: 1px solid var(--line); padding-top: 14px; display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; }
+footer .ico { color: var(--ink-3); }
+
+/* show / hide by sport, game type and owner (behaviour; keep) */
 body.nba .cl-only, body.nba .sd-only, body.nba .nfl-only, body.nba #rpBanner, body:not(.nba) .nba-only { display: none !important; }
-small.warn { color: #d9a441; }
-.nbaleaders { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; margin-bottom: 18px; }
-.nbaleaders .card { background: var(--plate); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; } .nbaleaders .card h4 { margin: 0 0 6px; font: 700 12.5px var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-.nbaleaders ol { margin: 0; padding-left: 18px; font-size: 13.5px; } .nbaleaders li { display: flex; justify-content: space-between; gap: 8px; } .nbaleaders li small { color: var(--muted); }
-.nbaform { display: grid; gap: 8px; max-width: 760px; } .nbaform label { display: flex; gap: 8px; align-items: center; } .nbaform input[type=number] { width: 80px; }
+body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 body.nbasd .clonly, body:not(.nbasd) .sdonly, body:not(.nbasd) .sdcol { display: none; }
 body.nbati .clonly, body.nbati .sdonly, body.nbati .sdcol, body.nbati .notiers { display: none !important; }
-.nbaflag { border-left: 3px solid var(--steel); padding-left: 10px; }
-.rpbanner { margin: 0 0 12px; padding: 10px 14px; border: 1px solid var(--steel); border-radius: 10px; background: var(--plate); font-size: 13.5px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-.rpbanner b { color: var(--steel); } .rpbanner .btn { margin-left: auto; }
-.graded { margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--line); font-size: 12.5px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
-.graded .win { color: var(--good); font-weight: 700; } .graded .dim { color: var(--muted); }
-.pastrow button { white-space: nowrap; } .pastrow.on td { background: var(--plate); }
-.tab .badge { display: inline-block; min-width: 16px; margin-left: 5px; padding: 0 4px; border-radius: 8px; background: var(--gold); color: #1b1408; font-size: 10.5px; line-height: 16px; text-align: center; font-family: var(--f-data); vertical-align: 2px; }
-.netpos { color: var(--good, #3d9a6a); } .netneg { color: var(--bad, #c0533a); }
-.subh2 { font-size: 18px; margin: 18px 0 8px; }
-.ksum td.tot, .ksum th:last-child { font-weight: 700; } .ksum { min-width: 0; } .ksum td small { display: block; font-size: 10.5px; }
-/* overlay alert (2026-10-15) */
-.ovl { margin-top: 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--plate); padding: 10px 12px; }
-.ovl.hot { border-color: var(--gold); box-shadow: inset 3px 0 0 var(--gold); }
-.ovl h3 { font-size: 17px; letter-spacing: .06em; text-transform: uppercase; margin: 0 0 2px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
-.ovl h3 small { font-family: var(--f-data); font-size: 11px; letter-spacing: 0; text-transform: none; color: var(--muted); }
-.ovl .row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 8px 0; border-top: 1px solid var(--line); } .ovl .row .nm { flex: 1 1 60%; }
-.ovl .row:first-of-type { border-top: 0; }
-.ovl .nm { font-weight: 600; } .ovl .ometa { flex: 1 1 100%; font-family: var(--f-data); font-size: 11.5px; color: var(--muted); line-height: 1.45; }
-.ovl .val { font-family: var(--f-data); color: var(--gold); text-align: right; white-space: nowrap; }
-.tpick { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; margin: 6px 0 8px; } .tpick select { width: 100%; font-size: 13px; }
-.tstats { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin: 10px 0; } .tstats div { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; background: var(--plate); }
-.tstats b { display: block; font-family: var(--f-data); font-size: 20px; } .tstats small { color: var(--muted); font-size: 11.5px; }
-.lu .testlu { margin: 6px 8px 8px; font-size: 11.5px; padding: 3px 8px; }
-.ovl a.btn { color: var(--fg); text-decoration: none; } .ovl details summary { cursor: pointer; color: var(--muted); font-size: 12.5px; }
-.note { font-size: 12.5px; color: var(--muted); }
-.status { font-family: var(--f-data); font-size: 13px; color: var(--muted); min-height: 20px; }
-.status.err { color: var(--bad); }
-textarea { width: 100%; min-height: 130px; background: var(--plate); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 8px; font-family: var(--f-data); font-size: 12px; }
-.projin { width: 70px !important; }
+body:not(.owner) .owner-only { display: none !important; }
+body:not(.nba):not(.classic) .nosd { display: none !important; }
+body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, body[data-tab="slate"] .chg { display: none !important; }
+.chg { margin-top: 10px; }
 
-/* record */
-.bars { display: grid; gap: 10px; max-width: 760px; }
-.barrow { display: grid; grid-template-columns: 190px minmax(0, 1fr) 70px; gap: 10px; align-items: center; }
-.track { position: relative; height: 22px; background: var(--plate-2); border-radius: 3px; }
-.track .zero { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--muted); }
-.track .fill { position: absolute; top: 0; bottom: 0; border-radius: 3px; background: var(--muted); }
-.track .fill.lead { background: var(--ember); }
-.barrow .lbl { font-size: 14px; } .barrow .lbl small { display: block; color: var(--muted); font-size: 11px; }
-.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; margin-top: 18px; }
-.fact { border-top: 2px solid var(--line); padding-top: 8px; font-size: 14px; }
-.fact b { font-family: var(--f-display); font-size: 18px; letter-spacing: .04em; display: block; }
-footer { margin-top: 30px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
-
-/* forge marks */
-.ico { width: 1em; height: 1em; display: inline-block; vertical-align: -0.12em; flex: none; }
-.mark .anvil { width: 34px; height: 34px; color: var(--ember); align-self: center; }
-.mark h1 span { background: linear-gradient(180deg, var(--gold), var(--ember)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.kicker { display: block; font-family: var(--f-display); font-weight: 600; font-size: 12px; letter-spacing: .1em; color: var(--gold); opacity: .85; }
-.tab[aria-selected="true"] .kicker { opacity: 1; }
-.flame { color: var(--ember); margin-left: 4px; }
-.ingot { color: var(--gold); margin-left: 4px; }
-.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); margin: -4px 0 12px; }
-.legend span { display: inline-flex; gap: 5px; align-items: center; }
-.lu.forged { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); position: relative; }
-.lu.forged::before { content: "FORGED"; position: absolute; top: -8px; right: 10px; font-family: var(--f-display); font-weight: 800; font-size: 11px; letter-spacing: .16em; padding: 0 6px; background: var(--bg); color: var(--gold); }
-.lu li.cpt .ico { color: var(--ember); margin-right: 4px; }
-.track .fill.lead { background: linear-gradient(90deg, var(--ember), var(--gold)); }
-.temper { display: flex; gap: 6px; align-items: center; }
-.temper i { width: 26px; height: 5px; border-radius: 3px; background: var(--plate-2); }
-.temper i.on { background: linear-gradient(90deg, var(--ember), var(--gold)); }
-.btn.primary { position: relative; overflow: visible; display: inline-flex; justify-content: center; align-items: center; gap: 8px; }
-.sparks { position: absolute; inset: 0; pointer-events: none; }
-.sparks b { position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 6px var(--ember); animation: spark .7s ease-out forwards; }
-@keyframes spark { from { transform: translate(-50%, -50%) scale(1); opacity: 1; } to { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.3); opacity: 0; } }
-.plate .glow { position: absolute; left: 20%; right: 20%; bottom: -40px; height: 80px; background: radial-gradient(ellipse at 50% 100%, var(--heat-hi), transparent 70%); opacity: .35; pointer-events: none; animation: breathe 5s ease-in-out infinite; }
-@keyframes breathe { 0%, 100% { opacity: .25; } 50% { opacity: .45; } }
-footer .ico { color: var(--ember); }
-
-@media (max-width: 820px) {
-  .plate { grid-template-columns: 1fr; }
-  .builder { grid-template-columns: 1fr; }
-  .controls { position: static; }
-  .barrow { grid-template-columns: 120px minmax(0, 1fr) 60px; }
-}
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
-.slates { display: flex; gap: 8px; overflow-x: auto; margin-top: 14px; padding-bottom: 4px; scrollbar-width: thin; }
-.slates[hidden] { display: none; }
-.newver { margin-top: 12px; background: var(--plate); border: 1px solid var(--ember); border-radius: 6px; padding: 8px 12px; display: flex; gap: 10px; align-items: center; justify-content: space-between; font-size: 14px; }
-.newver[hidden] { display: none; }
-#refreshBtn { margin-right: 8px; }
-body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
-.qbenv { background: var(--plate); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; margin: 0 0 14px; }
-.qbenv h3 { font-size: 17px; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px; }
-.qbenv ol { margin: 0; padding-left: 22px; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 2px 18px; font-size: 13.5px; }
-.qbenv small { color: var(--muted); }
-#cSearch, #cbSearch { font: inherit; font-size: 13px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--plate); color: var(--fg); min-width: 0; width: 150px; }
-.slate-chip { flex: 0 0 auto; display: grid; gap: 1px; text-align: left; border: 1px solid var(--line); background: var(--plate); color: var(--fg); border-radius: 6px; padding: 7px 12px; cursor: pointer; min-width: 128px; }
-/* 2026-10-15: on phones nothing hides off the right edge -- tabs and game chips wrap onto rows instead of scrolling sideways */
-@media (max-width: 640px) {
-  .slates { flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity; }
-  .slate-chip { flex: 0 0 auto; min-width: 116px; max-width: 170px; padding: 6px 10px; scroll-snap-align: center; }
-  .slate-chip b, .slate-chip span, .slate-chip small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .slate-chip span { font-size: 15px; } .slate-chip b { font-size: 10px; letter-spacing: .08em; } .slate-chip small { font-size: 10.5px; }
-  .panel .tiles { grid-template-columns: 1fr 1fr; gap: 8px; } .panel .tile { padding: 10px 11px; } .panel .tile b { font-size: 19px; white-space: nowrap; } .tile span { font-size: 11px; line-height: 1.35; } .tile small { font-size: 10px; }
-  .bar { flex-wrap: nowrap; min-width: 0; } .bar .row { flex-wrap: nowrap; gap: 6px; min-width: 0; flex: 0 1 auto; } .mark { flex: 0 0 auto; } #statusPill { min-width: 0; max-width: 44vw; overflow: hidden; } #statusText { overflow: hidden; text-overflow: ellipsis; } .rtxt { display: none; } #kick { display: none; }
-  .pill { font-size: 11px; letter-spacing: .04em; white-space: nowrap; max-width: 54vw; overflow: hidden; text-overflow: ellipsis; } #refreshBtn { margin-right: 0; padding: 4px 9px; }
-}
-/* 2026-10-15 redesign: phones get a bottom tab bar (icons + short labels) and a compact game plate */
-.tab .tico, .tab .tshort { display: none; } #tab-more { display: none; }
-#moreSheet { position: fixed; inset: 0; z-index: 45; } #moreSheet .sheetbg { position: absolute; inset: 0; background: rgba(0,0,0,.45); }
-#moreSheet .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--plate); border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; padding: 10px 14px calc(14px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 6px; max-width: 640px; margin: 0 auto; box-shadow: 0 -10px 30px rgba(0,0,0,.25); }
-#moreSheet .sheeth { font: 800 13px var(--f-display); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding: 4px 4px 6px; }
-#moreSheet button { text-align: left; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; color: var(--fg); font: inherit; cursor: pointer; display: grid; gap: 2px; }
-#moreSheet button b { font-weight: 600; font-size: 16px; } #moreSheet button small { color: var(--muted); font-size: 12.5px; }
-#moreSheet .sheetx { text-align: center; background: none; border: 0; color: var(--muted); padding: 10px; }
-.rpbanner:empty { display: none !important; } body:not(.owner) .owner-only { display: none !important; } .whobox { display: grid; gap: 4px; font-size: 14px; margin-top: 8px; } .whobox small { color: var(--muted); font-size: 12px; } .whobox input { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); } .subnav { margin-bottom: 14px; } .subnav button { padding: 8px 16px; font-size: 14px; } .betfoot { margin-top: 18px; }
-@media (max-width: 640px) {
-  body { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
-  .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; margin: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; overflow: visible;
-    background: var(--plate); border-top: 1px solid var(--line); border-bottom: 0; padding: 4px 2px calc(4px + env(safe-area-inset-bottom, 0px)); }
-  .tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 54px; padding: 4px 1px; border-bottom: 0;
-    font-family: var(--f-body); font-weight: 500; font-size: 10.5px; letter-spacing: 0; text-transform: none; white-space: nowrap; }
-  .tab .kicker, .tab .tlong { display: none; } .tab .tshort { display: block; } .tab .tico { display: block; width: 23px; height: 23px; }
-  .tab.tmore { display: none; } #tab-more { display: flex; }
-  .pickrow { flex-direction: column; align-items: stretch; gap: 4px; margin-bottom: 10px; } .pklab { min-width: 0; }
-  .slate-chip { min-width: 0; }
-  .bar .row { min-width: 0; } #statusPill { max-width: 46vw; } #statusText { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tab[aria-selected="true"] { color: var(--ember); }
-  .plate { margin-top: 10px; padding: 12px 14px; gap: 8px; }
-  .plate .glow { display: none; }
-  .team { font-size: 40px; } .at { font-size: 20px; } .matchup { gap: 10px; }
-  .meta { grid-template-columns: repeat(3, auto); justify-content: start; gap: 14px; }
-  .stat b { font-size: 16px; } .stat span { font-size: 11px; }
-  .sub { font-size: 12px; margin-top: 4px; }
-  .mark h1 { font-size: 26px; } .mark .anvil { width: 28px; height: 28px; } .mark small { display: none; }
-  .pill { font-size: 12px; padding: 2px 8px; }
-  .panel { padding-top: 12px; }
-  .ovl.quiet h3 small { display: none; }
-}
-.ovl.quiet { padding: 6px 12px; }
-.ovl.quiet h3 { font-family: var(--f-body); font-weight: 500; font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--muted); }
-.ovl.quiet h3::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--good); align-self: center; flex: none; }
-.ovl.quiet details summary { font-size: 12px; }
-.tag.steel { color: var(--steel); border: 1px solid var(--steel); border-radius: 99px; padding: 0 6px; font-size: 9.5px; vertical-align: 1px; }
-.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 0 0 18px; }
-.tile { background: var(--plate); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 2px; }
-.tile small { font-family: var(--f-display); font-weight: 700; font-size: 12.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-.tile b { font-family: var(--f-data); font-weight: 500; font-size: 28px; line-height: 1.15; } .tile b.gain { color: var(--good); } .tile b.loss { color: var(--bad); }
-.tile span { font-size: 12px; color: var(--muted); }
-.privcard { display: flex; gap: 14px; align-items: flex-start; background: var(--plate); border: 1px solid var(--line); border-radius: 10px; padding: 16px; max-width: 760px; margin-bottom: 16px; }
-.privcard > .ico { width: 40px; height: 40px; color: var(--ember); } .privcard p { margin: 6px 0; color: var(--muted); }
-.subh { font-size: 22px; margin: 4px 0 8px; } h4.subh { font-size: 17px; margin: 16px 0 6px; letter-spacing: .04em; }
-.dim { color: var(--muted); }
-.sumt td small { font-family: var(--f-data); font-size: 11px; }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; } .chips .chip small { color: var(--muted); }
-.ownernote { border: 1px dashed var(--gold); border-radius: 6px; padding: 6px 10px; color: var(--gold); }
-.linkbtn { background: none; border: 0; padding: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font-size: 12px; }
-.check.mine { margin-top: 2px; }
-/* 2026-10-15: player table fits laptops (wider page, tighter cells); phones/tablets switch column groups instead of scrolling sideways */
-.wrap { max-width: 1480px; }
-#ptable th, #ptable td { padding-left: 7px; padding-right: 7px; }
-#ptable td.who { white-space: normal; min-width: 170px; max-width: 290px; line-height: 1.3; }
+/* player table fits laptops; narrower screens switch column groups */
+#ptable td.who { white-space: normal; min-width: 170px; max-width: 290px; line-height: 17px; }
 #ptable .lines { white-space: normal; }
-.pcols { display: none; margin: 0 0 10px; }
-.pcols button { padding: 8px 14px; font-size: 13.5px; min-height: 40px; }
 @media (max-width: 1100px) {
   .pcols { display: inline-flex; }
   #ptable .gc { display: none; }
   body[data-pcols="proj"] #ptable .g-proj:not([hidden]), body[data-pcols="own"] #ptable .g-own:not([hidden]), body[data-pcols="sim"] #ptable .g-sim:not([hidden]) { display: table-cell; }
   #ptable td.who { min-width: 0; }
+  .brief { grid-template-columns: 1fr; }
+}
+@media (max-width: 860px) {
+  .builder { grid-template-columns: 1fr; }
+  .controls { position: static; max-height: none; }
+  .barrow { grid-template-columns: 120px minmax(0, 1fr) 60px; }
+  .stamp { display: none; }
 }
 @media (max-width: 640px) {
-  #ptable th, #ptable td { padding-left: 4px; padding-right: 4px; font-size: 12.5px; } #ptable th { font-size: 11.5px; letter-spacing: .02em; }
-  #ptable td.who { max-width: 33vw; min-width: 0; } #ptable .pos { min-width: 0; padding: 1px 3px; }
+  .appbar { gap: 10px; min-height: 52px; }
+  .wordmark { font-size: 17px; letter-spacing: .12em; }
+  .brand svg { width: 22px; height: 22px; }
+  .sports button { padding: 5px 10px; min-height: 28px; }
+  .tab { padding: 11px 9px 10px; font-size: 13.5px; min-height: var(--tap); }
+  .wrap { padding-block: 14px 32px; }
+  .pickrow { flex-direction: column; align-items: stretch; gap: 6px; } .pklab { min-width: 0; }
+  .slate-chip { min-width: 118px; padding: 7px 10px; }
+  .plate { gap: 12px; padding-bottom: 14px; margin-bottom: 14px; }
+  .team { font-size: 24px; line-height: 28px; } .at { font-size: 18px; line-height: 28px; }
+  .meta { width: 100%; } .stat { flex: 1; min-width: 0; padding: 8px 10px; } .stat b { font-size: 15px; }
+  td { height: var(--tap); }
+  .tbl-wrap td:first-child { white-space: normal; min-width: 118px; max-width: 42vw; line-height: 17px; }
+  .tbl-wrap td:first-child small { display: block; margin-left: 0; }
+  th, td { padding-left: 8px; padding-right: 8px; }
+  #ptable th, #ptable td { padding-left: 5px; padding-right: 5px; font-size: 12.5px; }
+  #ptable td.who { max-width: 34vw; } #ptable .pos { min-width: 0; padding: 1px 3px; }
+  .props { grid-template-columns: 1fr; }
+  input[type="search"] { width: 100%; }
+  .tiles { grid-template-columns: 1fr 1fr; gap: 10px; } .tile { padding: 11px 12px; } .tile b { font-size: 20px; line-height: 24px; white-space: nowrap; }
+  .pill { max-width: 38vw; }
+  .iconbtn { width: 32px; height: 32px; }
 }
-.privhead { display: flex; gap: 14px; align-items: flex-start; background: var(--plate); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
-.privhead > .ico { width: 38px; height: 38px; color: var(--ember); } .privhead p { margin: 4px 0 0; color: var(--muted); }
-.glance { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
-.gcard { background: var(--plate); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; min-width: 0; }
-.gcard h4 { font-family: var(--f-display); font-size: 16px; letter-spacing: .06em; text-transform: uppercase; margin: 0 0 8px; }
-table.mini { font-size: 13.5px; } table.mini td, table.mini th { padding: 5px 4px; } table.mini th { font-size: 12px; }
-.sbar { display: grid; grid-template-columns: 120px 1fr 44px; gap: 8px; align-items: center; font-size: 13.5px; margin: 5px 0; }
-.sbar i { display: block; height: 10px; border-radius: 99px; background: linear-gradient(90deg, var(--ember), var(--gold)); } .sbar b { font-family: var(--f-data); font-weight: 500; text-align: right; }
-.lrow { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; padding: 3px 0; } .lrow .lev { color: var(--steel); font-family: var(--f-data); font-weight: 500; }
-.bdown { margin: 0 0 12px; } .bdown summary { cursor: pointer; font-family: var(--f-display); font-weight: 700; letter-spacing: .05em; text-transform: uppercase; font-size: 15px; padding: 4px 0; }
-td.lev { color: var(--steel); }
-.slate-chip b { font-family: var(--f-display); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
-.slate-chip span { font-family: var(--f-display); font-weight: 800; font-size: 19px; letter-spacing: .02em; }
-.slate-chip small { color: var(--muted); font-size: 11.5px; }
-.slate-chip[aria-pressed="true"] { border-color: var(--ember); box-shadow: inset 0 -3px 0 var(--ember); }
-.slate-chip.live, .slate-chip.complete { opacity: .7; }
-#emode { position: fixed; inset: 0; z-index: 40; background: var(--bg); color: var(--fg); display: flex; flex-direction: column; padding: max(12px, env(safe-area-inset-top)) 14px max(12px, env(safe-area-inset-bottom)); overflow-y: auto; }
-#emode[hidden] { display: none; }
-.em-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.em-count { font-family: var(--f-display); font-weight: 800; font-size: 19px; white-space: nowrap; letter-spacing: .06em; text-transform: uppercase; }
-.em-contest { color: var(--gold); font-family: var(--f-display); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; font-size: 14px; margin: 8px 0 6px; }
-.em-dots { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
-.em-dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); display: inline-block; }
-.em-dots i.d { background: var(--good); } .em-dots i.c { background: var(--ember); }
-.em-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.em-list li { display: grid; grid-template-columns: 54px 1fr auto; align-items: center; gap: 10px; background: var(--plate); border: 1px solid var(--line); border-radius: 8px; padding: 12px; min-height: 58px; cursor: pointer; user-select: text; -webkit-user-select: text; }
-.em-list li .slot { font-family: var(--f-display); font-weight: 800; font-size: 15px; letter-spacing: .08em; color: var(--muted); }
-.em-list li .nm { font-size: 20px; font-weight: 700; line-height: 1.15; }
-.em-list li .nm small { display: block; font-size: 12.5px; font-weight: 400; color: var(--muted); margin-top: 2px; }
-.em-list li .sal { font-family: var(--f-data); font-size: 14px; color: var(--muted); }
-.em-list li.cap { border-color: var(--ember); } .em-list li.cap .slot { color: var(--ember); }
-.em-list li.ok { opacity: .45; } .em-list li.ok .nm { text-decoration: line-through; }
-.em-sum { margin: 12px 0; font-family: var(--f-data); color: var(--muted); font-size: 14px; }
-.em-nav { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: auto; padding-top: 8px; }
-.em-nav .btn { padding: 14px 8px; font-size: 16px; justify-content: center; white-space: nowrap; }
-.em-tip { color: var(--muted); font-size: 12.5px; text-align: center; margin: 10px 0 0; }
-.appbox { background: var(--plate); border: 1px solid var(--line); border-left: 3px solid var(--ember); border-radius: 6px; padding: 12px 14px; margin: 0 0 16px; max-width: 760px; line-height: 1.45; }
-.steps { margin: 0 0 16px; padding-left: 22px; display: grid; gap: 14px; max-width: 760px; }
-.steps li { line-height: 1.45; }
-.steps .btn { margin-top: 6px; display: inline-flex; }
-.filebtn { position: relative; overflow: hidden; cursor: pointer; }
-.filebtn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-.dkres { margin-top: 10px; display: grid; gap: 8px; }
-.dkres .ok { color: var(--good); font-weight: 600; }
-.dkres .err { color: var(--bad); font-weight: 600; }
-.dkres table { font-size: 13px; }
-.manual { max-width: 980px; margin-top: 8px; }
-.manual summary { cursor: pointer; font-family: var(--f-display); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; font-size: 16px; padding: 8px 0; }
-.lu.done { opacity: .5; }
-.lu .tick { display: flex; gap: 8px; align-items: center; margin-top: 8px; font-size: 14px; }
-.recipes { display: grid; gap: 8px; }
-.recipe { text-align: left; border: 1px solid var(--line); background: var(--plate-2); border-radius: 6px; padding: 10px 12px; cursor: pointer; color: var(--fg); display: grid; gap: 2px; }
-.recipe b { font-family: var(--f-display); font-size: 17px; letter-spacing: .06em; text-transform: uppercase; }
-.recipe small { color: var(--muted); font-size: 12px; line-height: 1.35; }
-.recipe[aria-pressed="true"] { border-color: var(--ember); box-shadow: inset 3px 0 0 var(--ember); }
-.recipe .ev { font-family: var(--f-data); color: var(--gold); font-size: 11.5px; }
-.custom-note { font-size: 12px; color: var(--gold); min-height: 16px; }
-.start { background: var(--plate); border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: 6px; padding: 12px 14px; margin: 0 0 14px; display: grid; gap: 6px; }
-.start h3 { font-size: 18px; letter-spacing: .08em; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
-.start ol { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap: 3px; font-size: 14px; }
-.start ol b { color: var(--fg); }
-.lines { display: block; font-family: var(--f-data); font-size: 11px; color: var(--muted); margin-top: 2px; }
-.mv { font-family: var(--f-data); font-size: 11px; margin-left: 4px; }
-.mv.up { color: var(--good); } .mv.dn { color: var(--bad); }
-.badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
-.badge { font-family: var(--f-data); font-size: 10.5px; padding: 1px 6px; border-radius: 3px; background: var(--plate-2); color: var(--muted); }
-.badge.top { color: var(--gold); }
-.fresh { font-size: 12px; color: var(--muted); }
-#gate{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;background:radial-gradient(ellipse 60% 50% at 50% 110%,rgba(255,107,31,.35),transparent 70%),#141110}
-#gate[hidden]{display:none}
-.gatebox{width:100%;max-width:380px;text-align:center;display:flex;flex-direction:column;gap:12px;background:#1d1816;border:1px solid #3a2c24;border-radius:12px;padding:28px 24px;color:#f4ece4}
-.gateico{width:44px;height:44px;margin:0 auto;color:#f1b64a}
-.gatek{font-family:'Big Shoulders Display',sans-serif;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#f1b64a;font-size:14px}
-.gateh{font-family:'Big Shoulders Display',sans-serif;font-weight:900;text-transform:uppercase;font-size:40px;line-height:1;margin:0}
-.gatep{color:#a8988c;margin:0;font-size:15px}
-#gatePw{font:inherit;font-size:17px;padding:12px 14px;border-radius:8px;border:1px solid #3a2c24;background:#141110;color:#f4ece4;text-align:center}
-#gatePw:focus{outline:2px solid #ff6b1f;outline-offset:1px}
-.gatem{min-height:20px;font-size:14px;color:#ff9a5c}
+@media (max-width: 640px) { #statusPill { display: none; } body[data-tab]:not([data-tab="slate"]) .meta, body[data-tab]:not([data-tab="slate"]) .sub.fresh { display: none; } }
+@media (max-width: 380px) { .wordmark { display: none; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-anvil" viewBox="0 0 32 32"><path fill="currentColor" d="M3 9h17c0 3.2 2.6 5.8 5.8 5.8H29v2.4h-4.2c-2.4 0-4.4 1.6-5 3.8H21l1.6 4H9.4l1.6-4h1.2c-.6-2.2-2.6-3.8-5-3.8H3z"/><path fill="currentColor" opacity=".55" d="M7 26h18v2H7z"/><path d="M12.5 6.6l-1-3.8M16.5 6.6l.5-4.4M20.6 7.2l2.6-3" fill="none" stroke-width="1.6" stroke-linecap="round" style="stroke: var(--gold, #f1b64a)"/></symbol>
-  <symbol id="i-flame" viewBox="0 0 24 24"><path fill="currentColor" d="M12.6 2.5c.5 3-1.3 4.6-2.9 6.3-1.5 1.6-2.9 3.2-2.9 5.8a5.2 5.2 0 0 0 10.4 0c0-1.8-.7-3.2-1.6-4.4-.2 1.4-1 2.4-2.1 2.7.9-3.4-.3-7.4-.9-10.4z"/></symbol>
-  <symbol id="i-ingot" viewBox="0 0 24 24"><path fill="currentColor" d="M6.5 8h11l3.5 9H3z"/><path fill="currentColor" opacity=".5" d="M8 10.5h8l.6 1.6H7.4z"/></symbol>
+  <symbol id="i-flame" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5.5" fill="currentColor"/></symbol>
+  <symbol id="i-ingot" viewBox="0 0 24 24"><path fill="currentColor" d="M12 5.5l5.5 6.5-5.5 6.5-5.5-6.5z"/></symbol>
   <symbol id="i-hammer" viewBox="0 0 24 24"><path fill="currentColor" d="M13.4 3.2 20.8 10.6l-2.6 2.6-2.1-2.1-9.3 9.3a1.6 1.6 0 0 1-2.3-2.3l9.3-9.3-2.1-2.1z"/></symbol>
 </svg>
+<div class="top">
+  <header class="appbar">
+    <button type="button" class="brand" data-go="slate" aria-label="FORGE: slate brief"><svg class="ico" aria-hidden="true"><use href="#i-anvil"/></svg><span class="wordmark">Forge</span></button>
+    <nav class="sports" id="sportPicker" aria-label="Sport"><button type="button" data-sport="NBA" aria-pressed="false">NBA</button><button type="button" data-sport="NFL" aria-pressed="true">NFL</button></nav>
+    <span class="spacer"></span>
+    <span class="stamp" id="stamp"></span>
+    <span id="statusPill" class="pill"><span class="dot"></span><span id="statusText">Loading</span></span>
+    <button type="button" class="iconbtn" id="refreshBtn" title="Load the newest FORGE site and data" aria-label="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
+  </header>
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" id="tab-slate" aria-selected="true" data-p="slate" data-grp="how alerts">Slate<b class="badge" id="ovlBadge" hidden></b></button>
+    <button class="tab" role="tab" id="tab-players" aria-selected="false" data-p="players">Players</button>
+    <button class="tab" role="tab" id="tab-props" aria-selected="false" data-p="props">Props</button>
+    <button class="tab" role="tab" id="tab-builder" aria-selected="false" data-p="builder">Build</button>
+    <button class="tab" role="tab" id="tab-sims" aria-selected="false" data-p="sims">Sims</button>
+    <button class="tab" role="tab" id="tab-dk" aria-selected="false" data-p="dk">Entries</button>
+    <button class="tab" role="tab" id="tab-record" aria-selected="false" data-p="record" data-grp="lineups past">Results</button>
+  </nav>
+</div>
 <div class="wrap">
-  <div class="bar">
-    <div class="mark"><svg class="ico anvil" aria-hidden="true"><use href="#i-anvil"/></svg><h1>FORG<span>E</span></h1><small>DFS Lab</small></div>
-    <div class="row"><button type="button" class="btn small" id="refreshBtn" title="Load the newest FORGE site and data" aria-label="Refresh">↻<span class="rtxt"> Refresh</span></button><span id="statusPill" class="pill"><span class="dot"></span><span id="statusText">Loading</span></span></div>
-  </div>
-
-  <div class="newver" id="newVer" hidden>A newer FORGE is ready. <button type="button" class="btn small primary" id="newVerBtn">Refresh now</button></div>
-  <nav class="sports" id="sportPicker" aria-label="Sport"><button type="button" data-sport="NFL" aria-pressed="true">NFL</button><button type="button" data-sport="NBA" aria-pressed="false">NBA</button></nav>
-  <nav class="slates" id="slatePicker" aria-label="Games" hidden></nav>
-  <section class="plate" aria-label="Game"><div class="glow" aria-hidden="true"></div>
+  <div class="newver" id="newVer" hidden>A newer version of FORGE is ready. <button type="button" class="btn small primary" id="newVerBtn">Refresh now</button></div>
+  <nav id="slatePicker" aria-label="Slates" hidden></nav>
+  <section class="plate" aria-label="Slate">
     <div>
-      <div class="matchup"><div class="team" id="tAway">—</div><div class="at" id="tAt">@</div><div class="team" id="tHome">—</div></div>
+      <div class="eyebrow" id="plEye"></div>
+      <h1 class="matchup"><span class="team" id="tAway">—</span><span class="at" id="tAt">@</span><span class="team" id="tHome">—</span></h1>
       <div class="sub" id="kick">—</div><div class="sub fresh" id="fresh"></div>
+      <button type="button" class="btn small chg" data-go="slate">Change slate</button>
     </div>
     <div class="meta">
       <div class="stat"><b id="mSpread">—</b><span id="lSpread">Spread</span></div>
@@ -423,26 +548,30 @@ td.lev { color: var(--steel); }
   </section>
 
   <div class="rpbanner" id="rpBanner" hidden></div>
-  <nav class="tabs" role="tablist" aria-label="Sections">
-    <button class="tab" role="tab" id="tab-players" aria-selected="true" data-p="players"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-4 3.5-6 7-6s6.2 2 7 6"/></svg><span class="kicker">The ore</span><span class="tlong">Players</span><span class="tshort">Players</span></button>
-    <button class="tab" role="tab" id="tab-builder" aria-selected="false" data-p="builder"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4l6 6-3 3-6-6zM11 7l-7 7 3 3 7-7M4 20h8"/></svg><span class="kicker">The anvil</span><span class="tlong">Builder</span><span class="tshort">Build</span></button>
-    <button class="tab" role="tab" id="tab-dk" aria-selected="false" data-p="dk"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7 9l5-5 5 5M5 15v4h14v-4"/></svg><span class="kicker">Out of the fire</span><span class="tlong">To DraftKings</span><span class="tshort">DraftKings</span></button>
-    <button class="tab" role="tab" id="tab-record" aria-selected="false" data-p="record" data-grp="past"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span class="kicker">Proof of steel</span><span class="tlong">Results</span><span class="tshort">Results</span></button>
-    <button class="tab tmore" role="tab" id="tab-lineups" aria-selected="false" data-p="lineups"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><span class="kicker">Forged</span><span class="tlong">Lineups</span><span class="tshort">Lineups</span></button>
-    <button class="tab tmore" role="tab" id="tab-props" aria-selected="false" data-p="props"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19h16M7 16V9M12 16V5M17 16v-4"/></svg><span class="kicker">Side bets</span><span class="tlong">Props &amp; odds</span><span class="tshort">Props</span></button>
-    <button class="tab tmore" role="tab" id="tab-alerts" aria-selected="false" data-p="alerts"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg><span class="kicker">Hot iron</span><span class="tlong">Alerts<b class="badge" id="ovlBadge" hidden></b></span><span class="tshort">Alerts<b class="badge" id="ovlBadgeS" hidden></b></span></button>
-    <button class="tab tmore" role="tab" id="tab-how" aria-selected="false" data-p="how"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/></svg><span class="kicker">The process</span><span class="tlong">How it works</span><span class="tshort">How</span></button>
-    <button class="tab tmorebtn" type="button" id="tab-more" aria-haspopup="dialog" aria-expanded="false"><svg class="tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg><span class="tshort">More<b class="badge" id="ovlBadgeM" hidden></b></span></button>
-  </nav>
-  <div id="moreSheet" hidden><div class="sheetbg" data-close="1"></div><div class="sheet" role="dialog" aria-label="More sections"><div class="sheeth">More</div><button type="button" data-go="lineups"><b>FORGE lineups</b><small>How FORGE played the slate (after lock)</small></button><button type="button" data-go="props"><b>Props &amp; odds</b><small>Stat leaders and betting-side numbers</small></button><button type="button" data-go="alerts"><b>Overlay alerts <span class="badge" id="ovlBadgeX" hidden></span></b><small>Contests running under their prize pool</small></button><button type="button" data-go="how"><b>How it works</b><small>The process behind FORGE Pick</small></button><button type="button" class="sheetx" data-close="1">Close</button></div></div>
 
-  <section class="panel" id="p-players">
+  <section class="panel" id="p-slate">
     <div class="start" id="startCard" hidden><h3>Start here <button class="btn small" id="startX" type="button">Got it</button></h3><ol>
-      <li><b>Pick a game</b> at the top: NFL or NBA, then a Classic slate or a Showdown.</li>
-      <li><b>Build</b> and press <b>Forge</b>. It is already set to FORGE Pick, the same settings FORGE enters with. No changes needed.</li>
-      <li><b>DraftKings</b> walks you through getting the lineups into your contests, from your phone.</li>
-      <li><b>Results</b> shows how FORGE has done on real contests, and lets you replay past contests.</li></ol>
+      <li><b>Pick a slate</b> at the top: NBA or NFL, then a Classic slate, a Showdown or Tiers.</li>
+      <li><b>Build</b> and press <b>Forge lineups</b>. It starts on FORGE Pick, the settings FORGE enters with.</li>
+      <li><b>Entries</b> walks you through getting the lineups into your DraftKings contests, from your phone.</li>
+      <li><b>Results</b> shows how FORGE has done on real contests and lets you replay past contests.</li></ol>
+    </div>
+    <div class="brief">
+      <div>
+        <div class="actions"><button type="button" class="btn" data-go="players">See players</button><button type="button" class="btn" data-go="props">Props</button><button type="button" class="btn primary" data-go="builder">Build lineups</button></div>
+        <section class="pnl"><div class="pnl-h"><h2>Games</h2><span class="stamp" id="brGamesStamp"></span></div><div class="pnl-b"><div class="games" id="brGames"></div><p class="note" id="brGamesNote" style="margin:10px 0 0"></p></div></section>
+        <section class="pnl"><div class="pnl-h"><h2 id="brTopTitle">Top projections</h2><button type="button" class="linkbtn" data-go="players">All players</button></div><div class="tbl-wrap"><table id="brTop"><thead></thead><tbody></tbody></table></div></section>
       </div>
+      <aside>
+        <section class="pnl"><div class="pnl-h"><h2>Player status</h2><span class="stamp">DraftKings salary file</span></div><div class="pnl-b stack" id="brStatus"></div></section>
+        <section class="prop hot" id="brHot"></section>
+        <div class="nfl-only"><section class="ovl" id="ovl" aria-live="polite"><p class="note">No overlay check loaded yet.</p></section></div>
+        <section class="pnl"><div class="pnl-h"><h2>How these numbers are made</h2></div><div class="pnl-b stack"><p class="note" id="brModel" style="margin:0"></p><div><button type="button" class="btn small" data-go="how">How FORGE works</button></div></div></section>
+      </aside>
+    </div>
+  </section>
+
+  <section class="panel" id="p-players" hidden>
     <div class="cl-only">
       <details class="about"><summary>About these numbers</summary>
       <p class="lede">Classic main slate: 9 players, $50,000. Projections come from DraftKings and FanDuel player props converted to DraftKings points. Players without enough prop lines get a salary-based number and are tagged. Games with no lines yet have no projections.</p>
@@ -461,7 +590,7 @@ td.lev { color: var(--steel); }
     <div class="sd-only">
     <details class="about"><summary>About these numbers</summary>
     <p class="lede">Projections come from the betting markets: DraftKings and FanDuel player props, converted to DraftKings Showdown points. Very cheap players get pulled toward what players at their price actually score. <b>Top scorer</b> is the chance, across 100,000 simulated games, that the player is the game's highest scorer, which makes him the ideal captain.</p>
-    <div class="legend"><span><svg class="ico flame" aria-hidden="true"><use href="#i-flame"/></svg> Hottest captains: top 3 top-scorer chances</span><span><svg class="ico ingot" aria-hidden="true"><use href="#i-ingot"/></svg> Gold value: top 3 points per $1K (5+ point projections)</span></div>
+    <div class="legend"><span><svg class="ico flame" aria-hidden="true"><use href="#i-flame"/></svg> FORGE's 3 likeliest captains (top-scorer chance)</span><span><svg class="ico ingot" aria-hidden="true"><use href="#i-ingot"/></svg> Best value: top 3 points per $1K (5+ point projections)</span></div>
     <p class="note" id="simLegend" hidden>From 2,000 simulated games (the same ones the Builder uses). <b>Floor / Ceil</b>: his 15th and 85th percentile score. <b>Opt CPT / Opt FLX</b>: how often he is in the single best legal lineup of a simulated game, as captain or flex. <b>Lev</b> (leverage) <span class="tag steel">untested</span>: optimal rate minus projected ownership (captain + flex, in points of %); positive = the best lineups use him more than the field will.</p>
     </details>
     <div class="seg pcols" id="pcols" role="group" aria-label="Columns"><button type="button" data-v="proj" aria-pressed="true">Projections</button><button type="button" data-v="own" aria-pressed="false">Ownership</button><button type="button" data-v="sim" aria-pressed="false">Simulation</button></div>
@@ -480,6 +609,7 @@ td.lev { color: var(--steel); }
   </section>
 
   <section class="panel" id="p-lineups" hidden>
+    <div class="seg subnav" role="group" aria-label="Results"><button type="button" data-go="record" aria-pressed="false">Live record</button><button type="button" data-go="lineups" aria-pressed="true">How FORGE played</button><button type="button" data-go="past" aria-pressed="false">Past contests</button></div>
     <p class="note nba-only">FORGE's own NBA lineups are not shown on the site yet. Use Build: it starts on FORGE's default settings.</p>
     <div class="cl-only" id="cForge"></div>
     <div id="privBox"></div>
@@ -537,7 +667,7 @@ td.lev { color: var(--steel); }
         <div class="toolbar"><div class="seg" id="cbPos"></div><input type="search" id="cbSearch" placeholder="Search players" aria-label="Search players"><button class="btn small" id="cReset" type="button">Reset</button><span class="note">Lock = in every lineup. Out = never used.</span></div>
         <div class="tbl-wrap"><table id="cbtable"><thead><tr><th>Player</th><th>Pos</th><th class="n">Salary</th><th class="n">Proj</th><th>Lock</th><th>Out</th></tr></thead><tbody></tbody></table></div>
         <div id="cOut" hidden>
-          <div class="toolbar" style="margin-top:16px"><h3 style="font-size:22px">Fresh off the anvil</h3><button class="btn small" id="cCopy" type="button">Copy for DraftKings</button><button class="btn small" id="cDl" type="button" hidden>Download CSV</button><button class="btn small primary" type="button" data-send="mine">Send to DraftKings →</button></div>
+          <div class="toolbar" style="margin-top:16px"><h3>Your lineups</h3><button class="btn small" id="cCopy" type="button">Copy for DraftKings</button><button class="btn small" id="cDl" type="button" hidden>Download CSV</button><button class="btn small primary" type="button" data-send="mine">Send to DraftKings →</button></div>
           <div class="flt" id="fltC"></div>
           <div class="expo" id="cExpo"></div>
           <div class="grid" id="cGrid"></div>
@@ -585,20 +715,13 @@ td.lev { color: var(--steel); }
         <div class="toolbar"><button class="btn small" id="resetProj" type="button">Reset projections</button><span class="note">CPT pool = only these can captain (none ticked = anyone). Lock = in every lineup. Out = never used.</span></div>
         <div class="tbl-wrap"><table id="btable"><thead><tr><th>Player</th><th>Pos</th><th class="n">Salary</th><th class="n">Proj</th><th title="Only these players can be captain">CPT pool</th><th>Lock</th><th>Out</th></tr></thead><tbody></tbody></table></div>
         <div id="bOut" hidden>
-          <div class="toolbar" style="margin-top:16px"><h3 style="font-size:22px">Fresh off the anvil</h3><button class="btn small" id="copyMine" type="button">Copy for DraftKings</button><button class="btn small" id="dlMine" type="button" hidden>Download CSV</button><button class="btn small primary" type="button" data-send="mine">Send to DraftKings →</button></div>
+          <div class="toolbar" style="margin-top:16px"><h3>Your lineups</h3><button class="btn small" id="copyMine" type="button">Copy for DraftKings</button><button class="btn small" id="dlMine" type="button" hidden>Download CSV</button><button class="btn small primary" type="button" data-send="mine">Send to DraftKings →</button></div>
           <div class="flt" id="fltMine"></div>
           <div class="expo" id="bExpo"></div>
           <details class="bdown" id="bBreak"><summary>Breakdown: captains, flex, team splits</summary><div id="bBreakBody"></div></details>
           <div id="bGrade"></div>
           <div class="grid" id="bGrid"></div>
         </div>
-        <section class="tester" id="tester" hidden>
-          <h3 style="font-size:22px;margin-top:20px">Test a lineup</h3>
-          <p class="note">Pick a captain and five FLEX (or tap "Test" on any lineup card). FORGE plays it in 2,000 simulated games against a simulated field of 3,000 lineups, using the projections in the table above.</p>
-          <div class="tpick" id="tPick"></div>
-          <div class="toolbar"><button type="button" class="btn primary small" id="tRun">Simulate this lineup</button><span class="status" id="tStatus" role="status"></span></div>
-          <div id="tOut"></div>
-        </section>
       </div>
     </div>
     </div>
@@ -614,7 +737,7 @@ td.lev { color: var(--steel); }
       <p class="note">Both rules start off (FORGE's NBA default since 10/22: highest projection, no forced stack). On the only graded night so far (10/21 main slate) projection-only lineups returned +335% vs +45% with the forced stack. One night is thin: all four rules are graded every night.</p>
       <div class="toolbar"><button type="button" class="btn primary" id="nbaRun">Forge NBA lineups</button><span class="status" id="nbaStatus" role="status"></span></div>
     </div>
-    <div id="nbaOut" hidden><div class="toolbar"><h3 style="font-size:22px">Fresh off the anvil</h3><button type="button" class="btn small" id="nbaCsv">Download for DraftKings</button></div><div class="expo" id="nbaExpo"></div><div class="grid" id="nbaGrid"></div></div>
+    <div id="nbaOut" hidden><div class="toolbar"><h3>Your lineups</h3><button type="button" class="btn small" id="nbaCsv">Download for DraftKings</button></div><div class="expo" id="nbaExpo"></div><div class="grid" id="nbaGrid"></div></div>
     </div>
     <div id="copyBox" hidden><p class="note">Copy didn't go through on this device. Select the text below and copy it.</p><textarea id="copyText" readonly></textarea></div>
   </section>
@@ -657,29 +780,48 @@ td.lev { color: var(--steel); }
   </section>
 
   <section class="panel" id="p-props" hidden>
-    <h3 class="subh">Props &amp; odds</h3>
-    <p class="lede">Betting-side numbers, kept apart from the DFS tools. FORGE's own chances come from player prop lines turned into simulated games; they are research, not picks.</p>
-    <div class="nba-only"><h3 class="subh2">Who leads the slate tonight</h3><div class="nbaleaders" id="nbaLeaders"><p class="note">No NBA slate loaded.</p></div></div>
-    <div class="nfl-only"><h3 class="subh2" id="nflLeadTitle">Who leads the game</h3><div class="nbaleaders" id="nflLeaders"><p class="note">No NFL slate loaded.</p></div>
-      <h3 class="subh2">Every posted player line</h3><p class="note">The main line for each prop and the chance of going over or under it, from the sportsbook prices with the bookmaker's margin removed. A line near 50/50 is the book saying it is a coin flip.</p>
-      <input id="nflLineQ" type="search" placeholder="Search a player" style="width:100%;max-width:320px;margin:4px 0 8px">
-      <h3 class="subh2">FORGE's prop paper record</h3><div id="propsRec"><p class="note">Loading…</p></div>
-      <h3 class="subh2">Where FORGE's own model disagrees with the book</h3>
-      <p class="note">FORGE's chance of going over each posted line from its own stat model (no prop prices used), next to the book's. <b>Research, not picks:</b> on 79 past games FORGE's numbers added information beyond the prices (backtest), but its disagreements did not make money there (+1% to +3%, inside the noise) and Week 6 did not confirm. A paper record starts this week. Known lean: FORGE's model sits on the under for catches and yards in general (it averaged 44-46% overs where 49-50% hit), so an under here is often that lean, not a read on the player. Touchdown props are left out here: FORGE's touchdown numbers swing too much on a few recent games and were clearly worse than the book's in the test.</p>
-      <div class="tbl-wrap"><table id="nflDis"><thead><tr><th>Player</th><th>Prop</th><th class="n">Line</th><th class="n">FORGE avg</th><th class="n">FORGE over</th><th class="n">Book over</th></tr></thead><tbody></tbody></table></div>
-      <h3 class="subh2">Every posted line, full list</h3>
-      <div class="tbl-wrap"><table id="nflLines"><thead><tr><th>Player</th><th>Prop</th><th class="n">Line</th><th class="n">Over</th><th class="n">Under</th><th class="n">FORGE sim over</th></tr></thead><tbody></tbody></table></div></div>
+    <p class="lede" id="propsLede">FORGE's numbers for the slate's player props, one category at a time. Betting-side research, kept apart from the DFS tools; not picks.</p>
+    <div class="props" id="propCards"></div>
+    <details class="more nba-only"><summary>Chance to lead the slate <small>20,000 simulated nights</small></summary><div class="mb"><div class="nbaleaders" id="nbaLeaders"><p class="note">No NBA slate loaded.</p></div></div></details>
+    <div class="nfl-only">
+      <details class="more"><summary><span id="nflLeadTitle">Who leads the game</span> <small>FORGE's stat simulation</small></summary><div class="mb"><div class="nbaleaders" id="nflLeaders"><p class="note">No NFL slate loaded.</p></div></div></details>
+      <details class="more"><summary>FORGE's prop paper record <small>every posted line, graded after the game</small></summary><div class="mb"><div id="propsRec"><p class="note">Loading…</p></div></div></details>
+      <details class="more"><summary>Where FORGE's own model disagrees with the book <small>research</small></summary><div class="mb"><p class="note">FORGE's chance of going over each posted line from its own stat model (no prop prices used), next to the book's. <b>Research, not picks:</b> on 79 past games FORGE's numbers added information beyond the prices (backtest), but its disagreements did not make money there (+1% to +3%, inside the noise) and Week 6 did not confirm. A paper record starts this week. Known lean: FORGE's model sits on the under for catches and yards in general (it averaged 44-46% overs where 49-50% hit), so an under here is often that lean, not a read on the player. Touchdown props are left out here: FORGE's touchdown numbers swing too much on a few recent games and were clearly worse than the book's in the test.</p>
+        <div class="tbl-wrap"><table id="nflDis"><thead><tr><th>Player</th><th>Prop</th><th class="n">Line</th><th class="n">FORGE avg</th><th class="n">FORGE over</th><th class="n">Book over</th></tr></thead><tbody></tbody></table></div></div></details>
+      <details class="more"><summary>Every posted player line <small>over and under chances, margin removed</small></summary><div class="mb"><p class="note">The main line for each prop and the chance of going over or under it, from the sportsbook prices with the bookmaker's margin removed. A line near 50/50 is the book saying it is a coin flip.</p>
+        <input id="nflLineQ" type="search" placeholder="Search a player" aria-label="Search a player" style="margin:4px 0 10px">
+        <div class="tbl-wrap"><table id="nflLines"><thead><tr><th>Player</th><th>Prop</th><th class="n">Line</th><th class="n">Over</th><th class="n">Under</th><th class="n">FORGE sim over</th></tr></thead><tbody></tbody></table></div></div></details>
+    </div>
     <p class="note betfoot">Not betting advice · 21+ · 1-800-GAMBLER</p>
   </section>
 
-  <section class="panel" id="p-alerts" hidden>
-    <h3 class="subh">Overlay alerts</h3>
-    <p class="lede">Guaranteed DraftKings contests on real NFL games that are running under their prize pool, checked about 2 hours, 1 hour and 15–25 minutes before every NFL lock. FORGE never enters contests for you.</p>
-    <section class="ovl" id="ovl" aria-live="polite"><p class="note">No overlay check loaded yet.</p></section>
+
+  <section class="panel" id="p-sims" hidden>
+    <div class="sd-only">
+      <p class="lede">Play lineups in FORGE's game simulation: 2,000 simulated games against a simulated field of 3,000 lineups drawn from FORGE's ownership forecast, paid on a 20-max prize curve. Simulation output is evidence, not a promise.</p>
+      <div class="brief">
+        <div>
+          <section class="pnl"><div class="pnl-h"><h2>Your lineups in the simulation</h2><button type="button" class="btn primary small" id="simRun">Simulate my lineups</button></div>
+            <div class="pnl-b"><div class="status" id="simStatus" role="status">Build lineups on the Build tab, then simulate them here.</div></div><div id="simOut"></div></section>
+          <section class="pnl" id="tester" hidden><div class="pnl-h"><h2>Test one lineup</h2></div><div class="pnl-b">
+            <p class="note" style="margin:0">Pick a captain and five FLEX (or tap <b>Test</b> on any lineup card). FORGE plays it in the same 2,000 simulated games, using the projections on the Build tab.</p>
+            <div class="tpick" id="tPick"></div>
+            <div class="toolbar"><button type="button" class="btn primary small" id="tRun">Simulate this lineup</button><span class="status" id="tStatus" role="status"></span></div>
+            <div id="tOut"></div></div></section>
+        </div>
+        <aside>
+          <section class="pnl"><div class="pnl-h"><h2>How far to trust it</h2><span class="stamp">backtest · 18 games × 4 seeds</span></div><div class="pnl-b">
+            <p class="note" style="margin:0 0 8px">Every legal lineup of 18 real 2026 Showdowns, put in the order FORGE's simulated payout ranks them, then checked against real points:</p>
+            <div class="trust"><div><span>First lineup that cashed</span><b>#1</b></div><div><span>First top-1% lineup (median)</span><b>#26</b></div><div><span>A top-1% lineup within 20</span><b>43% of runs</b></div><div><span>The real winner (median)</span><b>#2,532</b></div><div><span>The winner within 150</span><b>4% of runs</b></div></div>
+            <p class="note" style="margin:10px 0 0">The simulation is good at finding lineups that cash and reach the top 1%. It cannot single out the winner. Read the payout column as a ranking of solid lineups, not a prediction of 1st place.</p></div></section>
+        </aside>
+      </div>
+    </div>
+    <div class="nosd"><div class="pnl"><div class="empty-state"><h3>Simulation runs on NFL Showdowns</h3><p>FORGE's in-browser simulator scores Showdown lineups against a modeled field. It isn't built for NBA or Classic slates yet, so this tab has nothing to score here. Pick an NFL Showdown at the top to use it.</p></div></div></div>
   </section>
 
   <section class="panel" id="p-record" hidden>
-    <div class="seg subnav" role="group" aria-label="Results"><button type="button" data-go="record" aria-pressed="true">Live record</button><button type="button" data-go="past" aria-pressed="false">Past contests</button></div>
+    <div class="seg subnav" role="group" aria-label="Results"><button type="button" data-go="record" aria-pressed="true">Live record</button><button type="button" data-go="lineups" aria-pressed="false">How FORGE played</button><button type="button" data-go="past" aria-pressed="false">Past contests</button></div>
     <p class="note nba-only">No NBA slates graded yet: the results below are NFL.</p>
     <div class="tiles" id="recTiles"></div>
     <div id="ourBox"></div>
@@ -696,7 +838,7 @@ td.lev { color: var(--steel); }
   </section>
 
   <section class="panel" id="p-past" hidden>
-    <div class="seg subnav" role="group" aria-label="Results"><button type="button" data-go="record" aria-pressed="false">Live record</button><button type="button" data-go="past" aria-pressed="true">Past contests</button></div>
+    <div class="seg subnav" role="group" aria-label="Results"><button type="button" data-go="record" aria-pressed="false">Live record</button><button type="button" data-go="lineups" aria-pressed="false">How FORGE played</button><button type="button" data-go="past" aria-pressed="true">Past contests</button></div>
     <p class="note nba-only">Past contests are NFL Showdowns for now.</p>
     <h3 class="subh">Past contests</h3>
     <p class="lede">Every finished Showdown with FORGE's pre-game data: the projections, ownership forecast and simulated games it had before kickoff. Pick one, build in the Builder with any settings, and every lineup is graded against the real contest: actual points, finishing place, prize and the cash line.</p>
@@ -715,7 +857,7 @@ td.lev { color: var(--steel); }
     </div>
   </section>
 
-  <div id="gate" hidden><form id="gateForm" class="gatebox"><svg class="ico gateico" aria-hidden="true"><use href="#i-anvil"/></svg><div class="gatek">Invite only</div><h2 class="gateh">Enter the forge</h2><p class="gatep">Type the password you were sent. This device will remember it.</p><input id="gatePw" type="password" autocomplete="current-password" placeholder="Password" aria-label="Password"><button type="submit" class="btn primary">Unlock</button><div id="gateMsg" class="gatem" role="status"></div></form></div>
+  <div id="gate" hidden><form id="gateForm" class="gatebox"><div class="gatebrand"><svg class="ico" aria-hidden="true"><use href="#i-anvil"/></svg><span class="wordmark">Forge</span></div><div class="gatek">Invite only</div><h2 class="gateh">Sign in</h2><p class="gatep">Type the password you were sent. This device will remember it.</p><input id="gatePw" type="password" autocomplete="current-password" placeholder="Password" aria-label="Password"><button type="submit" class="btn primary">Unlock</button><div id="gateMsg" class="gatem" role="status"></div></form></div>
   <div id="emode" hidden role="dialog" aria-label="Entry mode">
     <div class="em-top"><button type="button" class="btn small" id="emClose" aria-label="Close">✕</button><div class="em-count" id="emCount"></div><button type="button" class="btn small" id="emWake" title="Keep the screen on">☀ On</button></div>
     <div class="em-contest" id="emTitle"></div>
@@ -725,7 +867,7 @@ td.lev { color: var(--steel); }
     <div class="em-nav"><button type="button" class="btn" id="emPrev">‹ Back</button><button type="button" class="btn primary" id="emNext">Entered · Next ›</button></div>
     <p class="em-tip">Tap a player when you've picked him in DraftKings. Long-press a name to copy it for DraftKings' search.</p>
   </div>
-  <footer id="foot"><svg class="ico" aria-hidden="true"><use href="#i-anvil"/></svg> Hammered out in the FORGE · private test site for friends · not affiliated with DraftKings · play within your means · <button type="button" class="linkbtn" id="ownerLink">Owner sign-in</button></footer>
+  <footer id="foot"><span>FORGE · private research site for invited players</span><span>Not affiliated with DraftKings</span><span>Play within your means · 21+ · 1-800-GAMBLER</span><button type="button" class="linkbtn" id="ownerLink">Owner sign-in</button></footer>
 </div>
 
 <script>
@@ -738,17 +880,15 @@ td.lev { color: var(--steel); }
 
   // tabs
   function show(p) {
+    if (p === 'alerts' || !document.getElementById('p-' + p)) p = 'slate';
+    document.body.dataset.tab = p;   // the slate picker shows on the Slate tab only; elsewhere the header carries a Change slate button   // 2026-10-28 redesign: overlay alerts live on the Slate brief
     $$('.tab[data-p]').forEach(t => t.setAttribute('aria-selected', String(t.dataset.p === p || (t.dataset.grp || '').split(' ').includes(p))));
-    const sec = ['lineups', 'props', 'alerts', 'how'].includes(p); $('#tab-more').setAttribute('aria-selected', String(sec));
     $$('.panel').forEach(x => x.hidden = x.id !== 'p-' + p); $$('.subnav button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.go === p)));
-    LS.set('forge_tab', p); if (p === 'past' && typeof renderPast === 'function') renderPast();
+    LS.set('forge_tab', p); if (p === 'past' && typeof renderPast === 'function') renderPast(); if (p === 'sims' && typeof simsReady === 'function') simsReady();
   }
-  const toTop = () => { if (matchMedia('(max-width: 640px)').matches) window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const toTop = () => { if (window.scrollY > 200) window.scrollTo({ top: 0, behavior: 'smooth' }); };
   $$('.tab[data-p]').forEach(t => t.addEventListener('click', () => { show(t.dataset.p); toTop(); }));
-  const sheet = $('#moreSheet'), sheetOpen = o => { sheet.hidden = !o; $('#tab-more').setAttribute('aria-expanded', String(o)); };
-  $('#tab-more').addEventListener('click', () => sheetOpen(sheet.hidden));
-  document.addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g) { show(g.dataset.go); sheetOpen(false); toTop(); return; } if (e.target.closest('[data-close]')) sheetOpen(false); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !sheet.hidden) sheetOpen(false); });
+  document.addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g) { show(g.dataset.go); window.scrollTo({ top: 0, behavior: 'smooth' }); } });
 
   const fail = e => { $('#statusText').textContent = 'No slate data'; $('#ptable tbody').innerHTML = '<tr><td colspan="8">The slate data could not be loaded (' + e.message + ').</td></tr>'; };
   // Data: public site = AES-GCM files encrypted with a key derived from the friends' password (PBKDF2-SHA256, one salt per publish);
@@ -789,14 +929,15 @@ td.lev { color: var(--steel); }
   const sportOf = x => (x && x.kind && String(x.kind).startsWith('nba')) ? 'NBA' : 'NFL';
   function renderSports() { $$('#sportPicker button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sport === SPORT))); }
   $$('#sportPicker button').forEach(b => b.onclick = () => { if (SPORT === b.dataset.sport) return; SPORT = b.dataset.sport; LS.set('forge_sport', SPORT); renderSports();
-    const d = defaultSlate(); if (d && sportOf(d) === SPORT) loadSlate(d.id); else { renderPicker(); document.body.classList.toggle('nba', SPORT === 'NBA'); if (SPORT === 'NBA') { $('#nbaLeaders').innerHTML = '<p class="note">No NBA slate published yet.</p>'; $('#nbaCount').textContent = 'No NBA slate published yet.'; } } });
+    const d = defaultSlate(); if (d && sportOf(d) === SPORT) loadSlate(d.id); else { renderPicker(); document.body.classList.toggle('nba', SPORT === 'NBA'); if (SPORT === 'NBA') { $('#propCards').innerHTML = ''; $('#nbaLeaders').innerHTML = '<p class="note">No NBA slate published yet.</p>'; $('#nbaCount').textContent = 'No NBA slate published yet.'; } } });
   function active(x) { if (x.status === 'complete') return false; return Date.now() < new Date(x.kickoff_utc).getTime() + (x.kind === 'classic' || String(x.kind).includes('tiers') || x.kind === 'nba_classic' ? 12 : 4.5) * 3600e3; }   // live window: Showdown 4.5 h after kickoff, Classic main slate 12 h
   function defaultSlate() { const k = x => new Date(x.kickoff_utc).getTime(), S = IDX.filter(x => sportOf(x) === SPORT).sort((a, b) => k(a) - k(b)), soon = S.filter(x => active(x) && k(x) > Date.now()), up = S.filter(active);   // next slate that has not locked yet, then a live one
     return (soon[0] || up[up.length - 1] || S[S.length - 1] || IDX[IDX.length - 1]); }
   async function loadSlate(id) {
     CUR = id; renderPicker(); $('#statusText').textContent = 'Loading';
     try { const d = await getJSON(id); const ob = await ownerBuilds(id); if (ob) { d.builds = ob; d.owner = true; } else d.builds = d.builds || {};
-      document.body.classList.toggle('owner', !!ob); init(d, IDX.find(x => x.id === id)); LS.set('forge_slate', id); renderOwnerLink(); } catch (e) { fail(e); }
+      document.body.classList.toggle('owner', !!ob); init(d, IDX.find(x => x.id === id)); LS.set('forge_slate', id); renderOwnerLink(); document.body.dataset.slate = id;
+      try { renderBrief(); renderPropCards(); simsReady(); } catch (e) { console.error(e); } } catch (e) { fail(e); }
   }
   async function start() {
     IDX = (await getJSON('index')).slates || []; if (!IDX.length) throw new Error('no slates published');
@@ -810,7 +951,7 @@ td.lev { color: var(--steel); }
     let O; try { O = await getJSON('overlays'); } catch (e) { return; }
     const el = $('#ovl'), ago = Math.round((Date.now() - new Date(O.checked_utc).getTime()) / 60e3), ALL = (O.overlays || []).map(o => ({ ...o, mins: Math.round((new Date(o.locks_utc).getTime() - Date.now()) / 60e3) })).filter(o => o.mins > 0);
     const isMad = o => o.madden || /madden/i.test(o.name), L = ALL.filter(o => !isMad(o)), M = ALL.filter(isMad);   // Madden Stream = DK contests on simulated video-game NFL games (FORGE has no projections for them)
-    const setB = n => ['#ovlBadge', '#ovlBadgeS', '#ovlBadgeM', '#ovlBadgeX'].forEach(s => { const b = $(s); if (b) { b.hidden = !n; b.textContent = n; } });
+    const setB = n => ['#ovlBadge'].forEach(s => { const b = $(s); if (b) { b.hidden = !n; b.textContent = n; } });
     if (ago > 240 && !ALL.length) { setB(0); el.classList.remove('hot'); el.innerHTML = '<p class="note">No overlay check in the last 4 hours. Checks run every 10 minutes in the hours before NFL locks.</p>'; return; }
     setB(L.length);
     el.hidden = false; el.classList.toggle('hot', L.length > 0); el.classList.toggle('quiet', !L.length); const usd = v => '$' + (v >= 100 ? Math.round(v).toLocaleString('en-US') : v.toFixed(2));
@@ -832,7 +973,7 @@ td.lev { color: var(--steel); }
         .catch(() => (silent ? Promise.reject() : ownerTry(pw).then(o => { OPW = pw; LS.set('forge_owner', pw); return tryPw(o.pw, false); }))
         .catch(() => { g.hidden = false; if (!silent) { m.textContent = 'That password is not right.'; i.select(); } })); };
     const saved = LS.get('forge_pw'); if (saved) tryPw(saved, true); else { g.hidden = false; setTimeout(() => i.focus(), 50); }
-    f.addEventListener('submit', ev => { ev.preventDefault(); m.textContent = 'Heating the forge…'; tryPw(i.value.trim(), false); });
+    f.addEventListener('submit', ev => { ev.preventDefault(); m.textContent = 'Building…'; tryPw(i.value.trim(), false); });
   }
   function renderOwnerLink() { const b = $('#ownerLink'); if (b) b.textContent = OPW ? 'Owner: signed in · sign out' : 'Owner sign-in'; }
   $('#ownerLink').addEventListener('click', async () => {
@@ -844,6 +985,129 @@ td.lev { color: var(--steel); }
   fetch('data/index.enc.json', { cache: 'no-cache' }).then(r => { if (!r.ok) throw new Error('plain'); return r.json(); }).then(enc => { ENC = true; gate(enc); })
     .catch(() => { ENC = false; start().catch(fail); });
 
+  // ---- 2026-10-28 redesign: Slate brief, Props by category, Sims. Read-only views of the slate data; no builder logic here. ----
+  const isOutP = p => /^(OUT|O|IR|INJ|D|SUSP)$/i.test(String((p && p.status) || '').trim());
+  const isQP = p => /^(Q|GTD|DTD)$/i.test(String((p && p.status) || '').trim());
+  const utcD = u => { if (!u) return null; const d = new Date(String(u).replace(' UTC', 'Z').replace(' ', 'T')); return isNaN(d) ? null : d; };
+  const tShort = d => d ? d.toLocaleString([], { hour: 'numeric', minute: '2-digit' }) : '';
+  const pct0 = v => v == null ? '—' : Math.round(100 * v) + '%';
+  const PLAB = { passyds: 'passing yards', passtd: 'passing TDs', int: 'interceptions', rushyds: 'rushing yards', recyds: 'receiving yards', rec: 'receptions', kpts: 'kicking points' };
+  function slateKind(s) { const k = String((s && s.kind) || ''); return k.includes('tiers') ? 'Tiers' : k.includes('showdown') ? 'Showdown' : (k === 'classic' || k === 'nba_classic') ? 'Classic' : (s && s.game) ? 'Showdown' : 'Classic'; }
+  function slateSport(s) { return sportOf(s) === 'NBA' ? 'NBA' : (s && s.sport) || 'NFL'; }
+  function playable() { return (D.players || []).filter(p => p.proj != null && p.source !== 'dk average' && p.source !== 'none' && !isOutP(p)); }
+  function pSub(p) { return [p.team, p.rpos || p.pos, p.game].filter(Boolean).join(' · '); }
+  function hotCalls() {     // every posted prop or FORGE probability at 70% or better (rounded as shown), OUT players left out
+    const R = [], r = v => Math.round(100 * v);
+    (D.players || []).forEach(p => { if (isOutP(p)) return;
+      if (p.dd != null && r(p.dd) >= 70) R.push({ p, lab: 'Double-double', v: p.dd, src: 'FORGE' });
+      if (p.td != null && r(p.td) >= 70) R.push({ p, lab: 'Triple-double', v: p.td, src: 'FORGE' });
+      Object.entries(p.lines || {}).forEach(([k, v]) => { if (!Array.isArray(v) || v[1] == null) return;
+        if (r(v[1]) >= 70) R.push({ p, lab: `Over ${v[0]} ${PLAB[k] || k}`, v: v[1], src: 'book' }); else if (r(1 - v[1]) >= 70) R.push({ p, lab: `Under ${v[0]} ${PLAB[k] || k}`, v: 1 - v[1], src: 'book' }); });
+      if (p.p_td != null && r(p.p_td) >= 70) R.push({ p, lab: 'Anytime touchdown', v: p.p_td, src: 'book' }); });
+    return R.sort((a, b) => b.v - a.v);
+  }
+  function propCard(title, unit, rows, opt) {      // rows: [{name, sub, val, ctx, bar}]
+    opt = opt || {}; const body = rows.length
+      ? `<ol>${rows.map((x, i) => `<li class="${x.bar != null ? 'wbar' : ''}"><span class="rk">${i + 1}</span><span class="who2"><b>${esc(x.name)}</b><span>${esc(x.sub || '')}</span></span><span class="val">${x.val}${x.ctx ? `<small>${x.ctx}</small>` : ''}</span>${x.bar != null ? `<span class="pbar" aria-hidden="true"><i style="width:${Math.round(100 * Math.min(1, x.bar))}%"></i></span>` : ''}</li>`).join('')}</ol>`
+      : `<p class="empty">${opt.empty || 'Nothing posted for this category yet.'}</p>`;
+    return `<section class="prop${opt.hot ? ' hot' : ''}"><div class="prop-h"><h3>${title}</h3><span>${unit}</span></div>${body}${opt.foot ? `<div class="prop-f">${opt.foot}</div>` : ''}</section>`;
+  }
+  function hotCard(limit) {
+    const H = hotCalls(), nba = slateSport(D.slate) === 'NBA', sd = slateKind(D.slate) === 'Showdown';
+    return propCard('70%+ calls', 'chance', H.slice(0, limit || 8).map(x => ({ name: x.p.name, sub: x.lab + ' · ' + (x.p.team || ''), val: pct0(x.v), bar: x.v })), {
+      hot: true, empty: `No call reaches 70% on this ${sd ? 'game' : 'slate'}.`,
+      foot: nba ? 'Double- and triple-double chances from FORGE\'s NBA model (FanDuel lines, 20,000 simulated nights; v0, unproven). Not graded yet.' : 'The sportsbooks\' own chances with the bookmaker\'s margin removed.' });
+  }
+  function leadFoot(key, scope) { const L = (D.leaders || {})[key]; if (!L || !L.length || L[0].p_lead == null || L[0].p_lead >= 0.999) return ''; const r = L[0]; return `Most likely to lead ${scope}: ${esc(r.name || r.team)} ${pct0(r.p_lead)}`; }
+  function renderPropCards() {
+    const el = $('#propCards'); if (!el || !D) return; const s = D.slate, nba = slateSport(s) === 'NBA', kind = slateKind(s), scope = kind === 'Showdown' ? 'the game' : 'the slate';
+    const pool = playable(), top = (k, f) => pool.filter(p => (f ? f(p) : p[k]) != null).sort((a, b) => (f ? f(b) : b[k]) - (f ? f(a) : a[k])).slice(0, 5);
+    const dk = propCard('Top projected DraftKings scorers', 'DK pts', top('proj').map(p => ({ name: p.name, sub: pSub(p), val: fmt(p.proj), ctx: p.sal ? money(p.sal) : '' })), { empty: 'No projections for this slate yet.', foot: leadFoot('dk', scope) });
+    if (nba) {
+      const hasStats = pool.some(p => p.pts != null);
+      const st = (title, unit, k, lineK, lk) => propCard(title, unit, top(k).map(p => ({ name: p.name, sub: pSub(p), val: fmt(p[k]), ctx: lineK && p.lines && p.lines[lineK] != null ? 'line ' + p.lines[lineK] : '' })), { foot: leadFoot(lk || k, scope), empty: 'No lines posted for this stat tonight.' });
+      const pra = p => (p.pts == null || p.reb == null || p.ast == null) ? null : p.pts + p.reb + p.ast;
+      const praC = propCard('Points + rebounds + assists', 'PRA', top(null, pra).map(p => ({ name: p.name, sub: pSub(p), val: fmt(pra(p)), ctx: `${fmt(p.pts)} · ${fmt(p.reb)} · ${fmt(p.ast)}` })), { foot: leadFoot('pra', scope) });
+      const sb = p => (p.stl == null && p.blk == null) ? null : (p.stl || 0) + (p.blk || 0);
+      const sbC = propCard('Steals + blocks', 'STL+BLK', top(null, sb).map(p => ({ name: p.name, sub: pSub(p), val: fmt(sb(p)) })), { empty: 'FanDuel has not posted steals or blocks lines tonight, so FORGE has no number for them.' });
+      el.innerHTML = hasStats ? [dk, hotCard(), praC, st('Points', 'PTS', 'pts', 'pts'), st('Rebounds', 'REB', 'reb', 'reb'), st('Assists', 'AST', 'ast', 'ast'), st('Made threes', '3PM', 'tpm', 'tpm'), sbC].join('')
+        : dk + `<section class="prop"><div class="prop-h"><h3>Stat props</h3><span>${kind}</span></div><p class="empty">This ${kind} slate carries projections only. The stat categories (points, rebounds, assists, 70%+ calls) are on the Classic slate for the same night.</p></section>`;
+      $('#propsLede').textContent = 'FORGE\'s NBA numbers for tonight, one category at a time: the average each player projects for in FORGE\'s model, with FanDuel\'s posted line underneath. Research, not picks.';
+    } else {
+      const L = D.leaders || {}, byP = Object.fromEntries((D.players || []).map(p => [p.name, p]));
+      const lc = (title, unit, k) => { const R = (L[k] || []).filter(r => !isOutP(byP[r.name])).slice().sort((a, b) => b.mean - a.mean).slice(0, 5);
+        return propCard(title, unit, R.map(r => { const p = byP[r.name] || {}, ln = (p.lines || {})[k]; return { name: r.name, sub: pSub(p) || r.team, val: fmt(r.mean), ctx: Array.isArray(ln) ? `line ${ln[0]} · over ${pct0(ln[1])}` : '' }; }), { foot: leadFoot(k, scope), empty: 'No lines posted for this stat yet.' }); };
+      const td = (L.td || []).filter(r => !isOutP(byP[r.name])).slice(0, 5);
+      const tdC = propCard('Anytime touchdown', 'chance', td.map(r => ({ name: r.name, sub: pSub(byP[r.name] || {}) || r.team, val: pct0(r.p), bar: r.p })), { empty: 'No touchdown prices posted yet.', foot: 'The sportsbooks\' chance with the margin removed.' });
+      el.innerHTML = [dk, hotCard(), lc('Passing yards', 'YDS', 'passyds'), lc('Rushing yards', 'YDS', 'rushyds'), lc('Receiving yards', 'YDS', 'recyds'), lc('Receptions', 'REC', 'rec'), tdC].join('');
+      $('#propsLede').textContent = 'FORGE\'s numbers for this ' + (kind === 'Showdown' ? 'game\'s' : 'slate\'s') + ' player props, one category at a time: each player\'s average in FORGE\'s stat simulation, with the posted line and the book\'s over chance underneath. Research, not picks.';
+    }
+  }
+  function renderBrief() {
+    if (!D || !D.slate) return; const s = D.slate, meta = IDX.find(x => x.id === CUR) || {}, sport = slateSport(s), kind = slateKind(s), nba = sport === 'NBA';
+    const ko = new Date(s.kickoff_utc || meta.kickoff_utc || NaN), built = [utcD(s.built_utc), utcD(s.refreshed_utc)].filter(Boolean).sort((a, b) => b - a)[0];
+    $('#plEye').textContent = [isNaN(ko) ? '' : ko.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' }), `DraftKings ${sport} ${kind}`].filter(Boolean).join(' · ');
+    $('#stamp').textContent = built ? 'Data ' + tShort(built) : '';
+    // games
+    let G = [];
+    if (nba) { const st = {}; (D.players || []).forEach(p => { const d = p.start ? new Date(p.start) : null; if (d && !isNaN(d) && (!st[p.game] || d < st[p.game])) st[p.game] = d; });
+      G = (s.game_list || []).map(g => { const [a, hm] = g.split('@'), gl = (D.game_lines || {})[g] || {}; return { a, h: hm, t: st[g], total: gl.total, sp: gl.home_spread }; }); }
+    else if (kind === 'Classic') G = Object.entries(D.lines || {}).map(([g, x]) => ({ a: x.away || g.split('@')[0], h: x.home || g.split('@')[1], total: x.total, sp: x.spread_home }));
+    else G = [{ a: s.away, h: s.home, t: isNaN(ko) ? null : ko, total: s.total, sp: s.spread_home, ko: s.kickoff }];
+    G.sort((x, y) => ((x.t ? +x.t : 0) - (y.t ? +y.t : 0)) || String(x.a).localeCompare(String(y.a)));
+    const T = G.map(g => g.total).filter(v => v != null), lo = Math.min(...T), hi = Math.max(...T);
+    const fav = g => g.sp == null ? '' : g.sp === 0 ? 'Pick' : g.sp < 0 ? `${g.h} −${-g.sp}` : `${g.a} −${g.sp}`;
+    $('#brGames').innerHTML = G.length ? G.map(g => `<div class="gm"><div class="gm-t"><span>${esc(g.a)}</span><i>@</i><span>${esc(g.h)}</span></div><div class="gm-m"><span>${g.t ? tShort(g.t) : (g.ko ? esc(g.ko.split(' ').slice(1).join(' ')) : '')}</span><span>O/U <b>${g.total == null ? '—' : fmt(g.total, 1)}</b></span><span>${fav(g)}</span></div>${g.total != null && T.length > 1 ? `<div class="gbar" aria-hidden="true"><i class="${g.total === hi ? 'hi' : ''}" style="width:${hi > lo ? Math.round(12 + 88 * (g.total - lo) / (hi - lo)) : 100}%"></i></div>` : ''}</div>`).join('')
+      : '<p class="note">No game lines on this slate yet.</p>';
+    const top2 = G.filter(g => g.total != null && g.total === hi).map(g => g.a + '@' + g.h);
+    $('#brGamesNote').textContent = T.length > 1 ? `Bar = game total against the slate's range (${fmt(lo, 1)} to ${fmt(hi, 1)}). Highest total: ${top2.join(', ')}, ${fmt(hi, 1)}.` + (G.length > T.length ? ` ${G.length - T.length} game${G.length - T.length > 1 ? 's have' : ' has'} no lines yet.` : '') : (G.length && !T.length ? 'No game totals posted yet.' : '');
+    $('#brGamesStamp').innerHTML = G.length ? `${G.length} game${G.length > 1 ? 's' : ''}` : '';
+    // top projections
+    const pool = playable().sort((a, b) => b.proj - a.proj).slice(0, 8), ti = kind === 'Tiers', sd = !nba && kind === 'Showdown';
+    const cols = nba ? (ti ? [['Tier', p => esc(p.pos)], ['Proj', p => `<b>${fmt(p.proj)}</b>`], ['DK avg', p => fmt(p.dk_avg)]] : [['Salary', p => money(p.sal)], ['Proj', p => `<b>${fmt(p.proj)}</b>`], ['Value', p => fmt(p.proj / (p.sal / 1000), 2)], ['Pts', p => fmt(p.pts)], ['Reb', p => fmt(p.reb)], ['Ast', p => fmt(p.ast)]])
+      : sd ? [['Salary', p => money(p.sal)], ['Proj', p => `<b>${fmt(p.proj)}</b>`], ['Pts/$1K', p => fmt(p.proj / (p.sal / 1000), 2)], ['Own FLX', p => p.own_flex == null ? '—' : fmt(p.own_flex) + '%'], ['Top', p => p.p_mvp == null ? '—' : fmt(100 * p.p_mvp) + '%']]
+      : [['Salary', p => money(p.sal)], ['Proj', p => `<b>${fmt(p.proj)}</b>`], ['Pts/$1K', p => fmt(p.proj / (p.sal / 1000), 2)]];
+    $('#brTop thead').innerHTML = `<tr><th>Player</th>${cols.map(c => `<th class="n">${c[0]}</th>`).join('')}</tr>`;
+    $('#brTop tbody').innerHTML = pool.length ? pool.map(p => `<tr><td class="who"><b>${esc(p.name)}</b>${isQP(p) ? ' <span class="tag">' + esc(p.status) + '</span>' : ''}<small>${esc(pSub(p))}</small></td>${cols.map(c => `<td class="n">${c[1](p)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${cols.length + 1}" class="note">No projections yet: they appear once the sportsbooks post player props.</td></tr>`;
+    $('#brTopTitle').textContent = sd ? 'Top projections' : 'Top projections tonight';
+    // status
+    const O = (D.players || []).filter(isOutP).sort((a, b) => (b.sal || b.proj || 0) - (a.sal || a.proj || 0)), Q = (D.players || []).filter(isQP).sort((a, b) => (b.sal || 0) - (a.sal || 0));
+    const names = (L, n) => L.slice(0, n).map(p => esc(p.name)).join(', ') + (L.length > n ? ` and ${L.length - n} more` : '');
+    const XI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg>', WI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg>', OI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9.5"/></svg>';
+    $('#brStatus').innerHTML = (O.length ? `<div class="notice out">${XI}<div><b>${O.length} OUT:</b> ${names(O, 8)}.${nba || kind === 'Classic' ? ' Left out of every build and every top list.' : ' Left out of every top list.'}</div></div>` : '')
+      + (Q.length ? `<div class="notice q">${WI}<div><b>${Q.length} questionable:</b> ${names(Q, 8)}. Check their status before lock.</div></div>` : '')
+      + (!O.length && !Q.length ? `<div class="notice ok">${OI}<div>No OUT or questionable players in the DraftKings file for this slate.</div></div>` : '');
+    $('#brHot').outerHTML = hotCard(6).replace('<section class="prop hot"', '<section class="prop hot" id="brHot"');
+    $('#brModel').textContent = nba ? String(s.model || 'FORGE NBA v0: FanDuel player props turned into DraftKings points').replace(/->/g, '→').replace(/\.?\s*$/, '.') + ' No NBA backtest yet.'
+      : 'Projections come from DraftKings and FanDuel player props turned into DraftKings points. Lines are saved the moment FORGE first sees them, then checked again about 2 hours, 1 hour and 15 minutes before lock.' + (sd ? ' Ownership and top-scorer chances come from FORGE\'s game simulation.' : '');
+  }
+  // Sims tab: FORGE's in-browser simulation (simEV) applied to the Builder's lineups (or, signed in as owner, FORGE's own set)
+  function simsReady() {
+    const ok = D && D.simpack && slateKind(D.slate) === 'Showdown' && slateSport(D.slate) !== 'NBA'; $('#simRun').disabled = !ok;
+    if (!ok) return; const n = (builder.result || []).length;
+    if (!$('#simOut').innerHTML) $('#simStatus').textContent = n ? `${n} Builder lineup${n > 1 ? 's' : ''} ready. Press Simulate my lineups.` : 'Build lineups on the Build tab, then simulate them here.' + (D.owner ? ' Signed in as owner: with no Builder lineups, FORGE\'s own set is simulated.' : '');
+  }
+  $('#simRun').addEventListener('click', runSims);
+  async function runSims() {
+    const st = $('#simStatus'), out = $('#simOut'); if (!(D && D.simpack)) return;
+    let L = (builder.result || []).filter(l => l.cpt), src = 'Your Builder lineups';
+    if (!L.length) { const B = D.builds || {}, fk = Object.keys(B).find(k => /^(Entered|FORGE build)/.test(k)); if (fk && (B[fk] || []).some(l => l.cpt)) { const seen = new Set(); L = B[fk].filter(l => { if (!l.cpt) return false; const k = l.cpt + '|' + [...l.flex].sort().join(); if (seen.has(k)) return false; seen.add(k); return true; }); src = setLabel(fk); } }
+    if (!L.length) { st.className = 'status'; st.textContent = 'No lineups yet: build them on the Build tab, then simulate them here.'; out.innerHTML = ''; return; }
+    const P = D.players, pkb = Object.fromEntries(D.simpack.names.map((nm, k) => [nm, D.simpack.base[k]]));
+    const proj = P.map(p => { const v = builder.proj[p.name] ?? p.proj; return (v === p.proj && pkb[p.name] != null && Math.abs(pkb[p.name] - v) < 0.006) ? pkb[p.name] : v; }); ownLean(P, proj);
+    const pos = P.map(p => p.pos), tl = [...new Set(P.map(p => p.team))], tm = P.map(p => tl.indexOf(p.team)), enc = a => a.reduce((c, x, k) => c | (x << (5 * k)), 0);
+    const lus = L.map(l => [l.cpt, ...l.flex].map(n => P.findIndex(p => p.name === n))), okL = lus.map(a => a.every(i => i >= 0)), use = lus.filter((a, i) => okL[i]), LL = L.filter((l, i) => okL[i]);
+    if (!use.length) { st.className = 'status err'; st.textContent = 'These lineups do not match the players on this slate.'; return; }
+    st.className = 'status'; $('#simRun').disabled = true; let ev;
+    try { ev = await simEV(P, proj, pos, tm, use.map(enc), [], use.map((_, i) => i), st); } catch (e) { st.className = 'status err'; st.textContent = 'Simulation failed: ' + e.message; return; } finally { $('#simRun').disabled = false; }
+    const S_ = ev.stats, U = Array.from(S_.evU), C = Array.from(ev), m = use.length, avg = a => a.reduce((t, v) => t + v, 0) / m, pcx = x => (100 * x < 1 && x > 0 ? (100 * x).toFixed(2) : (100 * x).toFixed(1)) + '%';
+    const pj = a => 1.5 * proj[a[0]] + a.slice(1).reduce((t, i) => t + proj[i], 0), best = U.indexOf(Math.max(...U));
+    st.textContent = `${src}: ${m} lineup${m > 1 ? 's' : ''} in 2,000 simulated games · simulated cash line ~${S_.cashLine.toFixed(1)} pts · simulated 1st place ~${S_.first.toFixed(1)} pts`;
+    const ord = use.map((_, i) => i).sort((a, b) => U[b] - U[a]);
+    out.innerHTML = `<div class="pnl-b"><div class="tstats" style="margin-top:0"><div><b>${avg(U).toFixed(2)}x</b><small>average payout per $1, every prize counted</small></div><div><b>${avg(C).toFixed(2)}x</b><small>same, each lineup capped at 10x</small></div><div><b>${pcx(avg(Array.from(S_.cash)))}</b><small>average chance to cash</small></div><div><b>${pcx(avg(Array.from(S_.top1)))}</b><small>average chance of the top 1%</small></div><div><b>${pcx(avg(Array.from(S_.win)))}</b><small>average chance to finish 1st</small></div></div></div>
+      <div class="tbl-wrap"><table class="simtbl"><thead><tr><th>Lineup</th><th class="n">Proj</th><th class="n">Payout</th><th class="n">Capped</th><th class="n">Cash</th><th class="n">Top 1%</th><th class="n">1st</th></tr></thead><tbody>${ord.map(i => { const l = LL[i]; return `<tr><td class="who"><b>CPT ${esc(l.cpt)}</b><small>${esc(l.flex.join(' · '))}</small></td><td class="n">${fmt(pj(use[i]))}</td><td class="n${i === best ? ' best' : ''}">${U[i].toFixed(2)}x</td><td class="n">${C[i].toFixed(2)}x</td><td class="n">${pcx(S_.cash[i])}</td><td class="n">${pcx(S_.top1[i])}</td><td class="n">${pcx(S_.win[i])}</td></tr>`; }).join('')}</tbody></table></div>
+      <div class="pnl-b"><p class="note" style="margin:12px 0 0">Sorted by average payout. Payout = average prize per $1 entry in the simulated contests; above 1.00x is profitable in the simulation. 20-max prize curve, field from FORGE's ownership forecast.</p></div>`;
+  }
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   function renderProd(data) {   // 2026-10-22: production behind each projection (tools/nfl_production.py)
     const P = (data.players || []).filter(p => p.prod), sel = $('#prodSel');
@@ -1120,7 +1384,7 @@ td.lev { color: var(--steel); }
     const pp = n => D.players.find(p => p.name === n) || {};
     const forged = l.forged ? ' forged' : '';
     return `<article class="lu${forged}"><header><span>#${i + 1}${l.contest ? ' · ' + shortContest(l.contest) : ''}</span><span><b>${fmt(l.proj)}</b> pts · <b>${money(l.sal)}</b></span></header><ol>
-      <li class="cpt"><span><svg class="ico" aria-hidden="true"><use href="#i-flame"/></svg>CPT ${l.cpt}</span><span class="p">${pp(l.cpt).pos || ''} ${pp(l.cpt).team || ''}</span></li>
+      <li class="cpt"><span><span class="slot">CPT</span> ${l.cpt}</span><span class="p">${pp(l.cpt).pos || ''} ${pp(l.cpt).team || ''}</span></li>
       ${l.flex.map(n => `<li><span>${n}</span><span class="p">${pp(n).pos || ''} ${pp(n).team || ''}</span></li>`).join('')}</ol>${badges(l)}${gradeLine(l)}${D && D.simpack ? `<button type="button" class="btn small testlu" data-cpt="${l.cpt}" data-flex="${l.flex.join('|')}">Test</button>` : ''}</article>`;
   }
   function badges(l) {
@@ -1204,7 +1468,7 @@ td.lev { color: var(--steel); }
   $$('#bform input').forEach(i => i.addEventListener('change', markCustom));
 
   // the forge: enumerate every legal lineup, score by projection, pick greedily under caps
-  $('#bform').addEventListener('submit', ev => { ev.preventDefault(); const st = $('#bStatus'); st.className = 'status'; st.textContent = 'Heating the steel…'; setTimeout(runForge, 30); });
+  $('#bform').addEventListener('submit', ev => { ev.preventDefault(); const st = $('#bStatus'); st.className = 'status'; st.textContent = 'Building…'; setTimeout(runForge, 30); });
   // (2026-10-22, FORGE: "would it build the lineups we are actually entering?") on an entered (final) slate the Builder starts from the projections
   // the entered build used (proj_build; the page's numbers refresh after the build); RUN = an automatic extra build for one contest (DK tab)
   function baseProj(p) { return (D && D.slate && D.slate.status === 'final' && p.proj_build != null) ? p.proj_build : p.proj; }
@@ -1326,7 +1590,7 @@ td.lev { color: var(--steel); }
     $('#tOut').innerHTML = ''; $('#tStatus').textContent = '';
   }
   function setTester(cpt, flex) { const sels = $$('#tPick select'); [cpt, ...flex].forEach((n, k) => { if (sels[k]) sels[k].value = n; }); $('#tester').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-  document.addEventListener('click', e => { const b = e.target.closest('.testlu'); if (!b) return; if ($('#p-builder').hidden) show('builder'); setTester(b.dataset.cpt, b.dataset.flex.split('|')); setTimeout(runTester, 350); });
+  document.addEventListener('click', e => { const b = e.target.closest('.testlu'); if (!b) return; if ($('#p-sims').hidden) show('sims'); setTester(b.dataset.cpt, b.dataset.flex.split('|')); setTimeout(runTester, 350); });
   $('#tRun').addEventListener('click', runTester);
   async function runTester() {
     const st = $('#tStatus'), names = $$('#tPick select').map(x => x.value);
@@ -1433,7 +1697,7 @@ td.lev { color: var(--steel); }
   async function glpk() { if (!GLPK_) { const m = await import('https://cdn.jsdelivr.net/npm/glpk.js@4.0.2/dist/index.js'); GLPK_ = await m.default(); } return GLPK_; }
   $('#cform').addEventListener('submit', async ev => {
     ev.preventDefault(); const st = $('#cStatus'); st.className = 'status'; st.textContent = 'Loading the optimizer…'; $('#cForgeBtn').disabled = true;
-    try { const g = await glpk(); st.textContent = 'Heating the steel…'; await new Promise(r => setTimeout(r, 20)); await runClassic(g); }
+    try { const g = await glpk(); st.textContent = 'Building…'; await new Promise(r => setTimeout(r, 20)); await runClassic(g); }
     catch (e) { st.className = 'status err'; st.textContent = 'The optimizer could not load (' + e.message + '). Check your connection and try again.'; }
     finally { $('#cForgeBtn').disabled = false; }
   });
@@ -2005,7 +2269,7 @@ td.lev { color: var(--steel); }
   }
   $('#nbaRun').addEventListener('click', () => nbaBuild());
   async function nbaBuild() {
-    const st = $('#nbaStatus'), t0 = performance.now(); st.className = 'status'; st.textContent = 'Heating the forge…';
+    const st = $('#nbaStatus'), t0 = performance.now(); st.className = 'status'; st.textContent = 'Building…';
     let g; try { g = await glpk(); } catch (e) { st.className = 'status err'; st.textContent = 'The optimizer could not load: ' + e.message; return; }
     const N = Math.max(1, Math.min(150, parseInt($('#nbaN').value) || 20)), uniq = Math.max(1, Math.min(6, parseInt($('#nbaUniq').value) || 2)), capP = Math.max(1, Math.ceil(N * Math.min(100, Math.max(10, parseFloat($('#nbaExp').value) || 100)) / 100));
     if (D.slate.kind === 'nba_showdown') return nbaShowdown(g, st, t0, N, uniq, capP);
