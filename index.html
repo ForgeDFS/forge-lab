@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="43f75e87bd26"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="b91ea338eee1"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -762,8 +762,8 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
       <div id="nbaDkResult" aria-live="polite"></div>
       <p class="note">New entries without an entries file: <b>Download for DraftKings</b> under your lineups gives DraftKings' <b>Upload Lineups</b> format (no entry IDs). <a class="btn small" href="https://www.draftkings.com/lineup/upload" target="_blank" rel="noopener">Open DraftKings upload</a></p>
       <div class="toolbar"><button type="button" class="btn small notiers" id="nbaCsv2">New-lineup file (Upload Lineups page only)</button><span class="status" id="nbaCsv2s"></span></div>
-      <div class="appbox notiers"><b>NBA late swap.</b> After the first games tip off, download your entries again from DraftKings (Lineups → Edit Entries), choose the file here and press the button. FORGE keeps every player whose game has started and re-picks the open spots from the newest projections, same salary cap and positions. Pick the Classic slate you entered at the top first.
-        <div class="toolbar" style="margin-top:8px"><label class="btn filebtn"><input type="file" id="nbaLsFile">Choose DKEntries file</label><button class="btn primary" type="button" id="nbaLsRun">Late swap my NBA entries</button><span class="status" id="nbaLsStatus" role="status"></span></div><div id="nbaLsOut"></div></div></div>
+      <div class="appbox notiers"><b>NBA late swap.</b> After the first games tip off, pick the Classic slate you entered and press the button. If you filled your entries with FORGE on this phone, that's all: FORGE remembers them. Otherwise (or if you changed lineups on DraftKings since), download your entries again (Lineups → Edit Entries) and choose the file first. FORGE keeps every player whose game has started and re-picks the open spots from the newest projections, same salary cap and positions. The file it gives you holds only the entries that change: upload it on DraftKings (Lineups → Edit Entries → Upload).
+        <div class="toolbar" style="margin-top:8px"><label class="btn filebtn"><input type="file" id="nbaLsFile">Choose DKEntries file (optional)</label><button class="btn primary" type="button" id="nbaLsRun">Late swap my NBA entries</button><label class="check" style="flex-basis:100%"><input type="checkbox" id="nbaLsAll"> Also re-optimize players who are fine (pulls entries toward the same top players; untested)</label><span class="status" id="nbaLsStatus" role="status"></span></div><div id="nbaLsOut"></div></div></div>
     <div class="nfl-only">
     <p class="lede">Get your Builder lineups into DraftKings from your phone. Use your phone's web browser for DraftKings here, not the DraftKings app: the app can't take a file, the website can.</p>
     <div class="appbox" id="appBox">
@@ -2386,26 +2386,31 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
   let NBLS = null; $('#nbaLsFile').addEventListener('change', async ev => { const f = ev.target.files[0]; if (!f) return; NBLS = await f.text(); ev.target.value = ''; $('#nbaLsStatus').textContent = 'File loaded: ' + f.name; });
   $('#nbaLsRun').addEventListener('click', async () => {
     const st = $('#nbaLsStatus'), out = $('#nbaLsOut'); st.className = 'status'; out.innerHTML = '';
-    if (!NBLS) { st.className = 'status err'; st.textContent = 'Choose your DKEntries file first.'; return; }
     if (!D || D.slate.kind !== 'nba_classic') { st.className = 'status err'; st.textContent = 'Pick the NBA Classic slate you entered at the top first.'; return; }
-    try { st.textContent = 'Loading the optimizer…'; const g = await glpk(); await nbaLateSwap(g, NBLS, st, out); } catch (e) { st.className = 'status err'; st.textContent = 'Late swap failed: ' + e.message; }
+    let text = NBLS, ov = null, note = '';
+    if (!text) { let m = null; try { m = JSON.parse(LS.get('forge_nba_filled_' + D.slate.id) || 'null'); } catch (e) {}
+      if (!m) { st.className = 'status err'; st.textContent = 'No entries on this phone for this slate yet. Fill your entries with FORGE on this phone first (above), or download your entries from DraftKings (Lineups → Edit Entries) and choose the file.'; return; }
+      text = m.src; ov = m.rows; note = `Using the ${Object.keys(ov).length} entries FORGE filled on this phone (${new Date(m.at).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}). If you changed any of them on DraftKings since, choose a fresh entries file instead. `; }
+    try { st.textContent = 'Loading the optimizer…'; const g = await glpk(); await nbaLateSwap(g, text, st, out, ov); if (note) st.textContent = note + st.textContent; } catch (e) { st.className = 'status err'; st.textContent = 'Late swap failed: ' + e.message; }
   });
-  async function nbaLateSwap(g, text, st, out) {
+  async function nbaLateSwap(g, text, st, out, ov) {
     const rows = csvParse(text.replace(/^﻿/, '')), hdr = rows[0] || [], qi = hdr.indexOf('PG'); if (qi < 0 || hdr[qi + 7] !== 'UTIL') throw new Error('this is not an NBA Classic entries file');
     let pr = -1, pc = -1; for (let i = 0; i < rows.length && pr < 0; i++) { const j = rows[i].indexOf('Name + ID'); if (j >= 0) { pr = i; pc = j; } }
     if (pr < 0) throw new Error('the player list is missing from this file');
     const qs = new URLSearchParams(location.search), now = qs.get('now') ? new Date(qs.get('now')).getTime() : Date.now();
     const site = Object.fromEntries(D.players.map(p => [p.name, p])), PL = {}, byId = {};
     for (let i = pr + 1; i < rows.length; i++) { const r = rows[i]; if (!(r[pc] || '').trim()) continue; const nm = (r[pc + 1] || '').trim(), gi = r[pc + 5] || '', k = etDate(gi), sp = site[nm] || {};
-      PL[nm] = byId[(r[pc + 2] || '').trim()] = { name: nm, id: (r[pc + 2] || '').trim(), pos: (r[pc - 1] || '').trim(), sal: +r[pc + 4] || 0, game: gi.split(' ')[0], kick: k ? k.getTime() : null, proj: sp.proj, out: NB.out.has(nm) }; }
+      PL[nm] = byId[(r[pc + 2] || '').trim()] = { name: nm, id: (r[pc + 2] || '').trim(), pos: (r[pc - 1] || '').trim(), sal: +r[pc + 4] || 0, game: gi.split(' ')[0], kick: k ? k.getTime() : null, proj: sp.proj, out: NB.out.has(nm), st: String(sp.status || '') }; }
     const P = Object.values(PL); if (!P.some(p => p.kick != null && p.kick <= now)) { st.textContent = 'No game has tipped off yet. Before the first game, build in Build and upload instead.'; return; }
     const cellP = c => { const s = String(c || ''), m = s.match(/\((\d+)\)/); return m ? byId[m[1]] : PL[s.replace(/\s*\(LOCKED\)\s*$/i, '').trim()]; };
     const ok = p => p.kick != null && p.kick > now && p.proj != null && !p.out, el = (p, s) => NEL[NSLOT[s]].some(z => p.pos.split('/').includes(z));
     const B = (lo, hi) => lo === hi ? { type: g.GLP_FX, lb: lo, ub: hi } : lo == null ? { type: g.GLP_UP, lb: 0, ub: hi } : { type: g.GLP_DB, lb: lo, ub: hi };
-    const entries = rows.slice(1).filter(r => /^\d+$/.test((r[0] || '').trim()) && (r[1] || '').trim()), changed = [], notes = [];
+    const entries = rows.slice(1).filter(r => /^\d+$/.test((r[0] || '').trim()) && (r[1] || '').trim() && (!ov || ov[(r[0] || '').trim()])), changed = [], notes = [];
+    if (ov) entries.forEach(r => { const c = ov[r[0].trim()]; for (let s = 0; s < 8; s++) r[qi + s] = c[s]; });   // the lineups FORGE filled on this phone
     for (const r of entries) {
       const cur = NSLOT.map((_, s) => cellP(r[qi + s])); if (cur.some(p => !p)) { notes.push(`Entry ${r[0]}: lineup not complete, skipped.`); continue; }
-      const locked = cur.map((p, s) => /\(LOCKED\)/i.test(r[qi + s] || '') || (p.kick != null && p.kick <= now)); if (locked.every(Boolean)) continue;
+      const outOnly = !$('#nbaLsAll').checked;   // (2026-10-28) default: replace only players who can't score (ruled out / no projection), so the built set's variety survives
+      const locked = cur.map((p, s) => /\(LOCKED\)/i.test(r[qi + s] || '') || (p.kick != null && p.kick <= now) || (outOnly && p.proj != null && !/^(OUT|O|IR|INJ|D|SUSP)$/i.test(p.st || ''))); if (locked.every(Boolean)) continue;
       const keep = new Set(cur.filter((p, s) => locked[s]).map(p => p.name)), lockSal = cur.reduce((t, p, s) => t + (locked[s] ? p.sal : 0), 0);
       const cand = P.filter(p => ok(p) && !keep.has(p.name)), X = [];
       NSLOT.forEach((_, s) => { if (!locked[s]) cand.forEach((p, j) => { if (el(p, s)) X.push({ v: `x${s}_${j}`, s, p }); }); });
@@ -2417,12 +2422,12 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
       if (!res || !res.result || (res.result.status !== g.GLP_OPT && res.result.status !== g.GLP_FEAS)) { notes.push(`Entry ${r[0]}: no legal swap found.`); continue; }
       const nu = [...cur]; X.forEach(x => { if (res.result.vars[x.v] > 0.5) nu[x.s] = x.p; });
       const oldP = cur.reduce((t, p, s) => t + (locked[s] ? 0 : (ok(p) ? p.proj : 0)), 0), newP = nu.reduce((t, p, s) => t + (locked[s] ? 0 : p.proj), 0), bad = cur.filter((p, s) => !locked[s] && !ok(p));
-      if (newP - oldP < 0.5 && !bad.length) continue;
+      if (outOnly ? !bad.length : (newP - oldP < 0.5 && !bad.length)) continue;
       if (nu.reduce((t, p) => t + p.sal, 0) > 50000 || new Set(nu.map(p => p.name)).size !== 8 || nu.some((p, s) => !el(p, s))) { notes.push(`Entry ${r[0]}: check failed, left unchanged.`); continue; }
       changed.push({ r, nu, gain: newP - oldP, swaps: nu.map((p, s) => p !== cur[s] ? `${NSLOT[s]}: ${cur[s].name} → ${p.name}` : null).filter(Boolean) });
     }
     logBuild('lateswap_nba', { entries: entries.length, changed: changed.length }, changed.map(c => ({ players: c.nu.map(p => p.name), swaps: c.swaps })));
-    if (!changed.length) { st.textContent = `Checked ${entries.length} entries: keep them as they are (no swap gains 0.5 projected points and nobody left is missing a line).`; out.innerHTML = notes.map(n => `<p class="note">${n}</p>`).join(''); return; }
+    if (!changed.length) { st.textContent = `Checked ${entries.length} entries: keep them as they are (nobody in a game still to start is ruled out${$('#nbaLsAll').checked ? ', and no swap gains 0.5 projected points' : ''}).`; out.innerHTML = notes.map(n => `<p class="note">${n}</p>`).join(''); return; }
     const EOL = text.includes('\r\n') ? '\r\n' : '\n', lines = [hdr.slice(0, qi + 8).map(csvCell).join(',')];
     changed.forEach(c => { const rr = c.r.slice(0, qi + 8); c.nu.forEach((p, s) => rr[qi + s] = `${p.name} (${p.id})`); lines.push(rr.map(v => csvCell(String(v))).join(',')); });
     const url = URL.createObjectURL(new Blob([lines.join(EOL) + EOL], { type: 'text/csv' }));
@@ -2517,6 +2522,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
       if (errs.length) return say('<div class="err">Not filled. Fix this first:</div><ul>' + [...new Set(errs)].slice(0, 8).map(e => `<li>${e}</li>`).join('') + '</ul>');
       if (!out.length) return say(`<div class="err">You built ${L.length} lineups; the selected entries need ${ent.length}. Build more lineups first.</div>`);
       const csv = [hdr.slice(0, 4 + nS).map(csvCell).join(','), ...out.map(r => r.map(x => csvCell(String(x))).join(','))].join('\r\n') + '\r\n';
+      if (!sd && !ti) { try { LS.set('forge_nba_filled_' + D.slate.id, JSON.stringify({ at: Date.now(), src: text, rows: Object.fromEntries(out.map(o => [o[0], o.slice(4)])) })); } catch (e) {} }   // (2026-10-28) late swap works from this without a new download
       const fname = `DKEntries_FORGE_${D.slate.id || 'slate'}.csv`;
       logBuild('nba_export', { fname, skipped: skipped.length, contests: plan }, out.map(o => ({ entry: o[0], contest: o[1] })));
       say(`<div class="ok">✓ ${out.length} entries filled with ${out.length} different lineups, checked against DraftKings' player list (IDs, ${ti ? 'tiers' : 'slots, $50,000'}).</div>${skipped.length ? `<p class="note"><b>${skipped.length} selected entries have no lineup yet</b>: FORGE could make only ${L.length} different lineups (${esc($('#nbaStatus').textContent)}). They are left out of the file and stay as they are on DraftKings; choose the file again later when more lines are posted.</p>` : ''}
