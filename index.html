@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="285b422fbcdf"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="f7f69a64bff3"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -1830,7 +1830,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     const qs = new URLSearchParams(location.search), now = qs.get('now') ? new Date(qs.get('now')).getTime() : Date.now();
     const site = Object.fromEntries(D.players.map(p => [p.name, p])), PL = {};
     for (let i = pr + 1; i < rows.length; i++) { const r = rows[i]; if (!(r[pc] || '').trim()) continue; const nm = (r[pc + 1] || '').trim(), gi = r[pc + 5] || '', k = etDate(gi), sp = site[nm] || {};
-      PL[nm] = { name: nm, id: (r[pc + 2] || '').trim(), pos: (r[pc - 1] || '').trim(), sal: +r[pc + 4] || 0, team: (r[pc + 6] || '').trim(), game: gi.split(' ')[0], kick: k ? k.getTime() : null, proj: sp.proj, status: sp.status || '' }; }
+      PL[nm] = { name: nm, id: (r[pc + 2] || '').trim(), pos: (r[pc - 1] || '').trim(), sal: +r[pc + 4] || 0, team: (r[pc + 6] || '').trim(), game: gi.split(' ')[0], kick: k ? k.getTime() : 0, proj: sp.proj, status: sp.status || '' }; }
     const P = Object.values(PL); P.forEach(p => { const [a, h] = (p.game || '@').split('@'); p.opp = p.team === a ? h : a; });
     if (!P.some(p => p.kick != null && p.kick <= now)) { st.textContent = 'No game has started yet. Before the first kickoff, use step 3 to fill your entries instead.'; return; }
     const SLOT = ['QB', 'RB', 'RB', 'WR', 'WR', 'WR', 'TE', 'FLEX', 'DST'], fits = (slot, pos) => slot === 'FLEX' ? /^(RB|WR|TE)$/.test(pos) : slot === pos;
@@ -2411,7 +2411,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     const qs = new URLSearchParams(location.search), now = qs.get('now') ? new Date(qs.get('now')).getTime() : Date.now();
     const site = Object.fromEntries(D.players.map(p => [p.name, p])), PL = {}, byId = {};
     for (let i = pr + 1; i < rows.length; i++) { const r = rows[i]; if (!(r[pc] || '').trim()) continue; const nm = (r[pc + 1] || '').trim(), gi = r[pc + 5] || '', k = etDate(gi), sp = site[nm] || {};
-      PL[nm] = byId[(r[pc + 2] || '').trim()] = { name: nm, id: (r[pc + 2] || '').trim(), pos: (r[pc - 1] || '').trim(), sal: +r[pc + 4] || 0, game: gi.split(' ')[0], kick: k ? k.getTime() : null, proj: sp.proj, out: NB.out.has(nm), st: String(sp.status || '') }; }
+      PL[nm] = byId[(r[pc + 2] || '').trim()] = { name: nm, id: (r[pc + 2] || '').trim(), pos: (r[pc - 1] || '').trim(), sal: +r[pc + 4] || 0, game: gi.split(' ')[0], kick: k ? k.getTime() : 0, proj: sp.proj, out: NB.out.has(nm), st: String(sp.status || '') }; }
     const P = Object.values(PL); if (!P.some(p => p.kick != null && p.kick <= now)) { st.textContent = 'No game has tipped off yet. Before the first game, build in Build and upload instead.'; return; }
     const cellP = c => { const s = String(c || ''), m = s.match(/\((\d+)\)/); return m ? byId[m[1]] : PL[s.replace(/\s*\(LOCKED\)\s*$/i, '').trim()]; };
     const ok = p => p.kick != null && p.kick > now && p.proj != null && !p.out, el = (p, s) => NEL[NSLOT[s]].some(z => p.pos.split('/').includes(z));
