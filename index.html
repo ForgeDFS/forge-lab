@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="47a82fd197fe"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="05e5922e1c34"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -377,6 +377,15 @@ details.about p:last-child { margin-bottom: 0; }
 .pies .dleg li { font-size: 12px; }
 .dtag { font-size: 11px; padding: 1px 6px; border-radius: 999px; margin-left: 6px; }
 .dtag.weak { background: var(--pos-wash); color: var(--pos); } .dtag.tough { background: var(--neg-wash); color: var(--neg); }
+
+.score { display: grid; gap: 10px; margin: 0 0 18px; }
+.srow { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); padding: 12px 14px; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px 16px; align-items: start; }
+.srow h4 { margin: 0 0 4px; font: 700 15px/20px var(--font-display); color: var(--ink); }
+.srow .def { font-size: 13px; color: var(--ink-2); }
+.srow small { display: block; font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 2px; }
+.srow b.big { font: 600 20px var(--font-data); }
+.srow .sub { font-size: 12px; color: var(--ink-2); }
+@media (max-width: 640px) { .srow { grid-template-columns: 1fr 1fr; } .srow > div:first-child { grid-column: 1 / -1; } }
 details.viz { margin: 0 0 14px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); padding: 10px 14px; }
 details.viz > summary { cursor: pointer; font: 700 13px/18px var(--font-display); letter-spacing: .04em; color: var(--ink); }
 .vscroll { overflow-x: auto; }
@@ -901,7 +910,9 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
 
   <section class="panel" id="p-record" hidden>
     <div class="seg subnav" role="group" aria-label="Results"><button type="button" data-go="record" aria-pressed="true">Live record</button><button type="button" data-go="lineups" aria-pressed="false">How FORGE played</button><button type="button" data-go="past" aria-pressed="false">Past contests</button></div>
-    <p class="note nba-only">No NBA slates graded yet: the results below are NFL.</p>
+    <h3 class="subh">Scorecard: how each format is doing</h3>
+    <div id="scoreBox"><p class="note">Loading…</p></div>
+    <p class="note nba-only">The detailed record below is NFL Showdown.</p>
     <div class="tiles" id="recTiles"></div>
     <div id="ourBox"></div>
     <h3 class="subh">Live: FORGE builds on real contests</h3>
@@ -2399,6 +2410,21 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     box.innerHTML = `<h4 class="rhead">${N[0].date >= yest ? 'Last night' : 'Most recent night'}</h4>${nights.slice(0, first)}${N.length > 1 ? `<h4 class="rhead">Earlier nights</h4><p class="note">Tap a night for every contest.</p>${nights.slice(first)}` : ''}
       <p class="note">Each finish is DraftKings' final rank; ties are split the way DraftKings splits them. A contest whose prize table was never saved shows its finish but no money. Lineups stay private.</p>`;
   }
+
+  // (2026-10-29, FORGE: backtest and real ROI "hard to follow") one row per sport x format: today's default, its backtest, real money (tools/scorecard.py)
+  let SCORE = undefined;
+  async function renderScore() {
+    const el = $('#scoreBox'); if (!el) return;
+    if (SCORE === undefined) { try { SCORE = await getJSON('scorecard'); } catch (e) { SCORE = null; } }
+    if (!SCORE || !SCORE.rows) { el.innerHTML = '<p class="note">No scorecard yet.</p>'; return; }
+    const pc = v => v == null ? '—' : (v > 0 ? '+' : '') + v.toFixed(1) + '%', cl = v => v == null ? '' : (v >= 0 ? 'gain' : 'loss');
+    const T = SCORE.total;
+    el.innerHTML = `<div class="score">${SCORE.rows.map(r => { const R = r.real;
+      return `<div class="srow"><div><h4>${esc(r.sport)} ${esc(r.fmt)}</h4><div class="def">${esc(r.default)} <span class="sub">· default since ${esc(r.since)}</span></div>${r.second ? `<div class="sub" style="margin-top:4px">Runner-up: ${esc(r.second)}</div>` : ''}</div>
+        <div><small>Backtest of this default</small><b class="big ${cl(r.bt_roi)}">${pc(r.bt_roi)}</b><div class="sub">${esc(r.bt_n)}${r.bt_note ? ' · ' + esc(r.bt_note) : ''}</div></div>
+        <div><small>Real money so far</small>${R ? `<b class="big ${cl(R.roi)}">${pc(R.roi)}</b><div class="sub">${usd2(R.won)} back on ${usd2(R.fees)} · ${R.slates} slate${R.slates === 1 ? '' : 's'} · best ${ordn(R.best.place)} of ${R.best.field.toLocaleString('en-US')}</div>` : '<b class="big">—</b><div class="sub">no real entries yet</div>'}</div></div>`; }).join('')}</div>
+      <p class="note">All formats together: <b class="${cl(T.roi)}">${pc(T.roi)}</b> (${usd2(T.won)} back on ${usd2(T.fees)}, ${T.entries.toLocaleString('en-US')} entries). ${esc(SCORE.note)} Day by day: the Real results tab.</p>`;
+  }
   // record
   let REC = null, OREC = null;   // 2026-10-21: one current record for every slate (data/record*.enc.json, tools/site_record.py)
   async function loadRecord(force) {
@@ -2411,7 +2437,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   const ordn = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th'));
   const selName = s => s === 'DREW-SET' ? "FORGE's entered set" : setInfo(s).name;
   async function renderRecord() {
-    renderMorning();
+    renderMorning(); renderScore();
     getJSON('learn_nba').then(L => {      // (2026-10-28) NBA learning loop: tools/nba_learn.py, rules knowledge/nba_learn_rules.json
       const I = L.items || {}, f2 = v => v == null ? '—' : (+v).toFixed(2), pc = v => v == null ? '—' : (v > 0 ? '+' : '') + (+v).toFixed(1) + '%';
       const row = (lab, what, val, st) => `<tr><td class="who"><b>${lab}</b><small>${what}</small></td><td>${val}</td><td>${esc(st || '')}</td></tr>`;
