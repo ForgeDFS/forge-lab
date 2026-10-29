@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="b5c3ca1fbb2f"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="2c9e03c247a8"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -2766,6 +2766,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       <td><input type="checkbox" data-n="${p.name}" ${NB.out.has(p.name) ? 'checked' : ''} ${p.proj == null ? 'disabled' : ''} aria-label="Exclude ${p.name}"></td></tr>`).join('');
     $$('#nbaTable tbody input[type=checkbox]').forEach(cb => cb.onchange = () => { cb.checked ? (NB.out.add(cb.dataset.n), NB.lock.delete(cb.dataset.n)) : NB.out.delete(cb.dataset.n); renderNBABuild(); });
   }
+  $('#nbaUniq').addEventListener('input', () => { $('#nbaUniq').dataset.touched = '1'; });
   $('#nbaRun').addEventListener('click', async () => { $('#nbaN').value = Math.max(...parseSizes($('#nbaEntries').value)); await nbaBuild(); nbaPlan(); });
   function nbaPlan() {     // (2026-10-29 NBA-EXTEND) biggest contest #1-n, smaller contests #1-k again, single entry #1
     const L = NB.result || [], el = $('#nbaPlan'); if (!el) return; if (!L.length) { el.innerHTML = ''; return; }
@@ -2797,7 +2798,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   async function nbaBuild() {
     const st = $('#nbaStatus'), t0 = performance.now(); st.className = 'status'; st.textContent = 'Building…';
     let g; try { g = await glpk(); } catch (e) { st.className = 'status err'; st.textContent = 'The optimizer could not load: ' + e.message; return; }
-    const N = Math.max(1, Math.min(150, parseInt($('#nbaN').value) || 20)), uniq = Math.max(1, Math.min(6, parseInt($('#nbaUniq').value) || 2)), capP = Math.max(1, Math.ceil(N * Math.min(100, Math.max(10, parseFloat($('#nbaExp').value) || 100)) / 100));
+    const N = Math.max(1, Math.min(150, parseInt($('#nbaN').value) || 20)), uniq = (D.slate.kind === 'nba_classic' && !$('#nbaUniq').dataset.touched && new Set(D.players.map(p => p.game)).size >= 5) ? 1 : Math.max(1, Math.min(6, parseInt($('#nbaUniq').value) || 2)),   // (2026-10-29 NBA-SIZE-S1) 5+ game Classic slates: 1 different capP = Math.max(1, Math.ceil(N * Math.min(100, Math.max(10, parseFloat($('#nbaExp').value) || 100)) / 100));
     NB.vz = null; if (VARY_S && D.slate.kind === 'nba_classic' && $('#nbaVary').checked) { NB.vz = {}; D.players.forEach(p => NB.vz[p.name] = Math.max(0.2, 1 + VARY_S * gauss())); }   // fresh draw every press
     if (D.slate.kind === 'nba_showdown') return nbaShowdown(g, st, t0, N, uniq, capP);
     if (String(D.slate.kind).includes('tiers')) return buildTiers(st, t0, N, uniq, capP);
