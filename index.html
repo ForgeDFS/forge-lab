@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="7e31fc6c91ae"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="ebaf6918b7ac"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -346,6 +346,29 @@ details.about p:last-child { margin-bottom: 0; }
 .story { display: grid; gap: 10px; margin: 0 0 18px; padding: 0; list-style: none; max-width: 70ch; }
 .story li { padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); line-height: 1.5; }
 .story li:first-child { font-family: var(--font-display); font-size: 18px; border-color: var(--line-strong); }
+
+/* (2026-10-29, FORGE: pie charts / line charts for who gets a slice and floors-ceilings) chart tokens; categorical slots = validated reference palette */
+:root { --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s-other: #5a6578; --viz-cpt: #4C8DFF; --viz-flex: #4C8DFF66; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s-other: #a3adbb; --viz-cpt: #1F5FD6; --viz-flex: #1F5FD655; } }
+:root[data-theme="light"] { --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s-other: #a3adbb; --viz-cpt: #1F5FD6; --viz-flex: #1F5FD655; }
+:root[data-theme="dark"] { --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s-other: #5a6578; --viz-cpt: #4C8DFF; --viz-flex: #4C8DFF66; }
+.vizrow { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin: 12px 0; }
+.vizcard { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); padding: 12px 14px; min-width: 0; }
+.vizcard h4 { margin: 0 0 8px; font: 700 12px/16px var(--font-display); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
+.vizcard svg { display: block; width: 100%; height: auto; }
+.vizcard svg text { fill: var(--ink-2); font: 11px var(--font-text); }
+.vizcard svg .vlab { fill: var(--ink); font-weight: 600; }
+.donutwrap { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.donutwrap svg { width: 150px; flex: none; }
+.dleg { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; min-width: 0; flex: 1; }
+.dleg li { display: flex; gap: 8px; align-items: baseline; font-size: 13px; color: var(--ink); }
+.dleg i { width: 10px; height: 10px; border-radius: 2px; flex: none; transform: translateY(1px); }
+.dleg b { margin-left: auto; font: 600 12px var(--font-data); color: var(--ink-2); }
+.vkey { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); margin: 0 0 6px; }
+.vkey i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+details.viz { margin: 0 0 14px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); padding: 10px 14px; }
+details.viz > summary { cursor: pointer; font: 700 13px/18px var(--font-display); letter-spacing: .04em; color: var(--ink); }
+.vscroll { overflow-x: auto; }
 .rcols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 0 0 18px; }
 .rcols > div { border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; background: var(--surface); min-width: 0; }
 .rcols h4 { margin: 0 0 8px; font: 700 12px/16px var(--font-display); letter-spacing: .06em; text-transform: uppercase; }
@@ -617,6 +640,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     <p class="note" id="simLegend" hidden>From 2,000 simulated games (the same ones the Builder uses). <b>Floor / Ceil</b>: his 15th and 85th percentile score. <b>Opt CPT / Opt FLX</b>: how often he is in the single best legal lineup of a simulated game, as captain or flex. <b>Lev</b> (leverage) <span class="tag steel">untested</span>: optimal rate minus projected ownership (captain + flex, in points of %); positive = the best lineups use him more than the field will.</p>
     </details>
     <div class="seg pcols" id="pcols" role="group" aria-label="Columns"><button type="button" data-v="proj" aria-pressed="true">Projections</button><button type="button" data-v="own" aria-pressed="false">Ownership</button><button type="button" data-v="sim" aria-pressed="false">Simulation</button></div>
+    <details class="viz" id="rangeBox" open hidden><summary>Floor to ceiling: each player's simulated range</summary><div id="rangeChart"></div></details>
     <div class="tbl-wrap"><table id="ptable"><thead><tr>
       <th>Player</th><th class="gc g-proj">Pos</th><th class="n sort gc g-proj" data-k="sal">Salary</th><th class="n sort" data-k="proj">Proj</th><th class="n sort gc g-proj" data-k="value" title="Projected points per $1,000 of salary">Pts/$1K</th>
       <th class="n sort gc g-own" data-k="own_flex" title="Projected ownership as FLEX">Own FLX</th><th class="n sort gc g-own" data-k="own_cpt" title="Projected ownership as captain">Own CPT</th><th class="n sort gc g-own" data-k="p_mvp" title="Chance to be the game's top scorer">Top</th>
@@ -647,6 +671,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     <div class="flt" id="fltForge"></div>
     <div class="note" id="expoHead">Exposure</div>
     <div class="expo" id="expo"></div>
+    <div class="vizrow" id="expoCharts"></div>
     <div id="luGrade"></div>
     <div class="grid" id="luGrid"></div>
     </div>
@@ -659,7 +684,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
       <form class="controls" id="cform">
         <h3>Start from</h3>
         <div class="recipes" id="crecipes">
-          <button type="button" class="recipe" data-r="gpp" aria-pressed="true"><b>Tournament · FORGE default</b><small>FORGE Pick, exactly what FORGE enters (since 10/29): FORGE's 20 highest-projected lineups, any team split, each at least 3 players different from every other. 20 different lineups for a 20-max; #1-5 in a 5-entry contest; #1 in single entry. "2nd best tested method so far" (the method before 10/29) is under Method.</small><span class="ev" id="evGpp">18 past Showdowns, 20 different lineups: +59.8% (2nd best: +22.8%); profit in 44% of games, so expect losing nights</span></button>
+          <button type="button" class="recipe" data-r="gpp" aria-pressed="true"><b>Tournament · FORGE default</b><small>FORGE Pick, exactly what FORGE enters (since 10/29): 4 groups of 5 -- the simulator's top 5, the 3-different list's #1-5 and #11-15, and the 1-different list's #1-5. 20 different lineups for a 20-max; 3-different #1-5 in a 5-entry contest; the stack method's #1 in single entry.</small><span class="ev" id="evGpp">18 past Showdowns (20-max): +77.7% vs +54.1% for 20 from 3-different; profit in 56% of games. Groups were chosen after seeing results, so expect less live.</span></button>
           <button type="button" class="recipe" data-r="se" aria-pressed="false"><b>Single entry</b><small>The single best lineup under the same rules.</small><span class="ev">Same rules, 1 lineup</span></button>
           <button type="button" class="recipe" data-r="cash" aria-pressed="false"><b>Cash · Double Up, 50/50</b><small>The highest projected legal lineup. No stacking rules.</small><span class="ev">Not tested on Classic yet</span></button>
         </div>
@@ -711,7 +736,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
         <div class="custom-note" id="customNote"></div>
         <h3>Rules</h3>
         <div class="field"><label for="bN">Lineups</label><input type="number" id="bN" min="1" max="150" value="20"></div>
-        <div class="field"><label>Method</label><div class="seg segwrap" id="bMethod"><button type="button" data-v="plain" aria-pressed="true">FORGE Pick</button><button type="button" data-v="hyb" aria-pressed="false">2nd best tested method so far</button><button type="button" data-v="p51" aria-pressed="false">Top Projected Stacks</button><button type="button" hidden data-v="ev" aria-pressed="false">Simulation's Best Payout</button><button type="button" hidden data-v="hyb0" aria-pressed="false">FORGE Pick – original</button></div><p class="note" id="methodNote"></p></div>
+        <div class="field"><label>Method</label><div class="seg segwrap" id="bMethod"><button type="button" data-v="mix4" aria-pressed="true">FORGE Pick</button><button type="button" data-v="plain" aria-pressed="false">2nd best tested method so far</button><button type="button" data-v="hyb" aria-pressed="false">3rd: FORGE Pick before 10/29</button><button type="button" data-v="p51" aria-pressed="false">Top Projected Stacks</button><button type="button" hidden data-v="ev" aria-pressed="false">Simulation's Best Payout</button><button type="button" hidden data-v="hyb0" aria-pressed="false">FORGE Pick – original</button></div><p class="note" id="methodNote"></p></div>
         <div class="field"><label>Structure</label><div class="seg" id="bStruct"><button type="button" aria-pressed="false" data-v="any">Any split</button><button type="button" aria-pressed="false" data-v="51">5-1 only</button><button type="button" aria-pressed="true" data-v="hedge">Half 5-1</button></div></div>
         <div class="field"><label for="bCap">Max lineups per captain</label><input type="number" id="bCap" min="1" max="150" value="6"><small class="note" id="bCapNote" hidden>Auto: FORGE Pick splits lineups across its 3 captains by their top-scorer chances (untick "FORGE Pick captains" below to set your own cap).</small></div>
         <div class="field"><label for="bExp">Max exposure per player (%)</label><input type="number" id="bExp" min="10" max="100" value="" placeholder="Auto"><p class="note" id="bExpNote">Auto = FORGE's per-player cap (FORGE Pick). Type a % to use your own flat cap instead.</p></div>
@@ -741,6 +766,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
           <div class="toolbar" style="margin-top:16px"><h3>Your lineups</h3><button class="btn small" id="copyMine" type="button">Copy for DraftKings</button><button class="btn small" id="dlMine" type="button" hidden>Download CSV</button><button class="btn small primary" type="button" data-send="mine">Send to DraftKings →</button></div>
           <div class="flt" id="fltMine"></div>
           <div class="expo" id="bExpo"></div>
+          <div class="vizrow" id="bCharts"></div>
           <details class="bdown" id="bBreak"><summary>Breakdown: captains, flex, team splits</summary><div id="bBreakBody"></div></details>
           <div id="bGrade"></div>
           <div class="grid" id="bGrid"></div>
@@ -923,7 +949,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const fmt = (v, d = 1) => (v === null || v === undefined || Number.isNaN(v)) ? '—' : Number(v).toFixed(d);
   const money = v => '$' + Number(v).toLocaleString('en-US');
-  let D = null, sortKey = 'proj', sortDir = -1, builder = { proj: {}, lock: new Set(), out: new Set(), cpt: new Set(), struct: 'any', result: [], recipe: 'gpp', method: 'plain' };
+  let D = null, sortKey = 'proj', sortDir = -1, builder = { proj: {}, lock: new Set(), out: new Set(), cpt: new Set(), struct: 'any', result: [], recipe: 'gpp', method: 'mix4' };
   const LS = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
 
   // tabs
@@ -1221,7 +1247,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     D.players.forEach(p => { const k = ix[p.name]; if (!ST || k == null) { p.floor = p.ceil = p.opt_cpt = p.opt_flex = p.lev = null; return; }
       p.floor = ST.p15[k]; p.ceil = ST.p85[k]; p.sd = ST.sd[k]; p.opt_cpt = 100 * ST.opt_cpt[k]; p.opt_flex = 100 * ST.opt_flex[k];
       p.lev = (p.own_flex == null || p.own_cpt == null) ? null : (p.opt_cpt + p.opt_flex) - (p.own_flex + p.own_cpt); });
-    $$('#ptable .simcol').forEach(x => x.hidden = !ST); $('#simLegend').hidden = !ST;
+    $$('#ptable .simcol').forEach(x => x.hidden = !ST); $('#simLegend').hidden = !ST; try { rangeChart(); } catch (e) { console.error(e); }
     const loc = u => { if (!u) return null; const d = new Date(String(u).replace(' UTC', 'Z').replace(' ', 'T')); return isNaN(d) ? null : d.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); };
     const fr = loc(s.odds_as_of); $('#fresh').textContent = fr ? 'Odds as of ' + fr + (s.refreshed_utc ? ' · projections refreshed ' + loc(s.refreshed_utc) : '') : '';
     if (!LS.get('forge_start_seen')) $('#startCard').hidden = false;
@@ -1264,8 +1290,9 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   const SETS = [
     [/^HYB-M-SXPW-20$|^HYBMSXPW20$/, 'FORGE Pick – 20 different', "Comparator (not entered): FORGE Pick with 20 different lineups, graded live against the entered 10 best, each twice."],
     [/^HYB-M-SXPW-10$/, 'FORGE Pick – top 5 of each half', "Test (live only): the first 5 lineups of each half of FORGE Pick, graded on the same contests to see if fewer, better lineups earn more."],
-    [/^PLAIN-U3$|^PLAINU3$|^(FORGE|Entered) build \(PLAIN-U3\)/, 'FORGE Pick', "Our main method and the set we enter (since 10/29): FORGE's highest-projected lineups, any team split, each at least 3 players different from every other; 20 different lineups (#1-5 for a 5-entry contest, #1 for single entry)."],
-    [/^HYB-M-SXPW$|^HYBMSXPW$|^(FORGE|Entered) build \(HYB-M-SXPW\)/, '2nd best tested method so far', "FORGE's entered method 10/22-10/28: half top-projected 5-1 stacks, half the simulator's best payers, captains = FORGE's 3 most likely top scorers. Kept as the comparator and as a Builder option."],
+    [/^MIX4$|^(FORGE|Entered) build \(MIX4\)/, 'FORGE Pick', "Our main method and the set we enter (since 10/29): the simulator's top 5 + the 3-different list's #1-5 and #11-15 + the 1-different list's #1-5; 20 different lineups. 5-entry contest: 3-different #1-5. Single entry: the stack method's #1."],
+    [/^PLAIN-U3$|^PLAINU3$|^(FORGE|Entered) build \(PLAIN-U3\)/, '2nd best tested method so far', "FORGE's highest-projected lineups, any team split, each at least 3 players different from every other; 20 different lineups."],
+    [/^HYB-M-SXPW$|^HYBMSXPW$|^(FORGE|Entered) build \(HYB-M-SXPW\)/, '3rd: FORGE Pick before 10/29', "FORGE's entered method 10/22-10/28: half top-projected 5-1 stacks, half the simulator's best payers, captains = FORGE's 3 most likely top scorers."],
     [/^HYB-M-SXPC$|^HYBMSXPC$|^FORGE build \(HYB-M-SXPC\)/, 'FORGE Pick – equal captains', "FORGE Pick with FORGE's 3 most likely top scorers as captains, equal lineups each (the comparator for the entered build)."],
     [/^HYB-M-SXP$|^HYBMSXP$|^FORGE build \(HYB-M-SXP\)/, 'FORGE Pick – before the captain pool', "The entered method 10/18-10/21. Half are the top-projected 5-1 stacks, half the lineups that pay best across simulated contests, with FORGE's per-player cap. It keeps running as the comparator for the kill switch. Half are the top-projected 5-1 stacks, half the lineups that pay best across simulated contests, with FORGE's per-player cap: nobody in more lineups than the higher of his projected ownership or his optimal rate."],
     [/^HYB-M-SX$|^HYBMSX$|^FORGE build \(HYB-M-SX\)/, 'FORGE Pick – before the player cap', "FORGE Pick as entered until 10/18, without the per-player cap. It keeps running as the comparator for the kill switch."],
@@ -1449,9 +1476,56 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const cc = {}; L.forEach(l => cc[l.cpt] = (cc[l.cpt] || 0) + 1);
     el.innerHTML = Object.entries(cnt).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span class="chip">${k} <b>${Math.round(100 * v / n)}%</b>${cc[k] ? ' · CPT ' + cc[k] : ''}</span>`).join('');
   }
+
+  // (2026-10-29, FORGE: "pie charts and line graphs ... which players get a slice of the pie and how much ... ceilings or floors")
+  function portfolioCharts(L, el) {
+    if (!el) return; if (!L || !L.length || !L[0].cpt) { el.innerHTML = ''; return; }
+    const n = L.length, cc = {}, fx = {}; L.forEach(l => { cc[l.cpt] = (cc[l.cpt] || 0) + 1; l.flex.forEach(x => fx[x] = (fx[x] || 0) + 1); });
+    const caps = Object.entries(cc).sort((a, b) => b[1] - a[1]), top = caps.slice(0, 5), other = caps.slice(5).reduce((t, x) => t + x[1], 0);
+    const slices = top.map(([k, v], i) => ({ k, v, c: `var(--s${i + 1})` })).concat(other ? [{ k: `Other (${caps.length - 5})`, v: other, c: 'var(--s-other)' }] : []);
+    const R = 60, r = 38, cx = 75, cy = 75; let a0 = -Math.PI / 2;
+    const arc = (a, b) => { const big = b - a > Math.PI ? 1 : 0, p = (rad, t) => [cx + rad * Math.cos(t), cy + rad * Math.sin(t)];
+      const [x0, y0] = p(R, a), [x1, y1] = p(R, b), [x2, y2] = p(r, b), [x3, y3] = p(r, a);
+      return `M${x0},${y0} A${R},${R} 0 ${big} 1 ${x1},${y1} L${x2},${y2} A${r},${r} 0 ${big} 0 ${x3},${y3} Z`; };
+    const paths = slices.map(sl => { const a1 = a0 + 2 * Math.PI * sl.v / n, d = sl.v === n ? `M${cx - R},${cy} a${R},${R} 0 1,0 ${2 * R},0 a${R},${R} 0 1,0 ${-2 * R},0 M${cx - r},${cy} a${r},${r} 0 1,1 ${2 * r},0 a${r},${r} 0 1,1 ${-2 * r},0` : arc(a0, a1);
+      a0 = a1; return `<path d="${d}" fill="${sl.c}" fill-rule="evenodd" stroke="var(--surface)" stroke-width="2"><title>${esc(sl.k)}: captain in ${sl.v} of ${n} lineups (${Math.round(100 * sl.v / n)}%)</title></path>`; }).join('');
+    const donut = `<div class="vizcard"><h4>Captain share</h4><div class="donutwrap"><svg viewBox="0 0 150 150" role="img" aria-label="Captain share across ${n} lineups">${paths}
+      <text x="75" y="72" text-anchor="middle" class="vlab" style="font-size:20px">${caps.length}</text><text x="75" y="90" text-anchor="middle">captains</text></svg>
+      <ul class="dleg">${slices.map(sl => `<li><i style="background:${sl.c}"></i><span>${esc(sl.k)}</span><b>${sl.v} · ${Math.round(100 * sl.v / n)}%</b></li>`).join('')}</ul></div></div>`;
+    const own = Object.fromEntries((D.players || []).map(p => [p.name, (p.own_flex || 0) + (p.own_cpt || 0)]));
+    const rows = [...new Set([...Object.keys(cc), ...Object.keys(fx)])].map(k => ({ k, c: cc[k] || 0, f: fx[k] || 0 })).sort((a, b) => (b.c + b.f) - (a.c + a.f)).slice(0, 16);
+    const W = 360, lw = 118, bw = W - lw - 44, rh = 22, H = rows.length * rh + 6, sx = v => lw + bw * Math.min(1, v / n);
+    const bars = rows.map((o, i) => { const y = i * rh + 4, xc = sx(o.c), xf = sx(o.c + o.f), ow = own[o.k];
+      return `<g><title>${esc(o.k)}: ${o.c + o.f} of ${n} lineups (${Math.round(100 * (o.c + o.f) / n)}%) · captain ${o.c}, flex ${o.f}${ow ? ` · field ownership forecast ${Math.round(ow)}%` : ''}</title>
+        <text x="${lw - 6}" y="${y + 13}" text-anchor="end">${esc(o.k.length > 18 ? o.k.slice(0, 17) + '…' : o.k)}</text>
+        <rect x="${lw}" y="${y + 3}" width="${bw}" height="12" rx="3" fill="var(--surface-sunken)"/>
+        ${o.c ? `<rect x="${lw}" y="${y + 3}" width="${Math.max(0, xc - lw - (o.f ? 1 : 0))}" height="12" rx="3" fill="var(--viz-cpt)"/>` : ''}
+        ${o.f ? `<rect x="${xc + (o.c ? 1 : 0)}" y="${y + 3}" width="${Math.max(0, xf - xc - (o.c ? 1 : 0))}" height="12" rx="3" fill="var(--viz-flex)"/>` : ''}
+        ${ow ? `<line x1="${sx(ow * n / 100)}" x2="${sx(ow * n / 100)}" y1="${y}" y2="${y + 18}" stroke="var(--ink)" stroke-width="2"/>` : ''}
+        <text x="${W - 4}" y="${y + 13}" text-anchor="end" class="vlab">${Math.round(100 * (o.c + o.f) / n)}%</text></g>`; }).join('');
+    const share = `<div class="vizcard"><h4>Who gets a slice: share of lineups</h4><div class="vkey"><span><i style="background:var(--viz-cpt)"></i>Captain</span><span><i style="background:var(--viz-flex)"></i>Flex</span><span><i style="background:var(--ink);width:2px"></i>Field ownership forecast</span></div>
+      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Share of lineups per player">${bars}</svg></div>`;
+    el.innerHTML = donut + share;
+  }
+  function rangeChart() {
+    const box = $('#rangeBox'), el = $('#rangeChart'); if (!box || !el) return;
+    const P = (D.players || []).filter(p => p.floor != null && p.ceil != null && p.proj != null && !/^(O|OUT|IR)$/i.test(p.status || '')).sort((a, b) => b.proj - a.proj);
+    if (!P.length || (D.slate && D.slate.kind === 'classic')) { box.hidden = true; return; } box.hidden = false;
+    const W = 560, lw = 150, rw = W - lw - 16, rh = 22, H = P.length * rh + 30, mx = Math.max(...P.map(p => p.ceil)) * 1.05, sx = v => lw + rw * Math.max(0, v) / mx;
+    const ticks = [0, 5, 10, 15, 20, 25, 30, 35, 40].filter(t => t <= mx);
+    const axis = ticks.map(t => `<line x1="${sx(t)}" x2="${sx(t)}" y1="0" y2="${H - 22}" stroke="var(--line)" stroke-width="1"/><text x="${sx(t)}" y="${H - 8}" text-anchor="middle">${t}</text>`).join('');
+    const rows = P.map((p, i) => { const y = i * rh + 11;
+      return `<g><title>${esc(p.name)} (${p.pos} ${p.team}, $${p.sal.toLocaleString('en-US')}): floor ${fmt(p.floor)} · projection ${fmt(p.proj)} · ceiling ${fmt(p.ceil)} DK points</title>
+        <rect x="0" y="${y - 10}" width="${W}" height="${rh}" fill="transparent"/>
+        <text x="${lw - 8}" y="${y + 4}" text-anchor="end">${esc(p.name.length > 20 ? p.name.slice(0, 19) + '…' : p.name)} <tspan fill="var(--ink-3)">${p.pos}</tspan></text>
+        <line x1="${sx(p.floor)}" x2="${sx(p.ceil)}" y1="${y}" y2="${y}" stroke="var(--viz-cpt)" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="${sx(p.proj)}" cy="${y}" r="4.5" fill="var(--viz-cpt)" stroke="var(--surface)" stroke-width="2"/></g>`; }).join('');
+    el.innerHTML = `<p class="note">The line runs from a player's floor (a bad game, 15th percentile of FORGE's simulated games) to his ceiling (a great game, 85th percentile); the dot is his projection. Long lines to the right = boom potential. DraftKings points, FLEX scoring.</p>
+      <div class="vscroll"><svg viewBox="0 0 ${W} ${H}" style="min-width:${W}px;max-width:${W * 1.4}px" role="img" aria-label="Floor, projection and ceiling per player">${axis}${rows}</svg></div>`;
+  }
   function forgeShown() { return applyFlt(currentForge(), FLT.forge); }
   function renderForge() { const all = currentForge(); fltBar($('#fltForge'), 'forge', all, renderForge); const L = applyFlt(all, FLT.forge).map(l => ({ ...l, forged: /^(Entered|FORGE build)/.test($('#buildSel').value) }));
-    $('#expoHead').textContent = `Exposure across ${L.length} lineups`; exposure(L, $('#expo')); renderGrade(L, $('#luGrade'), renderForge); $('#luGrid').innerHTML = L.length ? L.map(luCard).join('') : '<p class="note">No lineup in this set matches the filter.</p>'; }
+    $('#expoHead').textContent = `Exposure across ${L.length} lineups`; exposure(L, $('#expo')); portfolioCharts(L, $('#expoCharts')); renderGrade(L, $('#luGrade'), renderForge); $('#luGrid').innerHTML = L.length ? L.map(luCard).join('') : '<p class="note">No lineup in this set matches the filter.</p>'; }
 
   // copy
   function dkCSV(L) {
@@ -1484,8 +1558,9 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     }));
   }
   $('#resetProj').addEventListener('click', () => { D.players.forEach(p => builder.proj[p.name] = baseProj(p)); builder.lock.clear(); builder.out.clear(); builder.cpt.clear(); renderBuilderTable(); applyRecipe(builder.recipe, true); });
-  const METHOD_NOTE = { plain: "FORGE's method since 10/29 (what FORGE enters): FORGE's highest-projected lineups, any team split, each at least 3 players different from every other; no captain or exposure limits. 20 different lineups. Instant.",
-    p51: 'Highest-projected 5-1 stacks under your rules. Instant.', hyb: "2nd best tested method so far (FORGE's entered method until 10/29): half top-projected 5-1 stacks, half the best payers in simulated contests, with FORGE's per-player cap (Auto below). A few seconds.",
+  const METHOD_NOTE = { mix4: "FORGE Pick (what FORGE enters since 10/29): 4 groups of 5 -- the simulator's top 5 picks, the 3-different list's #1-5 and #11-15, and the 1-different list's #1-5. 20 different lineups; a 5-entry contest gets the 3-different #1-5; single entry gets the stack method's #1. A few seconds.",
+    plain: "2nd best tested method so far: FORGE's highest-projected lineups, any team split, each at least 3 players different from every other; no captain or exposure limits. 20 different lineups. Instant.",
+    p51: 'Highest-projected 5-1 stacks under your rules. Instant.', hyb: "3rd: FORGE Pick before 10/29: half top-projected 5-1 stacks, half the best payers in simulated contests, with FORGE's per-player cap (Auto below). A few seconds.",
     ev: "Every lineup is played in 2,000 simulated games against a simulated field; the best average payouts win (FORGE's Showdown rules on). Takes a few seconds.", hyb0: 'FORGE Pick without the two fixes: captain can be anyone and cheap fillers are not marked down (unless you edited them).' };
   if ($('#bCap')) $('#bCap').addEventListener('input', () => { $('#bCap').dataset.touched = '1'; });
   function syncCap() {   // (2026-10-22) with FORGE Pick captains on, the captain cap is FORGE's weighting, not this box -> show that instead of a number that isn't used
@@ -1493,17 +1568,17 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     if (on && !c.disabled) { c.dataset.v = c.value; c.value = ''; c.placeholder = 'Auto'; c.disabled = true; } else if (!on && c.disabled) { c.disabled = false; c.value = c.dataset.v || 6; c.placeholder = ''; }
     $('#bCapNote').hidden = !on;
   }
-  function setMethod(v) { if (v !== 'p51' && v !== 'plain' && !(D && D.simpack)) v = 'plain'; builder.method = v; $$('#bMethod button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === v))); if (typeof syncCap === 'function' && $('#bCapNote')) syncCap();
+  function setMethod(v) { if (v !== 'p51' && v !== 'plain' && v !== 'mix4' && !(D && D.simpack)) v = 'plain'; builder.method = v; $$('#bMethod button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === v))); if (typeof syncCap === 'function' && $('#bCapNote')) syncCap();
     // 2026-10-21 PI decision: captain can be anyone by default; the box stays as an option
-    $('#methodNote').textContent = (D && !D.simpack && v === 'p51' ? 'Simulation methods appear after FORGE builds this game. ' : '') + METHOD_NOTE[v]; if (v !== builder.method_prev) setStruct((v === 'ev' || v === 'plain') ? 'any' : (v === 'p51' ? builder.struct : 'hedge')); builder.method_prev = v; }   // 2026-10-16: structure is editable for every method; each method starts on its own default
+    $('#methodNote').textContent = (D && !D.simpack && v === 'p51' ? 'Simulation methods appear after FORGE builds this game. ' : '') + METHOD_NOTE[v]; if (v !== builder.method_prev) setStruct((v === 'ev' || v === 'plain' || v === 'mix4') ? 'any' : (v === 'p51' ? builder.struct : 'hedge')); builder.method_prev = v; }   // 2026-10-16: structure is editable for every method; each method starts on its own default
   $$('#bMethod button').forEach(b => b.addEventListener('click', () => { setMethod(b.dataset.v); markCustom(); }));
   $('#bOwn').addEventListener('input', () => { const v = parseInt($('#bOwn').value); $('#bOwnV').textContent = v === 0 ? 'off' : v < 0 ? `fade popular ${-v}%` : `play popular ${v}%`; });
   function setStruct(v) { builder.struct = v; $$('#bStruct button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === v))); }
   $$('#bStruct button').forEach(b => b.addEventListener('click', () => { setStruct(b.dataset.v); markCustom(); }));
   // recipes: settings FORGE has tested (P51-M-SX for tournaments = PREREG_ROUND11 B1ax; single entry = P51 #1, Round 24; cash = best projected lineup of any shape, Round 24)
   const RECIPES = {
-    gpp: { n: 20, struct: 'any', cap: 20, exp: 100, uniq: 3, minSal: 47000, punt: 1, noCpt: false, dst: true, method: 'plain', top3: false, top5: false, label: 'Tournament · FORGE default' },   // (2026-10-29 PI decision D-2026-10-29-plain-u3) = production PLAIN-U3
-    se: { n: 20, struct: 'any', cap: 20, exp: 100, uniq: 3, minSal: 47000, punt: 1, noCpt: false, dst: true, method: 'plain', top3: false, top5: false, label: 'Single entry (uses lineup #1)' },   // single entry = #1 of FORGE Pick
+    gpp: { n: 20, struct: 'any', cap: 20, exp: 100, uniq: 3, minSal: 47000, punt: 1, noCpt: false, dst: true, method: 'mix4', top3: false, top5: false, label: 'Tournament · FORGE default' },   // (2026-10-29 PI decision D-2026-10-29-plain-u3) = production PLAIN-U3
+    se: { n: 20, struct: 'any', cap: 20, exp: 100, uniq: 3, minSal: 47000, punt: 1, noCpt: false, dst: true, method: 'mix4', top3: false, top5: false, label: 'Single entry (uses the stack method #1)' },   // single entry = #1 of FORGE Pick
     cash: { n: 1, struct: 'any', cap: 6, exp: 100, uniq: 1, minSal: 47000, punt: 1, noCpt: false, dst: true, top3: false, label: 'Cash' } };
   let applying = false;
   function applyRecipe(k, quiet) {
@@ -1519,7 +1594,39 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   $$('#bform input').forEach(i => i.addEventListener('change', markCustom));
 
   // the forge: enumerate every legal lineup, score by projection, pick greedily under caps
-  $('#bform').addEventListener('submit', ev => { ev.preventDefault(); const st = $('#bStatus'); st.className = 'status'; st.textContent = 'Building…'; setTimeout(runForge, 30); });
+  $('#bform').addEventListener('submit', ev => { ev.preventDefault(); const st = $('#bStatus'); st.className = 'status'; st.textContent = 'Building…'; setTimeout(() => (builder.method === 'mix4' ? runMix4() : runForge()), 30); });
+  // (2026-10-29 PI decision D-2026-10-29-mix4) FORGE Pick = the simulator's top 5 (stack + simulator method, its EV half) + 3-different #1-5 and
+  // #11-15 + 1-different #1-5; same slices, de-duplication and round-robin order as forge_v4/run_showdown.py mix4_build().
+  async function runMix4() {
+    const st0 = $('#bStatus'), edited = builder.lock.size || builder.out.size || builder.cpt.size || D.players.some(p => builder.proj[p.name] != null && Math.abs(builder.proj[p.name] - baseProj(p)) > 0.005);
+    const ek = D.owner && !edited ? Object.keys(D.builds || {}).find(k => /^(Entered|FORGE) build \(MIX4\)/.test(k) && (D.builds[k] || []).length) : null;
+    if (ek) {   // owner, no edits: FORGE's own server set (exact, the bigger simulation), so the Builder = what FORGE enters
+      const by = {}; D.builds[ek].forEach(l => (by[l.contest] = by[l.contest] || []).push(l)); const gs = Object.values(by).sort((a, b) => b.length - a.length);
+      const g20 = gs[0], se = (gs.find(g => g.length === 1) || g20)[0], mini = gs.find(g => g.length > 1 && g.length < g20.length) || g20;
+      const sal = Object.fromEntries(D.players.map(p => [p.name, p.sal])), mk = l => ({ cpt: l.cpt, flex: l.flex, proj: l.proj, sal: l.sal || (1.5 * (sal[l.cpt] || 0) + l.flex.reduce((t, x) => t + (sal[x] || 0), 0)), pct: null, own: null });
+      builder.result = g20.map(mk); builder.resultMethod = 'mix4'; builder.mix = { se: mk(se), mini: mini.map(mk) };
+      st0.className = 'status'; st0.textContent = `Forged ${g20.length} lineups: FORGE's own FORGE Pick set for this game (simulator top 5 + 3-different #1-5 & #11-15 + 1-different #1-5), exactly what FORGE enters.`;
+      FLT.mine = mkF(); $('#bOut').hidden = false; renderMine(); return; }
+    const st = $('#bStatus'), t0 = performance.now(), keep = { n: $('#bN').value, u: $('#bUniq').value, t5: $('#bTop5').checked, t3: $('#bTop3').checked, exp: $('#bExp').value };
+    let H = [], U3 = [], U1 = [];
+    try {
+      if (D.simpack) { setMethod('hyb'); $('#bTop5').checked = true; $('#bTop3').checked = true; $('#bExp').value = ''; $('#bUniq').value = 1; H = await forgeRun(10, new Set()); }
+      setMethod('plain'); $('#bUniq').value = 3; U3 = await forgeRun(30, new Set());
+      $('#bUniq').value = 1; U1 = await forgeRun(15, new Set());
+    } finally { setMethod('mix4'); $('#bN').value = keep.n; $('#bUniq').value = keep.u; $('#bTop5').checked = keep.t5; $('#bTop3').checked = keep.t3; $('#bExp').value = keep.exp; }
+    const key = l => l.cpt + '|' + [...l.flex].sort().join(','), lists = { EV: H.slice(5, 10).concat(U3.slice(15)), U3, U1 }, used = new Set(), outs = [];
+    for (const [src, a] of [['EV', 0], ['U3', 0], ['U3', 10], ['U1', 0]]) {
+      const L = lists[src], got = []; let k = a;
+      while (got.length < 5 && k < L.length) { if (!used.has(key(L[k]))) { got.push(L[k]); used.add(key(L[k])); } k++; }
+      outs.push(got); }
+    const P20 = []; for (let r = 0; r < 5; r++) outs.forEach(o => { if (o[r]) P20.push(o[r]); });
+    if (!P20.length) { st.className = 'status err'; st.textContent = 'No legal lineup fits these rules. Loosen a lock, the salary floor or the punt limit.'; return; }
+    builder.result = P20; builder.resultMethod = 'mix4'; builder.mix = { se: H[0] || U3[0], mini: U3 };
+    st.className = 'status'; st.textContent = `Forged ${P20.length} lineups (FORGE Pick: simulator top 5 + 3-different #1-5 & #11-15 + 1-different #1-5${H.length ? '' : '; no simulation for this game yet, so 3-different #16-20 stand in for the simulator picks'}) in ${((performance.now() - t0) / 1000).toFixed(1)} s`;
+    FLT.mine = mkF(); $('#bOut').hidden = false; renderMine();
+    logBuild('showdown', { method: 'mix4', n: 20, got: P20.length, ev_picks: Math.min(5, Math.max(0, H.length - 5)), locks: [...builder.lock], outs: [...builder.out], cpt_pool: [...builder.cpt], recipe: builder.recipe,
+      edits: Object.fromEntries(D.players.filter(p => builder.proj[p.name] != null && Math.abs(builder.proj[p.name] - p.proj) > 0.005).map(p => [p.name, builder.proj[p.name]])) }, P20.map(l => ({ cpt: l.cpt, flex: l.flex })));
+  }
   // (2026-10-22, FORGE: "would it build the lineups we are actually entering?") on an entered (final) slate the Builder starts from the projections
   // the entered build used (proj_build; the page's numbers refresh after the build); RUN = an automatic extra build for one contest (DK tab)
   function baseProj(p) { return (D && D.slate && D.slate.status === 'final' && p.proj_build != null) ? p.proj_build : p.proj; }
@@ -1685,7 +1792,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       <div class="tbl-wrap"><table class="sumt"><thead><tr><th>Player</th><th class="n">Captain</th><th class="n">Flex</th><th class="n">Total</th><th class="n">Field</th><th class="n">Opt rate</th></tr></thead><tbody>${names.map(r => `<tr><td><b>${r.nm}</b> <small class="dim">${r.p.pos || ''} ${r.p.team || ''}</small></td><td class="n">${pc(r.c)}</td><td class="n">${pc(r.f)}</td><td class="n"><b>${pc(r.c + r.f)}</b></td><td class="n">${r.p.own_flex == null ? '—' : fmt(r.p.own_flex + (r.p.own_cpt || 0), 0) + '%'}</td><td class="n">${r.p.opt_cpt == null ? '—' : fmt(r.p.opt_cpt + r.p.opt_flex, 0) + '%'}</td></tr>`).join('')}</tbody></table></div>
       <p class="note">Field = projected ownership (captain + flex). Opt rate = how often the player is in the best lineup of a simulated game (captain + flex).</p>`;
   }
-  function renderMine() { fltBar($('#fltMine'), 'mine', builder.result, renderMine); const L = mineShown(); exposure(L, $('#bExpo')); $('#bBreakBody').innerHTML = breakdown(L); renderPrivate(); $('#bGrid').innerHTML = L.length ? L.map((l, i) => luCard(l, i)).join('') : '<p class="note">No lineup matches the filter.</p>'; renderGrade(L, $('#bGrade'), renderMine); }
+  function renderMine() { fltBar($('#fltMine'), 'mine', builder.result, renderMine); const L = mineShown(); exposure(L, $('#bExpo')); portfolioCharts(L, $('#bCharts')); $('#bBreakBody').innerHTML = breakdown(L); renderPrivate(); $('#bGrid').innerHTML = L.length ? L.map((l, i) => luCard(l, i)).join('') : '<p class="note">No lineup matches the filter.</p>'; renderGrade(L, $('#bGrade'), renderMine); }
 
 
   // ---------------------------------------------------------------- Classic (2026-10-15): projections, QB environment, in-browser optimizer (GLPK, WebAssembly)
@@ -1849,7 +1956,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   function mineShown() { return applyFlt(builder.result || [], FLT.mine); }
   function cShown() { return applyFlt(CL.result || [], FLT.c); }
   function lineupsFor(kind) {      // -> { byContest: {name: [lu]}, gpp: [lu], se: lu, cash: lu } ; lu = {cpt, flex} (showdown) or {players} (classic)
-    if (DKSRC === 'mine') { const L = kind === 'classic' ? cShown() : mineShown(); return { byContest: {}, gpp: L, se: L[0], cash: L[0] }; }
+    if (DKSRC === 'mine') { const L = kind === 'classic' ? cShown() : mineShown(), se = (kind !== 'classic' && builder.resultMethod === 'mix4' && builder.mix) ? builder.mix.se : L[0]; return { byContest: {}, gpp: L, se, cash: se }; }
     if (kind === 'classic') { const B = D.builds || {}; const k = Object.keys(B).find(x => (B[x] || []).length); const L = k ? B[k] : []; return { byContest: groupBy(L), gpp: L, se: L[0], cash: L[0] }; }
     const L = forgeSendSet();
     const by = groupBy(L), cashL = L.filter(l => CASHRX.test(l.contest || '')), seL = L.filter(l => SERX.test(l.contest || ''));
@@ -1939,6 +2046,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     cs.forEach((c, j) => { if (j > 0) return; const n = per[c]; map[c] = (twice && n > L.length) ? L.flatMap(l => [l, l]) : L.slice(); why[c] = (twice && n > L.length) ? 'your lineups, each twice' : 'your lineups'; });
     for (const c of cs.slice(1)) {
       if (builder.resultMethod === 'plain') { const n = per[c]; map[c] = L.slice(0, n); why[c] = `lineups #1-${Math.min(n, L.length)} of your set (FORGE's tested plan)`; continue; }
+      if (builder.resultMethod === 'mix4' && builder.mix) { const n = per[c]; map[c] = builder.mix.mini.slice(0, n); why[c] = `3-different #1-${Math.min(n, builder.mix.mini.length)} (FORGE's tested plan for smaller contests)`; continue; }
       const n = per[c], dup = twice && n >= 20 && n % 2 === 0, need = dup ? n / 2 : n;
       const R = await forgeRun(need, used); R.forEach(l => used.add(key(l)));
       map[c] = dup ? R.flatMap(l => [l, l]) : R; why[c] = `${R.length} more of your lineups built for this contest${dup ? ', each twice' : ''} (none repeat another contest)`;
