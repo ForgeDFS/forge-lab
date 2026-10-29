@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="047a4e8f3ae8"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="6da64ae8ac4c"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -287,7 +287,7 @@ details.about p:last-child { margin-bottom: 0; }
 .builder { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; align-items: start; }
 .controls { padding: 16px; display: grid; gap: 14px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 112px); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); max-height: calc(100vh - 128px); overflow: auto; }
 .controls h3 { font: 600 11px/14px var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
-.recipes { display: grid; gap: 8px; } .recipes[hidden], .custom-note[hidden], h3[hidden] { display: none; }
+.recipes { display: grid; gap: 8px; } #fltMine, #fltC { display: none !important; } .emgo { width: 100%; margin-top: 4px; } .recipes[hidden], .custom-note[hidden], h3[hidden] { display: none; }
 .recipe { appearance: none; text-align: left; border: 1px solid var(--line); background: var(--surface-raised); border-radius: var(--r-md); padding: 10px 12px; cursor: pointer; color: var(--ink); display: grid; gap: 3px; }
 .recipe:hover { border-color: var(--line-strong); }
 .recipe b { font: 700 13.5px/18px var(--font-display); letter-spacing: .02em; }
@@ -744,7 +744,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
         <div class="toolbar"><div class="seg" id="cbPos"></div><input type="search" id="cbSearch" placeholder="Search players" aria-label="Search players"><button class="btn small" id="cReset" type="button">Reset</button><span class="note">Lock = in every lineup. Out = never used.</span></div>
         <div class="tbl-wrap"><table id="cbtable"><thead><tr><th>Player</th><th>Pos</th><th class="n">Salary</th><th class="n">Proj</th><th>Lock</th><th>Out</th></tr></thead><tbody></tbody></table></div>
         <div id="cOut" hidden>
-          <div class="toolbar" style="margin-top:16px"><h3>Your lineups</h3><button class="btn small" id="cCopy" type="button">Copy for DraftKings</button><button class="btn small" id="cDl" type="button" hidden>Download CSV</button><button class="btn small primary" type="button" data-send="mine">Send to DraftKings →</button></div>
+          <div class="toolbar" style="margin-top:16px"><h3>Your lineups</h3><button class="btn small" id="cCopy" type="button">Copy for DraftKings</button><button class="btn small" id="cDl" type="button" hidden>Download CSV</button><button class="btn small primary" type="button" data-send="mine">Send to DraftKings →</button><button class="btn primary emgo" type="button" data-em="1">Enter on phone · one at a time</button></div>
           <div class="flt" id="fltC"></div>
           <div class="expo" id="cExpo"></div>
           <div class="grid" id="cGrid"></div>
@@ -792,7 +792,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
         <div class="toolbar"><button class="btn small" id="resetProj" type="button">Reset projections</button><span class="note">CPT pool = only these can captain (none ticked = anyone). Lock = in every lineup. Out = never used.</span></div>
         <div class="tbl-wrap"><table id="btable"><thead><tr><th>Player</th><th>Pos</th><th class="n">Salary</th><th class="n">Proj</th><th title="Only these players can be captain">CPT pool</th><th>Lock</th><th>Out</th></tr></thead><tbody></tbody></table></div>
         <div id="bOut" hidden>
-          <div class="toolbar" style="margin-top:16px"><h3>Your lineups</h3><button class="btn small" id="copyMine" type="button">Copy for DraftKings</button><button class="btn small" id="dlMine" type="button" hidden>Download CSV</button><button class="btn small primary" type="button" data-send="mine">Send to DraftKings →</button></div>
+          <div class="toolbar" style="margin-top:16px"><h3>Your lineups</h3><button class="btn small" id="copyMine" type="button">Copy for DraftKings</button><button class="btn small" id="dlMine" type="button" hidden>Download CSV</button><button class="btn small primary" type="button" data-send="mine">Send to DraftKings →</button><button class="btn primary emgo" type="button" data-em="1">Enter on phone · one at a time</button></div>
           <div class="flt" id="fltMine"></div>
           <div class="expo" id="bExpo"></div>
           <div class="vizrow" id="bCharts"></div>
@@ -825,7 +825,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
       <div class="toolbar"><input type="search" id="nbaBSearch" placeholder="Search players" aria-label="Search players"><select id="nbaBGame" aria-label="Game"></select><button class="btn small" id="nbaBReset" type="button">Reset</button><span class="note" id="nbaBCount"></span></div>
       <p class="note" style="margin:-4px 0 10px">Lock = in every lineup. Out = never used. <span class="sdonly">CPT pool = only these can captain (none ticked = FORGE's 3 likeliest top scorers).</span> Type over a projection to use your own number. Players without a betting line start Out; untick to use them with FORGE's engine projection.</p>
       <div class="tbl-wrap"><table id="nbaBTable"><thead><tr><th>Player</th><th class="n" id="nbaBSalH">Salary</th><th class="n">Proj</th><th class="sdonly">CPT pool</th><th>Lock</th><th>Out</th></tr></thead><tbody></tbody></table></div>
-      <div id="nbaOut" hidden><div class="toolbar" style="margin-top:16px"><h3>Your lineups</h3><button type="button" class="btn small" id="nbaCsv">Download for DraftKings</button></div><div id="nbaPlan"></div><div class="expo" id="nbaExpo"></div><div class="grid" id="nbaGrid"></div></div>
+      <div id="nbaOut" hidden><div class="toolbar" style="margin-top:16px"><h3>Your lineups</h3><button type="button" class="btn small" id="nbaCsv">Download for DraftKings</button><button class="btn primary emgo" type="button" data-em="1">Enter on phone · one at a time</button></div><div id="nbaPlan"></div><div class="expo" id="nbaExpo"></div><div class="grid" id="nbaGrid"></div></div>
     </div>
     </div>
     </div>
@@ -1772,6 +1772,18 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const tot = applyPlan(builder.mix); st.className = 'status'; st.textContent = `Forged your ${tot} entries (${builder.result.length} different lineups). ${msg}`;
     FLT.mine = mkF(); $('#bOut').hidden = false; renderMine();
   }
+  // (2026-10-29 SD jitter test, docs/FORGE_SD_RESEARCH_2026-10-29.md s10) friends' FORGE Pick: projections x (1 + 2% noise) for the 3-different
+  // and 1-different lists, a fixed draw per phone and game (2% kept ROI within the rule; two phones share ~64% of lineups instead of 100%).
+  // The owner gets FORGE's exact set. Players you edited keep your number.
+  let JIT = null;
+  function sdJitter() {
+    if (D.owner) return null; let seed = 0; try { seed = +LS.get('forge_jit_seed') || 0; if (!seed) { seed = 1 + Math.floor(Math.random() * 2 ** 30); LS.set('forge_jit_seed', String(seed)); } } catch (e) { seed = 1 + Math.floor(Math.random() * 2 ** 30); }
+    let h = seed; for (const ch of String(D.slate.id || D.slate.game)) h = (Math.imul(h ^ ch.charCodeAt(0), 2654435761) >>> 0) || 1;
+    const rnd = () => { h = (h + 0x6D2B79F5) >>> 0; let t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const out = [];
+    D.players.forEach(p => { const z = Math.sqrt(-2 * Math.log(rnd() || 1e-9)) * Math.cos(2 * Math.PI * rnd()); const b0 = baseProj(p), v0 = builder.proj[p.name]; if (b0 == null || (v0 != null && Math.abs(v0 - b0) > 0.005)) return; out.push([p.name, v0]); builder.proj[p.name] = b0 * (1 + 0.02 * z); });
+    return out;
+  }
   async function runMix4() {
     const st0 = $('#bStatus'), edited = builder.lock.size || builder.out.size || builder.cpt.size || D.players.some(p => builder.proj[p.name] != null && Math.abs(builder.proj[p.name] - baseProj(p)) > 0.005);
     const ek = D.owner && !edited ? Object.keys(D.builds || {}).find(k => /^(Entered|FORGE) build \(MIX4\)/.test(k) && (D.builds[k] || []).length) : null;
@@ -1785,9 +1797,9 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     let H = [], U3 = [], U1 = [];
     try {
       if (D.simpack) { setMethod('hyb'); $('#bTop5').checked = true; $('#bTop3').checked = true; $('#bExp').value = ''; $('#bUniq').value = 1; H = await forgeRun(10, new Set()); }
-      setMethod('plain'); $('#bUniq').value = 3; U3 = await forgeRun(30, new Set());
+      JIT = sdJitter(); setMethod('plain'); $('#bUniq').value = 3; U3 = await forgeRun(30, new Set());
       $('#bUniq').value = 1; U1 = await forgeRun(15, new Set());
-    } finally { setMethod('mix4'); $('#bN').value = keep.n; $('#bUniq').value = keep.u; $('#bTop5').checked = keep.t5; $('#bTop3').checked = keep.t3; $('#bExp').value = keep.exp; }
+    } finally { if (JIT) { JIT.forEach(([n, v]) => { if (v === undefined) delete builder.proj[n]; else builder.proj[n] = v; }); JIT = null; } setMethod('mix4'); $('#bN').value = keep.n; $('#bUniq').value = keep.u; $('#bTop5').checked = keep.t5; $('#bTop3').checked = keep.t3; $('#bExp').value = keep.exp; }
     const key = l => l.cpt + '|' + [...l.flex].sort().join(','), lists = { EV: H.slice(5, 10).concat(U3.slice(15)), U3, U1 }, used = new Set(), outs = [];
     for (const [src, a] of [['EV', 0], ['U3', 0], ['U3', 10], ['U1', 0]]) {
       const L = lists[src], got = []; let k = a;
@@ -2319,8 +2331,22 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const toSlots = l => kind === 'classic'
       ? (l.players || l.lineup || []).map(p => { const q = typeof p === 'string' ? (D.players.find(z => z.name === p) || { name: p }) : p; return { slot: q.slot || q.pos, name: q.name, pos: q.pos, team: q.team, sal: q.sal }; })
       : [l.cpt, ...l.flex].map((n, k) => { const q = D.players.find(z => z.name === n) || { name: n }; return { slot: k ? 'FLEX' : 'CPT', name: n, pos: q.pos, team: q.team, sal: q.sal ? (k ? q.sal : Math.round(q.sal * 1.5)) : null }; });
+    if (String(D.slate.kind || '').startsWith('nba')) {   // (2026-10-29) NBA entry mode: your entries in contest order
+      const L = NB.result || []; if (!L.length) return out; const sd = D.slate.kind === 'nba_showdown', ti = String(D.slate.kind).includes('tiers');
+      const SL = ti ? (D.slate.tiers || []) : sd ? ['CPT', 'UTIL', 'UTIL', 'UTIL', 'UTIL', 'UTIL'] : NSLOT;
+      const ts = c => ({ slots: c.lu.map((p, j) => ({ slot: SL[j] || '', name: p.name, pos: p.pos, team: p.team, sal: sd && j === 0 ? (p.cpt_sal || null) : (ti ? null : p.sal) })) });
+      const plan = entryPlan(parseSizes($('#nbaEntries').value), L, null, true), nm = (c, j) => c.n === 1 ? 'Single entry' : j === 0 ? 'Biggest contest' : 'Contest ' + (j + 1);
+      out.push({ label: `All your entries (${plan.reduce((t, c) => t + c.lus.length, 0)})`, lineups: plan.flatMap((c, j) => c.lus.map(l => ({ ...ts(l), contest: nm(c, j) }))) });
+      plan.forEach((c, j) => out.push({ label: `${nm(c, j)} (${c.lus.length})`, lineups: c.lus.map(l => ({ ...ts(l), contest: nm(c, j) })) }));
+      return out;
+    }
+    if (kind === 'showdown' && builder.plan && builder.plan.length) {   // (2026-10-29) your entries, contest by contest, in the order you play them
+      const nm = (c, j) => c.n === 1 ? 'Single entry' : j === 0 ? 'Biggest contest' : 'Contest ' + (j + 1);
+      out.push({ label: `All your entries (${builder.plan.reduce((t, c) => t + c.lus.length, 0)})`, lineups: builder.plan.flatMap((c, j) => c.lus.map(l => ({ slots: toSlots(l), contest: nm(c, j) }))) });
+      builder.plan.forEach((c, j) => out.push({ label: `${nm(c, j)} (${c.lus.length})`, lineups: c.lus.map(l => ({ slots: toSlots(l), contest: nm(c, j) })) }));
+    }
     const mine = kind === 'classic' ? cShown() : mineShown();
-    if (mine && mine.length) out.push({ label: `My Builder lineups (${mine.length})`, lineups: mine.map(l => ({ slots: toSlots(l), contest: 'My Builder' })) });
+    if (mine && mine.length && !(kind === 'showdown' && builder.plan && builder.plan.length)) out.push({ label: `My Builder lineups (${mine.length})`, lineups: mine.map(l => ({ slots: toSlots(l), contest: 'My Builder' })) });
     const B = D.builds || {}; const k = Object.keys(B).find(x => /^(Entered|FORGE build)/.test(x)) || Object.keys(B).find(x => (B[x] || []).length);
     if (k && B[k] && B[k].length) {
       const by = {}; B[k].forEach(l => (by[l.contest || 'FORGE'] = by[l.contest || 'FORGE'] || []).push(l));
@@ -2328,13 +2354,15 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     }
     return out;
   }
-  function emFill() { const S = emSets(); const big = S.reduce((b, x, j) => x.lineups.length > (S[b] ? S[b].lineups.length : -1) ? j : b, 0);
+  function emFill() { const S = emSets(); const big = S.length && /^All your entries/.test(S[0].label) ? 0 : S.reduce((b, x, j) => x.lineups.length > (S[b] ? S[b].lineups.length : -1) ? j : b, 0);
     $('#emContest').innerHTML = S.length ? S.map((x, j) => `<option value="${j}" ${j === big ? 'selected' : ''}>${x.label}</option>`).join('') : '<option>No lineups yet</option>'; $('#emStart').disabled = !S.length; }
-  $('#emStart').addEventListener('click', () => {
-    const S = emSets(), set = S[+$('#emContest').value || 0]; if (!set) return;
+  $('#emStart').addEventListener('click', () => emGo(+$('#emContest').value || 0));
+  $$('[data-em]').forEach(b => b.addEventListener('click', () => { emFill(); emGo(0); }));   // (2026-10-29, FORGE) straight from the Builder to one-at-a-time entry
+  function emGo(ix) {
+    const S = emSets(), set = S[ix]; if (!set || !set.lineups.length) return;
     EM.L = set.lineups; EM.key = 'forge_em_' + (D.slate.id || D.slate.game) + '_' + set.label.replace(/\W+/g, '');
     EM.i = Math.min(EM.L.length - 1, +(LS.get(EM.key + '_i') || 0)); $('#emode').hidden = false; document.body.style.overflow = 'hidden'; emRender(); emWakeOn();
-  });
+  }
   function emState() { try { return JSON.parse(LS.get(EM.key) || '{}'); } catch (e) { return {}; } }
   function emSave(st) { LS.set(EM.key, JSON.stringify(st)); LS.set(EM.key + '_i', String(EM.i)); }
   function emRender() {
