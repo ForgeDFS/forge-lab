@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="fb7f4b6050b1"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="80f4be98e665"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -1461,6 +1461,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   $('#resetProj').addEventListener('click', () => { D.players.forEach(p => builder.proj[p.name] = baseProj(p)); builder.lock.clear(); builder.out.clear(); builder.cpt.clear(); renderBuilderTable(); applyRecipe(builder.recipe, true); });
   const METHOD_NOTE = { p51: 'Highest-projected 5-1 stacks under your rules. Instant.', hyb: "FORGE's main method: half top-projected 5-1 stacks, half the best payers in simulated contests, with FORGE's per-player cap (Auto below). A few seconds.",
     ev: "Every lineup is played in 2,000 simulated games against a simulated field; the best average payouts win (FORGE's Showdown rules on). Takes a few seconds.", hyb0: 'FORGE Pick without the two fixes: captain can be anyone and cheap fillers are not marked down (unless you edited them).' };
+  if ($('#bCap')) $('#bCap').addEventListener('input', () => { $('#bCap').dataset.touched = '1'; });
   function syncCap() {   // (2026-10-22) with FORGE Pick captains on, the captain cap is FORGE's weighting, not this box -> show that instead of a number that isn't used
     const on = builder.method === 'hyb' && $('#bTop3') && $('#bTop3').checked && !(builder.cpt && builder.cpt.size), c = $('#bCap');
     if (on && !c.disabled) { c.dataset.v = c.value; c.value = ''; c.placeholder = 'Auto'; c.disabled = true; } else if (!on && c.disabled) { c.disabled = false; c.value = c.dataset.v || 6; c.placeholder = ''; }
@@ -1523,7 +1524,11 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       while (c.reduce((a, b) => a + b, 0) > N) c[c.indexOf(Math.max(...c))]--;
       while (c.reduce((a, b) => a + b, 0) < N) { let k = 0, best = -Infinity; wn.forEach((x, j) => { if (x - c[j] / N > best) { best = x - c[j] / N; k = j; } }); c[k]++; }
       T3.forEach((i, j) => wcap[i] = c[j]); }
-    const capOf = i => top3On ? (wcap[i] || 0) : cap;
+    // (2026-10-28, FORGE: "them changing the captain should not throw the whole process") your own CPT pool under FORGE Pick keeps every other
+    // FORGE Pick setting and splits the lineups evenly across your captains (1 captain = all of them), instead of the generic per-captain box
+    const myPool = method === 'hyb' && cptPool.size && !top3On && !$('#bCap').dataset.touched;
+    if (myPool) { const L = [...cptPool], base = Math.floor(N / L.length); let rem = N - base * L.length; L.forEach(i => { wcap[i] = base + (rem > 0 ? 1 : 0); rem--; }); }
+    const capOf = i => (top3On || myPool) ? (wcap[i] || 0) : cap;
     const out = P.map(p => builder.out.has(p.name)), lock = P.map(p => builder.lock.has(p.name)), nLock = lock.filter(Boolean).length;
     const luKey = lu => P[lu[0]].name + '|' + lu.slice(1).map(x => P[x].name).sort().join(',');
     /* 2026-10-22 (FORGE): on a slate FORGE entered, friends' builds never reproduce FORGE's entered lineups (salted hashes only; owner builds unaffected) */
@@ -1581,7 +1586,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       const val = new Map(); pool.forEach((i, k) => val.set(i, ev[k])); const evOrder = [...pool].sort((a, b) => val.get(b) - val.get(a));
       const stc = builder.struct, evo51 = evOrder.filter(i => is51[i]);   // structure: any = no split rule, 51 = every lineup 5-1, hedge = half 5-1 (the default for FORGE Pick)
       if (method === 'ev') { if (stc === 'hedge') { pickFrom(evo51, Math.ceil(N / 2), cc, val); pickFrom(evOrder, N, {}, val); } else pickFrom(stc === '51' ? evo51 : evOrder, N, cc, val); }
-      else { if (stc !== 'any') pickFrom(idx.filter(i => is51[i]), Math.ceil(N / 2), cc, val); const half = {}; pickFrom(stc === '51' ? evo51 : evOrder, N, (stc === 'any' || top3On) ? cc : half, val); }   // captain pool: one captain count across both halves (as tested)
+      else { if (stc !== 'any') pickFrom(idx.filter(i => is51[i]), Math.ceil(N / 2), cc, val); const half = {}; pickFrom(stc === '51' ? evo51 : evOrder, N, (stc === 'any' || top3On || myPool) ? cc : half, val); }   // captain pool: one captain count across both halves (as tested)
       // 2026-10-21 (FORGE, 20 of 45): same as production hybrid_select_pitch: when the pitch cap, the captain cap and the "different players" rule use up the candidates, fill the rest without the pitch cap (logged); never fewer lineups than asked unless the other rules truly leave none
       if (method === 'hyb' && PC && chosen.length < N) { const before = chosen.length, ccAll = {}; chosen.forEach(ch => ccAll[ch.lu[0]] = (ccAll[ch.lu[0]] || 0) + 1); pickFrom(stc === '51' ? evo51 : evOrder, N, ccAll, val, true); builder.relaxed = chosen.length - before; }
       if (chosen.length < N) { const why = { cap: 0, exp: 0, uniq: 0 }; for (const i of (stc === '51' ? evo51 : evOrder)) { const lu = lus(i); if (chosen.some(ch => ch.lu.every((x, k) => x === lu[k]))) continue;
@@ -1601,7 +1606,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     st.className = 'status'; st.textContent = `Forged ${chosen.length} of ${NREQ} lineups${top5 ? ' (best half of ' + N + ')' : ''} (${setInfo({ p51: 'P51-M-SX', hyb: 'HYB-M-SXPW', ev: 'EV-M', hyb0: 'HYB-M' }[method]).name}) · ${codes.length.toLocaleString('en-US')} legal lineups${sim ? ', ' + (builder.poolN || Math.min(codes.length, D.simpack.topn || 10000)).toLocaleString('en-US') + ' simulated' : ''} in ${(ms / 1000).toFixed(1)} s` + (builder.relaxed ? ` · the last ${builder.relaxed === 1 ? 'lineup was' : builder.relaxed + ' lineups were'} filled without FORGE's per-player cap (the cap alone left too few)` : '') + (chosen.length < NREQ ? ` · stopped at ${chosen.length}: of the ${(builder.why ? builder.why.cap + builder.why.exp + builder.why.uniq : 0).toLocaleString('en-US')} lineups left, ${builder.why ? builder.why.cap.toLocaleString('en-US') : 0} are blocked by the per-captain limit, ${builder.why ? builder.why.exp.toLocaleString('en-US') : 0} by the per-player exposure limit and ${builder.why ? builder.why.uniq.toLocaleString('en-US') : 0} by the min-players-different rule. With a high "min players different" only so many lineups can fit; lower it (or raise the captain limit) to get more` : '');
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) { const sp = $('#sparks'); sp.innerHTML = Array.from({ length: 18 }, () => { const a = Math.random() * Math.PI * 2, r = 40 + Math.random() * 70; return `<b style="--dx:${(Math.cos(a) * r).toFixed(0)}px;--dy:${(Math.sin(a) * r - 20).toFixed(0)}px"></b>`; }).join(''); setTimeout(() => sp.innerHTML = '', 800); }
     FLT.mine = mkF(); $('#bOut').hidden = false; renderMine();
-    logBuild('showdown', { method, n: NREQ, top5: !!top5, top3: !!top3On, cpt_caps: top3On ? Object.fromEntries(Object.entries(wcap).map(([i, k]) => [P[i].name, k])) : null, seed: Math.max(0, Math.floor(+$('#bSeed').value) || 0), got: chosen.length, pitch_relaxed: builder.relaxed || 0, short_why: builder.why || null, var_pct: (Math.floor(+$('#bSeed').value) > 0) ? (parseFloat($('#bVar').value) || 25) : null, recipe: builder.recipe, built: N, cap, exp: maxExp, uniq, minSal, punt: maxPunt, noCpt, dst: dstRule, struct: builder.struct,
+    logBuild('showdown', { method, n: NREQ, top5: !!top5, top3: !!top3On, cpt_caps: (top3On || myPool) ? Object.fromEntries(Object.entries(wcap).map(([i, k]) => [P[i].name, k])) : null, seed: Math.max(0, Math.floor(+$('#bSeed').value) || 0), got: chosen.length, pitch_relaxed: builder.relaxed || 0, short_why: builder.why || null, var_pct: (Math.floor(+$('#bSeed').value) > 0) ? (parseFloat($('#bVar').value) || 25) : null, recipe: builder.recipe, built: N, cap, exp: maxExp, uniq, minSal, punt: maxPunt, noCpt, dst: dstRule, struct: builder.struct,
       own_lean: parseInt($('#bOwn').value) || 0, mine: $('#bMine').checked, locks: [...builder.lock], outs: [...builder.out], cpt_pool: [...builder.cpt],
       edits: Object.fromEntries(P.filter(p => builder.proj[p.name] != null && Math.abs(builder.proj[p.name] - p.proj) > 0.005).map(p => [p.name, builder.proj[p.name]])) },
       builder.result.map(l => ({ cpt: l.cpt, flex: l.flex })));
@@ -2505,7 +2510,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const P = D.players.map((p, i) => ({ ...p, i, q: QJ(p) })).filter(p => p.proj != null && !NB.out.has(p.name) && !NBOUT(p) && p.cpt_sal);
     const teams = [...new Set(P.map(p => p.team))]; let pool = null, wcap = {};
     const myC = P.filter(p => NB.cpt.has(p.name));
-    if (myC.length) { pool = new Set(myC.map(p => p.i)); myC.forEach(p => wcap[p.i] = N); }      // the user's own captain pool (no weighting)
+    if (myC.length) { pool = new Set(myC.map(p => p.i)); const base = Math.floor(N / myC.length); let rem = N - base * myC.length; myC.forEach(p => { wcap[p.i] = base + (rem > 0 ? 1 : 0); rem--; }); }      // the user's own captains: everything else default, lineups split evenly across them (2026-10-28, FORGE)
     else if ($('#nbaTop3').checked) { const T3 = [...P].sort((a, b) => (b.p_top || 0) - (a.p_top || 0)).slice(0, 3); pool = new Set(T3.map(p => p.i));
       const w = T3.map(p => p.p_top || 0), sw = w.reduce((a, b) => a + b, 0) || 1, wn = w.map(x => x / sw), c = wn.map(x => Math.max(1, Math.round(N * x)));
       if (N < 3) { c.fill(0); [...wn.keys()].sort((a, b) => wn[b] - wn[a]).slice(0, N).forEach(j => c[j] = 1); }
