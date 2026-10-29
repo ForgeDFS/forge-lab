@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="a730d910a793"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="0894b88d801a"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -764,7 +764,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
         </div>
         <div class="custom-note" id="customNote"></div>
         <h3>Rules</h3>
-        <div class="field"><label for="bN">Lineups</label><input type="number" id="bN" min="1" max="150" value="20"></div>
+        <div class="field"><label for="bEntries">Entries you're playing</label><input type="text" id="bEntries" inputmode="numeric" autocomplete="off" value="20"><small class="note">One number per contest: <b>20, 5, 2, 1</b> = a 20-max, a 5-entry contest, a 2-entry GPP and a single entry (28 entries). FORGE builds every entry with its tested plan for that contest size.</small><input type="number" id="bN" min="1" max="150" value="20" hidden></div>
         <div class="field"><label>Method</label><div class="seg segwrap" id="bMethod"><button type="button" data-v="mix4" aria-pressed="true">FORGE Pick</button><button type="button" data-v="plain" aria-pressed="false">2nd best tested method so far</button><button type="button" data-v="hyb" aria-pressed="false">3rd: FORGE Pick before 10/29</button><button type="button" data-v="p51" aria-pressed="false">Top Projected Stacks</button><button type="button" hidden data-v="ev" aria-pressed="false">Simulation's Best Payout</button><button type="button" hidden data-v="hyb0" aria-pressed="false">FORGE Pick – original</button></div><p class="note" id="methodNote"></p></div>
         <div class="field"><label>Structure</label><div class="seg" id="bStruct"><button type="button" aria-pressed="false" data-v="any">Any split</button><button type="button" aria-pressed="false" data-v="51">5-1 only</button><button type="button" aria-pressed="true" data-v="hedge">Half 5-1</button></div></div>
         <div class="field"><label for="bCap">Max lineups per captain</label><input type="number" id="bCap" min="1" max="150" value="6"><small class="note" id="bCapNote" hidden>Auto: FORGE Pick splits lineups across its 3 captains by their top-scorer chances (untick "FORGE Pick captains" below to set your own cap).</small></div>
@@ -796,6 +796,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
           <div class="flt" id="fltMine"></div>
           <div class="expo" id="bExpo"></div>
           <div class="vizrow" id="bCharts"></div>
+          <div id="bPlan"></div>
           <details class="bdown" id="bBreak"><summary>Breakdown: captains, flex, team splits</summary><div id="bBreakBody"></div></details>
           <div id="bGrade"></div>
           <div class="grid" id="bGrid"></div>
@@ -808,7 +809,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     <div class="builder">
     <div class="controls nbaform">
       <h3>Rules</h3>
-      <label>Lineups <input type="number" id="nbaN" min="1" max="150" value="20"></label>
+      <label>Entries you're playing <input type="text" id="nbaEntries" inputmode="numeric" autocomplete="off" value="20"></label><small class="note">One number per contest: <b>20, 5, 2, 1</b> = a 20-max, a 5-entry contest, a 2-entry GPP and a single entry (28 entries). FORGE builds every entry with its tested plan for that contest size.</small><input type="number" id="nbaN" min="1" max="150" value="20" hidden>
       <label>Min players different <input type="number" id="nbaUniq" min="1" max="6" value="2"></label>
       <label>Max exposure % <input type="number" id="nbaExp" min="10" max="100" value="100"></label>
       <label class="check sdonly"><input type="checkbox" id="nbaTop3" checked> FORGE Pick captains: FORGE's 3 most likely top DraftKings scorers, more lineups for the likeliest (FORGE's Showdown default)</label>
@@ -822,7 +823,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
       <div class="toolbar"><input type="search" id="nbaBSearch" placeholder="Search players" aria-label="Search players"><select id="nbaBGame" aria-label="Game"></select><button class="btn small" id="nbaBReset" type="button">Reset</button><span class="note" id="nbaBCount"></span></div>
       <p class="note" style="margin:-4px 0 10px">Lock = in every lineup. Out = never used. <span class="sdonly">CPT pool = only these can captain (none ticked = FORGE's 3 likeliest top scorers).</span> Type over a projection to use your own number. Players without a betting line start Out; untick to use them with FORGE's engine projection.</p>
       <div class="tbl-wrap"><table id="nbaBTable"><thead><tr><th>Player</th><th class="n" id="nbaBSalH">Salary</th><th class="n">Proj</th><th class="sdonly">CPT pool</th><th>Lock</th><th>Out</th></tr></thead><tbody></tbody></table></div>
-      <div id="nbaOut" hidden><div class="toolbar" style="margin-top:16px"><h3>Your lineups</h3><button type="button" class="btn small" id="nbaCsv">Download for DraftKings</button></div><div class="expo" id="nbaExpo"></div><div class="grid" id="nbaGrid"></div></div>
+      <div id="nbaOut" hidden><div class="toolbar" style="margin-top:16px"><h3>Your lineups</h3><button type="button" class="btn small" id="nbaCsv">Download for DraftKings</button></div><div id="nbaPlan"></div><div class="expo" id="nbaExpo"></div><div class="grid" id="nbaGrid"></div></div>
     </div>
     </div>
     </div>
@@ -850,7 +851,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
       <li><b>Download your entries file.</b> On the DraftKings website, open <b>Lineups → Edit Entries</b> and download your entries (DKEntries.csv). <a class="btn small" id="dkOpen" href="https://www.draftkings.com/entry/upload" target="_blank" rel="noopener">Open DraftKings Edit Entries</a>
         <span class="note" style="display:block;margin-top:4px">The page is draftkings.com/entry/upload. On a phone, if the DraftKings app opens instead, type that address into your browser.</span></li>
       <li><b>Fill it here.</b> <label class="btn primary filebtn"><input type="file" id="dkFile">Choose your DKEntries file</label>
-        <label class="check" style="margin-top:8px"><input type="checkbox" id="dkTwice" checked> Enter each lineup twice when a contest has more entries than lineups (FORGE's default: 10 best lineups, each twice, beat 20 different ones on 18 past Showdowns)</label>
+        
         <div class="field" style="margin-top:10px"><label>Use these lineups</label><div class="seg" id="dkSrc"><button type="button" data-v="forge" aria-pressed="true">FORGE's lineups</button><button type="button" data-v="mine" aria-pressed="false">My Builder lineups</button></div></div>
         <p class="note">Can't see the file? iPhone: tap <b>Choose File</b>, then <b>Browse</b> → <b>Downloads</b>. Android: if photos open, tap <b>Browse</b> or the ☰ menu → <b>Downloads</b>. The file is usually named <b>DKEntries.csv</b>.</p>
         <div id="dkResult" class="dkres" role="status"></div></li>
@@ -1714,7 +1715,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   let applying = false;
   function applyRecipe(k, quiet) {
     const r = RECIPES[k] || RECIPES.gpp; applying = true; builder.recipe = k in RECIPES ? k : 'gpp';
-    $('#bN').value = r.n; setStruct(r.struct); $('#bCap').value = r.cap; $('#bExp').value = (r.method === 'hyb') ? '' : r.exp; $('#bUniq').value = r.uniq; $('#bMinSal').value = r.minSal; $('#bPunt').value = r.punt;
+    $('#bN').value = r.n; if ($('#bEntries') && builder.recipe !== 'gpp') $('#bEntries').value = '1'; else if ($('#bEntries') && $('#bEntries').value.trim() === '1') $('#bEntries').value = '20'; setStruct(r.struct); $('#bCap').value = r.cap; $('#bExp').value = (r.method === 'hyb') ? '' : r.exp; $('#bUniq').value = r.uniq; $('#bMinSal').value = r.minSal; $('#bPunt').value = r.punt;
     $('#bNoCpt').checked = r.noCpt; $('#bDst').checked = r.dst; setMethod(r.method || 'p51'); $('#bOwn').value = 0; $('#bOwnV').textContent = 'off';
     if ($('#bTop3')) $('#bTop3').checked = !!r.top3; if ($('#bTop5')) $('#bTop5').checked = !!r.top5; if ($('#bMine')) $('#bMine').checked = false; $('#bSeed').value = 0; if ($('#bVar')) $('#bVar').value = 25; builder.cpt.clear(); applying = false;   // every recipe resets the extras: FORGE default = production build exactly
     syncCap(); $$('#recipes .recipe').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.r === builder.recipe))); $('#customNote').textContent = ''; LS.set('forge_recipe', builder.recipe);
@@ -1725,9 +1726,48 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   $$('#bform input').forEach(i => i.addEventListener('change', markCustom));
 
   // the forge: enumerate every legal lineup, score by projection, pick greedily under caps
-  $('#bform').addEventListener('submit', ev => { ev.preventDefault(); const st = $('#bStatus'); st.className = 'status'; st.textContent = 'Building…'; setTimeout(() => (builder.method === 'mix4' ? runMix4() : runForge()), 30); });
+  $('#bform').addEventListener('submit', ev => { ev.preventDefault(); $('#bN').value = Math.max(...parseSizes($('#bEntries').value)); const st = $('#bStatus'); st.className = 'status'; st.textContent = 'Building…'; setTimeout(() => (builder.method === 'mix4' ? runMix4() : runForge()), 30); });
   // (2026-10-29 PI decision D-2026-10-29-mix4) FORGE Pick = the simulator's top 5 (stack + simulator method, its EV half) + 3-different #1-5 and
   // #11-15 + 1-different #1-5; same slices, de-duplication and round-robin order as forge_v4/run_showdown.py mix4_build().
+  // (2026-10-29, FORGE: "I need 28 lineups so give me 28") entries per contest -> FORGE's tested plan for each contest size (SD-EXTEND / NBA-EXTEND):
+  // the biggest contest gets different lineups (#1-n); every smaller contest gets FORGE's top lineups again (NFL FORGE Pick: 3-different #1-n);
+  // a single entry gets the single-entry lineup. Past 20 in one contest FORGE Pick continues with its next-best groups (bucket table, untested there).
+  function parseSizes(v) { const a = String(v || '').split(/[^0-9]+/).map(x => parseInt(x)).filter(x => x > 0).map(x => Math.min(150, x)); return a.length ? a : [20]; }
+  function entryPlan(sizes, R, mix, nba) {
+    return sizes.map((n, i) => ({ n, i })).sort((a, b) => b.n - a.n).map((c, j) => { const n = c.n; let lus, why;
+      if (n === 1) { lus = [mix ? mix.se : R[0]]; why = mix ? "single entry: FORGE Pick's single-entry lineup (stack method #1)" : 'single entry: lineup #1'; }
+      else if (j === 0 && (!mix || n >= 20)) { lus = R.slice(0, n); why = mix ? (n > 20 ? `FORGE Pick's 20 + ${n - 20} from FORGE's next-best groups (untested past 20)` : 'FORGE Pick, 20 different lineups') : `${n} different lineups`; }
+      else if (mix) { lus = mix.mini.slice(0, n); why = j === 0 ? `3-different #1-${n}: FORGE's tested plan for contests under 20 entries` : `3-different #1-${n}: in smaller contests FORGE's best lineups beat new ones (tested)`; }
+      else { lus = R.slice(0, n); why = `lineups #1-${n} again: in smaller contests FORGE's best lineups beat new ones (tested)`; }
+      return { i: c.i, n, lus: lus.filter(Boolean), why }; });
+  }
+  const runs = idx => { const a = [...idx].sort((x, y) => x - y), o = []; for (let k = 0; k < a.length; k++) { let e = k; while (e + 1 < a.length && a[e + 1] === a[e] + 1) e++; o.push(e - k >= 2 ? `#${a[k]}-${a[e]}` : a.slice(k, e + 1).map(x => '#' + x).join(', ')); k = e; } return o.join(', '); };
+  function planTable(plan, uniq, keyf) {
+    const pos = new Map(uniq.map((l, i) => [keyf(l), i + 1])), tot = plan.reduce((t, c) => t + c.n, 0), many = plan.length > 1;
+    return `<div class="tbl-wrap" style="margin-top:12px"><table><thead><tr><th>${many ? 'Contest' : 'Contest'}</th><th class="n">Entries</th><th>Lineups below</th><th>Why</th></tr></thead><tbody>${plan.map((c, j) => `<tr><td>${c.n === 1 ? 'Single entry' : (j === 0 ? 'Biggest contest' : 'Contest ' + (j + 1))}</td><td class="n">${c.n}${c.lus.length < c.n ? ` <small>(only ${c.lus.length} built)</small>` : ''}</td><td>${runs(c.lus.map(l => pos.get(keyf(l))))}</td><td><small>${c.why}</small></td></tr>`).join('')}</tbody></table></div><p class="note">${tot} entries, ${uniq.length} different lineups. The Entries tab fills your DraftKings file this way by itself.</p>`;
+  }
+  const sdKey = l => l.cpt + '|' + [...l.flex].sort().join(',');
+  function applyPlan(mix) {
+    const plan = entryPlan(parseSizes($('#bEntries').value), builder.raw || builder.result || [], mix), seen = new Set(), U = [];
+    plan.forEach(c => c.lus.forEach(l => { if (!seen.has(sdKey(l))) { seen.add(sdKey(l)); U.push(l); } }));
+    builder.plan = plan; builder.result = U; return plan.reduce((t, c) => t + c.n, 0);
+  }
+  async function mixExt(used0, need) {     // FORGE's next-best groups for entries 21+ in one contest, order from the bucket table (docs/FORGE_SD_RESEARCH_2026-10-29.md s7-8)
+    const keep = { n: $('#bN').value, u: $('#bUniq').value }; let U1 = [], U2 = [], U3 = [];
+    try { setMethod('plain'); $('#bUniq').value = 1; U1 = await forgeRun(20 + need, new Set()); $('#bUniq').value = 2; U2 = await forgeRun(15 + need, new Set()); $('#bUniq').value = 3; U3 = await forgeRun(30 + need, new Set()); }
+    finally { setMethod('mix4'); $('#bN').value = keep.n; $('#bUniq').value = keep.u; }
+    const used = new Set(used0), out = [];
+    for (const [L, a, b] of [[U1, 15, 20], [U2, 0, 5], [U2, 10, 15], [U1, 10, 15], [U3, 5, 10], [U3, 20, 1e9], [U2, 15, 1e9], [U1, 20, 1e9]])
+      for (let k = a; k < Math.min(b, L.length) && out.length < need - used0.size; k++) if (!used.has(sdKey(L[k]))) { used.add(sdKey(L[k])); out.push(L[k]); }
+    return out;
+  }
+  async function finishMix(P20, se, mini, st, msg) {
+    const need = Math.max(...parseSizes($('#bEntries').value)); let ext = [];
+    if (need > P20.length) { st.textContent = 'Building the extra lineups…'; ext = await mixExt(new Set(P20.map(sdKey)), need); }
+    builder.raw = P20.concat(ext); builder.resultMethod = 'mix4'; builder.mix = { se, mini, ext };
+    const tot = applyPlan(builder.mix); st.className = 'status'; st.textContent = `Forged your ${tot} entries (${builder.result.length} different lineups). ${msg}`;
+    FLT.mine = mkF(); $('#bOut').hidden = false; renderMine();
+  }
   async function runMix4() {
     const st0 = $('#bStatus'), edited = builder.lock.size || builder.out.size || builder.cpt.size || D.players.some(p => builder.proj[p.name] != null && Math.abs(builder.proj[p.name] - baseProj(p)) > 0.005);
     const ek = D.owner && !edited ? Object.keys(D.builds || {}).find(k => /^(Entered|FORGE) build \(MIX4\)/.test(k) && (D.builds[k] || []).length) : null;
@@ -1736,9 +1776,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       const g20 = gs[0], se = (gs.find(g => g.length === 1) || g20)[0], uk = Object.keys(D.builds).find(k => /PLAIN-U3/.test(k) && (D.builds[k] || []).length),
         mini = gs.find(g => g.length > 1 && g.length < g20.length) || (uk ? Object.values(groupBy(D.builds[uk])).sort((a, b) => b.length - a.length)[0] : g20);   // smaller contests = 3-different #1-n (SD-EXTEND)
       const sal = Object.fromEntries(D.players.map(p => [p.name, p.sal])), mk = l => ({ cpt: l.cpt, flex: l.flex, proj: l.proj, sal: l.sal || (1.5 * (sal[l.cpt] || 0) + l.flex.reduce((t, x) => t + (sal[x] || 0), 0)), pct: null, own: null });
-      builder.result = g20.map(mk); builder.resultMethod = 'mix4'; builder.mix = { se: mk(se), mini: mini.map(mk) };
-      st0.className = 'status'; st0.textContent = `Forged ${g20.length} lineups: FORGE's own FORGE Pick set for this game (simulator top 5 + 3-different #1-5 & #11-15 + 1-different #1-5), exactly what FORGE enters.`;
-      FLT.mine = mkF(); $('#bOut').hidden = false; renderMine(); return; }
+      return finishMix(g20.map(mk), mk(se), mini.map(mk), st0, "FORGE Pick from FORGE's own server set for this game (simulator top 5 + 3-different #1-5 & #11-15 + 1-different #1-5), exactly what FORGE enters."); }
     const st = $('#bStatus'), t0 = performance.now(), keep = { n: $('#bN').value, u: $('#bUniq').value, t5: $('#bTop5').checked, t3: $('#bTop3').checked, exp: $('#bExp').value };
     let H = [], U3 = [], U1 = [];
     try {
@@ -1753,9 +1791,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       outs.push(got); }
     const P20 = []; for (let r = 0; r < 5; r++) outs.forEach(o => { if (o[r]) P20.push(o[r]); });
     if (!P20.length) { st.className = 'status err'; st.textContent = 'No legal lineup fits these rules. Loosen a lock, the salary floor or the punt limit.'; return; }
-    builder.result = P20; builder.resultMethod = 'mix4'; builder.mix = { se: H[0] || U3[0], mini: U3 };
-    st.className = 'status'; st.textContent = `Forged ${P20.length} lineups (FORGE Pick: simulator top 5 + 3-different #1-5 & #11-15 + 1-different #1-5${H.length ? '' : '; no simulation for this game yet, so 3-different #16-20 stand in for the simulator picks'}) in ${((performance.now() - t0) / 1000).toFixed(1)} s`;
-    FLT.mine = mkF(); $('#bOut').hidden = false; renderMine();
+    await finishMix(P20, H[0] || U3[0], U3, st, `FORGE Pick: simulator top 5 + 3-different #1-5 & #11-15 + 1-different #1-5${H.length ? '' : '; no simulation for this game yet, so 3-different #16-20 stand in for the simulator picks'}. ${((performance.now() - t0) / 1000).toFixed(1)} s`);
     logBuild('showdown', { method: 'mix4', n: 20, got: P20.length, ev_picks: Math.min(5, Math.max(0, H.length - 5)), locks: [...builder.lock], outs: [...builder.out], cpt_pool: [...builder.cpt], recipe: builder.recipe,
       edits: Object.fromEntries(D.players.filter(p => builder.proj[p.name] != null && Math.abs(builder.proj[p.name] - p.proj) > 0.005).map(p => [p.name, builder.proj[p.name]])) }, P20.map(l => ({ cpt: l.cpt, flex: l.flex })));
   }
@@ -1873,6 +1909,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const ms = Math.round(performance.now() - t0);
     st.className = 'status'; st.textContent = `Forged ${chosen.length} of ${NREQ} lineups${top5 ? ' (best half of ' + N + ')' : ''} (${setInfo({ plain: 'PLAIN-U3', p51: 'P51-M-SX', hyb: 'HYB-M-SXPW', ev: 'EV-M', hyb0: 'HYB-M' }[method]).name}) · ${codes.length.toLocaleString('en-US')} legal lineups${sim ? ', ' + (builder.poolN || Math.min(codes.length, D.simpack.topn || 10000)).toLocaleString('en-US') + ' simulated' : ''} in ${(ms / 1000).toFixed(1)} s` + (builder.relaxed ? ` · the last ${builder.relaxed === 1 ? 'lineup was' : builder.relaxed + ' lineups were'} filled without FORGE's per-player cap (the cap alone left too few)` : '') + (chosen.length < NREQ ? ` · stopped at ${chosen.length}: of the ${(builder.why ? builder.why.cap + builder.why.exp + builder.why.uniq : 0).toLocaleString('en-US')} lineups left, ${builder.why ? builder.why.cap.toLocaleString('en-US') : 0} are blocked by the per-captain limit, ${builder.why ? builder.why.exp.toLocaleString('en-US') : 0} by the per-player exposure limit and ${builder.why ? builder.why.uniq.toLocaleString('en-US') : 0} by the min-players-different rule. With a high "min players different" only so many lineups can fit; lower it (or raise the captain limit) to get more` : '');
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) { const sp = $('#sparks'); sp.innerHTML = Array.from({ length: 18 }, () => { const a = Math.random() * Math.PI * 2, r = 40 + Math.random() * 70; return `<b style="--dx:${(Math.cos(a) * r).toFixed(0)}px;--dy:${(Math.sin(a) * r - 20).toFixed(0)}px"></b>`; }).join(''); setTimeout(() => sp.innerHTML = '', 800); }
+    builder.raw = builder.result; { const tot = applyPlan(null); st.textContent = `Forged your ${tot} entries (${builder.result.length} different lineups). ` + st.textContent; }
     FLT.mine = mkF(); $('#bOut').hidden = false; renderMine();
     logBuild('showdown', { method, n: NREQ, top5: !!top5, top3: !!top3On, cpt_caps: (top3On || myPool) ? Object.fromEntries(Object.entries(wcap).map(([i, k]) => [P[i].name, k])) : null, seed: Math.max(0, Math.floor(+$('#bSeed').value) || 0), got: chosen.length, pitch_relaxed: builder.relaxed || 0, short_why: builder.why || null, var_pct: (Math.floor(+$('#bSeed').value) > 0) ? (parseFloat($('#bVar').value) || 25) : null, recipe: builder.recipe, built: N, cap, exp: maxExp, uniq, minSal, punt: maxPunt, noCpt, dst: dstRule, struct: builder.struct,
       own_lean: parseInt($('#bOwn').value) || 0, mine: $('#bMine').checked, locks: [...builder.lock], outs: [...builder.out], cpt_pool: [...builder.cpt],
@@ -1924,7 +1961,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       <div class="tbl-wrap"><table class="sumt"><thead><tr><th>Player</th><th class="n">Captain</th><th class="n">Flex</th><th class="n">Total</th><th class="n">Field</th><th class="n">Opt rate</th></tr></thead><tbody>${names.map(r => `<tr><td><b>${r.nm}</b> <small class="dim">${r.p.pos || ''} ${r.p.team || ''}</small></td><td class="n">${pc(r.c)}</td><td class="n">${pc(r.f)}</td><td class="n"><b>${pc(r.c + r.f)}</b></td><td class="n">${r.p.own_flex == null ? '—' : fmt(r.p.own_flex + (r.p.own_cpt || 0), 0) + '%'}</td><td class="n">${r.p.opt_cpt == null ? '—' : fmt(r.p.opt_cpt + r.p.opt_flex, 0) + '%'}</td></tr>`).join('')}</tbody></table></div>
       <p class="note">Field = projected ownership (captain + flex). Opt rate = how often the player is in the best lineup of a simulated game (captain + flex).</p>`;
   }
-  function renderMine() { fltBar($('#fltMine'), 'mine', builder.result, renderMine); const L = mineShown(); exposure(L, $('#bExpo')); portfolioCharts(L, $('#bCharts')); $('#bBreakBody').innerHTML = breakdown(L); renderPrivate(); $('#bGrid').innerHTML = L.length ? L.map((l, i) => luCard(l, i)).join('') : '<p class="note">No lineup matches the filter.</p>'; renderGrade(L, $('#bGrade'), renderMine); }
+  function renderMine() { fltBar($('#fltMine'), 'mine', builder.result, renderMine); $('#bPlan').innerHTML = builder.plan ? planTable(builder.plan, builder.result, sdKey) : ''; const L = mineShown(); exposure(L, $('#bExpo')); portfolioCharts(L, $('#bCharts')); $('#bBreakBody').innerHTML = breakdown(L); renderPrivate(); $('#bGrid').innerHTML = L.length ? L.map((l, i) => luCard(l, i)).join('') : '<p class="note">No lineup matches the filter.</p>'; renderGrade(L, $('#bGrade'), renderMine); }
 
 
   // ---------------------------------------------------------------- Classic (2026-10-15): projections, QB environment, in-browser optimizer (GLPK, WebAssembly)
@@ -2079,7 +2116,6 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   }
   const csvCell = v => /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
   let DKFILE = null, DKONLY = null;   // DKONLY: contests chosen in the selector (null = all in the file)
-  if ($('#dkTwice')) $('#dkTwice').addEventListener('change', () => { if (DKFILE) fillDK(DKFILE); });
   $('#dkFile').addEventListener('change', async ev => { const f = ev.target.files[0]; if (!f) return; DKFILE = await f.text(); DKONLY = null; ev.target.value = ''; fillDK(DKFILE); });
   function forgeSendSet() {     // the set picked on the FORGE Lineups tab (default: the entered/FORGE Pick set), narrowed by its filter
     const keys = Object.keys(D.builds || {}); const sel = $('#buildSel') && $('#buildSel').value; const k = (sel && D.builds[sel] && D.builds[sel].length) ? sel : (keys.find(x => /^(Entered|FORGE build)/.test(x)) || keys[0]);
@@ -2172,17 +2208,11 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       + changed.slice(0, 60).map(c => `<p class="note"><b>${c.r[1].replace(/\[.*?\]/g, '').trim()}</b> (entry ${c.r[0]}): ${c.swaps.join(', ')} · +${c.gain.toFixed(1)} pts${c.relaxed ? ' · rules relaxed (locked players already break one)' : ''}</p>`).join('') + notes.map(n => `<p class="note">${n}</p>`).join('');
   }
   let AUTO = null;
-  async function prepAuto(per, L, twice) {
-    const key = l => l.cpt + '|' + [...l.flex].sort().join(','); const cs = Object.keys(per).filter(c => !CASHRX.test(c) && !(SERX.test(c) || per[c] === 1)).sort((a, b) => per[b] - per[a]);
-    const map = {}, why = {}, used = new Set(L.map(key));
-    cs.forEach((c, j) => { if (j > 0) return; const n = per[c]; map[c] = (twice && n > L.length) ? L.flatMap(l => [l, l]) : L.slice(); why[c] = (twice && n > L.length) ? 'your lineups, each twice' : 'your lineups'; });
-    for (const c of cs.slice(1)) {
-      if (builder.resultMethod === 'plain') { const n = per[c]; map[c] = L.slice(0, n); why[c] = `lineups #1-${Math.min(n, L.length)} of your set (FORGE's tested plan)`; continue; }
-      if (builder.resultMethod === 'mix4' && builder.mix) { const n = per[c]; map[c] = builder.mix.mini.slice(0, n); why[c] = `3-different #1-${Math.min(n, builder.mix.mini.length)} (FORGE's tested plan for smaller contests)`; continue; }
-      const n = per[c], dup = twice && n >= 20 && n % 2 === 0, need = dup ? n / 2 : n;
-      const R = await forgeRun(need, used); R.forEach(l => used.add(key(l)));
-      map[c] = dup ? R.flatMap(l => [l, l]) : R; why[c] = `${R.length} more of your lineups built for this contest${dup ? ', each twice' : ''} (none repeat another contest)`;
-    }
+  async function prepAuto(per, L) {     // (2026-10-29 SD-EXTEND) the same plan as the Builder, sized by the contests in your file
+    const cs = Object.keys(per).filter(c => !CASHRX.test(c)), mix = builder.resultMethod === 'mix4' ? builder.mix : null; let raw = (builder.raw && builder.raw.length) ? builder.raw.slice() : L.slice();
+    const need = Math.max(...cs.map(c => per[c]));
+    if (need > raw.length) { const more = mix ? await mixExt(new Set(raw.map(sdKey)), need) : await forgeRun(need - raw.length, new Set(raw.map(sdKey))); raw = raw.concat(more); if (mix) { builder.mix.ext = (builder.mix.ext || []).concat(more); builder.raw = raw; } }
+    const map = {}, why = {}; entryPlan(cs.map(c => per[c]), raw, mix).forEach(p => { map[cs[p.i]] = p.lus; why[cs[p.i]] = p.why; });
     return { map, why };
   }
   function fillDK(text) {
@@ -2211,10 +2241,10 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       if (kind === 'showdown') { const g = D.slate.away + '@' + D.slate.home; if (!games.has(g)) return say(`<div class="err">This file is for ${[...games].join(', ')}, but the game picked at the top is ${g}. Tap the right game at the top; this check runs again on its own.</div>`); }
       const src = lineupsFor(kind); if (!src.gpp || !src.gpp.length) return say(`<div class="err">${DKSRC === 'mine' ? 'Build your lineups in the Builder first.' : 'FORGE has no lineups for this game yet. Try the Builder, then pick "My Builder lineups".'}</div>`);
       const perContest = {}; entries.forEach(r => perContest[r[1].trim()] = (perContest[r[1].trim()] || 0) + 1);
-      const twice0 = !!($('#dkTwice') && $('#dkTwice').checked);
+      const twice0 = false;
       if (DKSRC === 'mine' && kind === 'showdown' && src.gpp.length) {   // (2026-10-22) same plan as FORGE's entries: biggest contest = your set (each twice), every other multi-entry contest gets its own lineups, built the same way and never repeating
         const key = JSON.stringify([perContest, src.gpp.map(l => l.cpt + '|' + l.flex.join(',')), twice0]);
-        if (!AUTO || AUTO.key !== key) { say('<p class="note">Building the lineups each contest needs, the same way FORGE builds its own entries…</p>'); prepAuto(perContest, src.gpp, twice0).then(m => { AUTO = { key, map: m.map, why: m.why }; fillDK(text); }).catch(e => say('<div class="err">Could not build the extra lineups (' + e.message + ').</div>')); return; }
+        if (!AUTO || AUTO.key !== key) { say('<p class="note">Building the lineups each contest needs, the same way FORGE builds its own entries…</p>'); prepAuto(perContest, src.gpp).then(m => { AUTO = { key, map: m.map, why: m.why }; fillDK(text); }).catch(e => say('<div class="err">Could not build the extra lineups (' + e.message + ').</div>')); return; }
       }
       // (2026-10-29 SD-EXTEND) FORGE's lineups on your own contests: biggest contest = the FORGE Pick 20, every smaller contest = 3-different #1-n,
       // single entry = FORGE Pick's single-entry lineup -- the same as "My Builder lineups" and FORGE's own entries
@@ -2224,9 +2254,9 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
         if (ek) { const gs = Object.values(groupBy(B[ek])).sort((a, b) => b.length - a.length), g20 = gs[0], u3 = uk ? Object.values(groupBy(B[uk])).sort((a, b) => b.length - a.length)[0] : g20;
           src.se = (gs.find(g => g.length === 1) || g20)[0]; FM = {};
           Object.keys(perContest).filter(c => !CASHRX.test(c) && !(SERX.test(c) || perContest[c] === 1)).sort((a, b) => perContest[b] - perContest[a])
-            .forEach((c, j) => FM[c] = j === 0 ? [g20, 'FORGE Pick (20 different lineups)'] : [u3.slice(0, perContest[c]), `3-different #1-${Math.min(perContest[c], u3.length)} (FORGE's tested plan for smaller contests)`]); } }
+            .forEach((c, j) => FM[c] = j === 0 ? [g20.concat(builder.mix && builder.mix.ext || []), 'FORGE Pick (20 different lineups)' + (perContest[c] > 20 ? ' + next-best groups' : '')] : [u3.slice(0, perContest[c]), `3-different #1-${Math.min(perContest[c], u3.length)} (FORGE's tested plan for smaller contests)`]); } }
       // (2026-10-21 Round 41) single entry gets lineup #1, which also stays in the multi-entry contests (the tested plan)
-      let gp = 0; const used = {}, out = [], errs = [], plan = {}, skipped = [], expo = [], twice = !!($('#dkTwice') && $('#dkTwice').checked);
+      let gp = 0; const used = {}, out = [], errs = [], plan = {}, skipped = [], expo = [], twice = false;
       const status = {}; D.players.forEach(p => status[p.name] = p.status || '');
       for (const r of entries) {
         const c = r[1].trim(); used[c] = used[c] || 0; let lu, why;
@@ -2704,7 +2734,11 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       <td><input type="checkbox" data-n="${p.name}" ${NB.out.has(p.name) ? 'checked' : ''} ${p.proj == null ? 'disabled' : ''} aria-label="Exclude ${p.name}"></td></tr>`).join('');
     $$('#nbaTable tbody input[type=checkbox]').forEach(cb => cb.onchange = () => { cb.checked ? (NB.out.add(cb.dataset.n), NB.lock.delete(cb.dataset.n)) : NB.out.delete(cb.dataset.n); renderNBABuild(); });
   }
-  $('#nbaRun').addEventListener('click', () => nbaBuild());
+  $('#nbaRun').addEventListener('click', async () => { $('#nbaN').value = Math.max(...parseSizes($('#nbaEntries').value)); await nbaBuild(); nbaPlan(); });
+  function nbaPlan() {     // (2026-10-29 NBA-EXTEND) biggest contest #1-n, smaller contests #1-k again, single entry #1
+    const L = NB.result || [], el = $('#nbaPlan'); if (!el) return; if (!L.length) { el.innerHTML = ''; return; }
+    const k = c => c.lu.map(p => p.name).join('|'), plan = entryPlan(parseSizes($('#nbaEntries').value), L, null, true);
+    el.innerHTML = planTable(plan, L.slice(0, Math.max(...plan.map(c => c.n))), k); }
   // (2026-10-28, FORGE) late-swap flexibility: the same 8 players, re-seated so the latest tip-offs sit in UTIL, then G / F, earliest in PG..C;
   // at equal tip time the pricier player takes the more flexible slot (swapping him frees the most salary). Points are unchanged.
   function nbaFlex(lu) {
