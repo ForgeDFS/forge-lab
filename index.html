@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="80f4be98e665"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="d393b05d91c7"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -695,22 +695,22 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
         <div class="custom-note" id="customNote"></div>
         <h3>Rules</h3>
         <div class="field"><label for="bN">Lineups</label><input type="number" id="bN" min="1" max="150" value="20"></div>
-        <div class="field"><label>Method</label><div class="seg segwrap" id="bMethod"><button type="button" data-v="hyb" aria-pressed="false">FORGE Pick</button><button type="button" data-v="p51" aria-pressed="true">Top Projected Stacks</button><button type="button" data-v="ev" aria-pressed="false">Simulation's Best Payout</button><button type="button" data-v="hyb0" aria-pressed="false">FORGE Pick – original</button></div><p class="note" id="methodNote"></p></div>
+        <div class="field"><label>Method</label><div class="seg segwrap" id="bMethod"><button type="button" data-v="hyb" aria-pressed="false">FORGE Pick</button><button type="button" data-v="p51" aria-pressed="true">Top Projected Stacks</button><button type="button" hidden data-v="ev" aria-pressed="false">Simulation's Best Payout</button><button type="button" hidden data-v="hyb0" aria-pressed="false">FORGE Pick – original</button></div><p class="note" id="methodNote"></p></div>
         <div class="field"><label>Structure</label><div class="seg" id="bStruct"><button type="button" aria-pressed="false" data-v="any">Any split</button><button type="button" aria-pressed="false" data-v="51">5-1 only</button><button type="button" aria-pressed="true" data-v="hedge">Half 5-1</button></div></div>
         <div class="field"><label for="bCap">Max lineups per captain</label><input type="number" id="bCap" min="1" max="150" value="6"><small class="note" id="bCapNote" hidden>Auto: FORGE Pick splits lineups across its 3 captains by their top-scorer chances (untick "FORGE Pick captains" below to set your own cap).</small></div>
         <div class="field"><label for="bExp">Max exposure per player (%)</label><input type="number" id="bExp" min="10" max="100" value="" placeholder="Auto"><p class="note" id="bExpNote">Auto = FORGE's per-player cap (FORGE Pick). Type a % to use your own flat cap instead.</p></div>
         <div class="field"><label for="bUniq">Min players different between lineups</label><input type="number" id="bUniq" min="1" max="4" value="1"></div>
-        <details class="adv" id="bAdv"><summary>More settings <small>variation, salary floor, ownership lean, captain rules</small></summary>
-        <div class="field"><label for="bSeed">Variation (seed)</label><input type="number" id="bSeed" min="0" max="999999" value="0"><label for="bVar" style="margin-top:8px">Share of simulated games used when varying (%)</label><input type="number" id="bVar" min="1" max="100" value="25"><p class="note">Seed 0 = FORGE's exact simulation: the same settings give the same lineups every time. Any other seed scores the lineups on a random sample of the simulated games (the share above), so each seed gives a somewhat different set. A smaller share varies more.</p></div>
+        <details class="adv" id="bAdv"><summary>More settings <small>salary floor, captain rules</small></summary>
+        <div class="field" hidden><label for="bSeed">Variation (seed)</label><input type="number" id="bSeed" min="0" max="999999" value="0"><label for="bVar" style="margin-top:8px">Share of simulated games used when varying (%)</label><input type="number" id="bVar" min="1" max="100" value="25"><p class="note">Seed 0 = FORGE's exact simulation: the same settings give the same lineups every time. Any other seed scores the lineups on a random sample of the simulated games (the share above), so each seed gives a somewhat different set. A smaller share varies more.</p></div>
         <div class="field"><label for="bMinSal">Min salary used</label><input type="number" id="bMinSal" min="40000" max="50000" step="100" value="47000"></div>
         <div class="field"><label for="bPunt">Max FLEX at $1,000 or less</label><input type="number" id="bPunt" min="0" max="5" value="1"></div>
-        <div class="field"><label for="bOwn">Ownership lean <small id="bOwnV" style="text-transform:none;letter-spacing:0">off</small> <span class="tag steel">untested</span></label><input type="range" id="bOwn" min="-100" max="100" step="10" value="0" aria-describedby="bOwnNote">
+        <div class="field" hidden><label for="bOwn">Ownership lean <small id="bOwnV" style="text-transform:none;letter-spacing:0">off</small> <span class="tag steel">untested</span></label><input type="range" id="bOwn" min="-100" max="100" step="10" value="0" aria-describedby="bOwnNote">
           <p class="note" id="bOwnNote">Left = fade popular players, right = play them more. Moves the projections every method uses (up to ±30% at the extremes, by how far a player's projected ownership is from the slate average). Untested lever: FORGE's tested settings keep it at 0, and a contrarian penalty did not beat the default on 14 backtested games.</p></div>
         <label class="check"><input type="checkbox" id="bTop3" checked> FORGE Pick captains: FORGE's 3 most likely top scorers, more lineups for the likeliest</label>
         <label class="check"><input type="checkbox" id="bTop5" checked> Fewer, better lineups: build twice as many and keep only the best of each half (FORGE's default since 10/22; on 18 past Showdowns 10 of these beat 20 regular ones)</label>
         <label class="check"><input type="checkbox" id="bNoCpt"> No TE, K or DST captain</label>
         <label class="check"><input type="checkbox" id="bDst" checked> No DST against your captain</label>
-        <label class="check mine"><input type="checkbox" id="bMine"> Make my lineups mine <span class="tag steel">untested</span></label>
+        <label class="check mine" hidden><input type="checkbox" id="bMine"> Make my lineups mine <span class="tag steel">untested</span></label>
         <p class="note">Nudges every projection (typically within ±8%) in a pattern unique to this phone, so friends using FORGE don't build the same lineups and split a prize. It can cost a little projected score; turn it off to get FORGE's exact numbers.</p>
         <p class="note">The simulation methods run FORGE's own game simulation in your browser (2,000 simulated games against a simulated field of 3,000 lineups; FORGE's own entered builds use 256,000, and on NE@CHI the default Builder still matched all 26 entered lineups), using your projections. Backtests replay real 2026 contests; they aren't a promise.</p>
         </details>
@@ -1505,7 +1505,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const pkb = sim && D.simpack ? Object.fromEntries(D.simpack.names.map((nm, k) => [nm, D.simpack.base[k]])) : {};
     const proj = P.map(p => { const b0 = baseProj(p), v = builder.proj[p.name] ?? b0; if (method === 'hyb0' && p.shrunk && v === b0 && p.market != null) return p.market;
       return (sim && v === b0 && pkb[p.name] != null && Math.abs(pkb[p.name] - v) < 0.006) ? pkb[p.name] : v; });   // unedited -> FORGE's unrounded value (page shows 2 decimals)
-    ownLean(P, proj); personal(P, proj, $('#bMine').checked);
+    /* (2026-10-29) ownership lean and 'make my lineups mine' retired (untested; NFL-SD-V: jittered projections cost money) */
     const teams = [...new Set(P.map(p => p.team))], tm = P.map(p => teams.indexOf(p.team));
     const NREQ = RUN ? RUN.n : Math.max(1, Math.min(150, parseInt($('#bN').value) || 20)); let cap = Math.max(1, parseInt($('#bCap').value || $('#bCap').dataset.v) || 6);
     // 2026-10-21 Round 38 (FORGE: "cut down the entries"): FORGE Pick builds twice the lineups and keeps the top half of each half (best stacks + first simulator picks)
@@ -1582,7 +1582,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       if (!pool.length) { st.className = 'status err'; st.textContent = "No lineup passes FORGE's Showdown rules under these settings. Loosen a lock or the salary floor."; return; }
       builder.poolN = pool.length;   // (2026-10-21) the status line shows the real number simulated (lineups passing FORGE's rules, at most topn)
       $('#forgeBtn').disabled = true; let ev;
-      try { ev = await simEV(P, proj, pos, tm, codes, scores, pool, st, Math.max(0, Math.floor(+$('#bSeed').value) || 0), parseFloat($('#bVar').value)); } catch (e) { st.className = 'status err'; st.textContent = 'Simulation failed: ' + e.message; $('#forgeBtn').disabled = false; return; } finally { $('#forgeBtn').disabled = false; }
+      try { ev = await simEV(P, proj, pos, tm, codes, scores, pool, st, 0, 25); } catch (e) { st.className = 'status err'; st.textContent = 'Simulation failed: ' + e.message; $('#forgeBtn').disabled = false; return; } finally { $('#forgeBtn').disabled = false; }
       const val = new Map(); pool.forEach((i, k) => val.set(i, ev[k])); const evOrder = [...pool].sort((a, b) => val.get(b) - val.get(a));
       const stc = builder.struct, evo51 = evOrder.filter(i => is51[i]);   // structure: any = no split rule, 51 = every lineup 5-1, hedge = half 5-1 (the default for FORGE Pick)
       if (method === 'ev') { if (stc === 'hedge') { pickFrom(evo51, Math.ceil(N / 2), cc, val); pickFrom(evOrder, N, {}, val); } else pickFrom(stc === '51' ? evo51 : evOrder, N, cc, val); }
