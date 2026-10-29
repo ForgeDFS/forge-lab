@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="0894b88d801a"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="8a54fbdee074"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -287,7 +287,7 @@ details.about p:last-child { margin-bottom: 0; }
 .builder { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; align-items: start; }
 .controls { padding: 16px; display: grid; gap: 14px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 112px); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); max-height: calc(100vh - 128px); overflow: auto; }
 .controls h3 { font: 600 11px/14px var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
-.recipes { display: grid; gap: 8px; }
+.recipes { display: grid; gap: 8px; } .recipes[hidden], .custom-note[hidden], h3[hidden] { display: none; }
 .recipe { appearance: none; text-align: left; border: 1px solid var(--line); background: var(--surface-raised); border-radius: var(--r-md); padding: 10px 12px; cursor: pointer; color: var(--ink); display: grid; gap: 3px; }
 .recipe:hover { border-color: var(--line-strong); }
 .recipe b { font: 700 13.5px/18px var(--font-display); letter-spacing: .02em; }
@@ -711,18 +711,18 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     <p class="lede">Build your own Classic set. Edit any projection, lock or exclude players, set the rules, then press Forge. An optimizer runs in your browser and finds the best lineup under your rules, one lineup at a time, each different from the last.</p>
     <div class="builder">
       <form class="controls" id="cform">
-        <h3>Start from</h3>
-        <div class="recipes" id="crecipes">
+        <h3 hidden>Start from</h3>
+        <div class="recipes" id="crecipes" hidden>
           <button type="button" class="recipe" data-r="gpp" aria-pressed="true"><b>Tournament · FORGE default</b><small>FORGE Pick, exactly what FORGE enters (since 10/29): 4 groups of 5 -- the simulator's top 5, the 3-different list's #1-5 and #11-15, and the 1-different list's #1-5. 20 different lineups for a 20-max; 3-different #1-5 in a 5-entry contest; the stack method's #1 in single entry.</small><span class="ev" id="evGpp">18 past Showdowns (20-max): +77.7% vs +54.1% for 20 from 3-different; profit in 56% of games. Groups were chosen after seeing results, so expect less live.</span></button>
           <button type="button" class="recipe" data-r="se" aria-pressed="false"><b>Single entry</b><small>The single best lineup under the same rules.</small><span class="ev">Same rules, 1 lineup</span></button>
           <button type="button" class="recipe" data-r="cash" aria-pressed="false"><b>Cash · Double Up, 50/50</b><small>The highest projected legal lineup. No stacking rules.</small><span class="ev">Not tested on Classic yet</span></button>
         </div>
-        <div class="custom-note" id="cCustomNote"></div>
+        <div class="custom-note" id="cCustomNote" hidden></div>
         <h3>Rules</h3>
         <div class="field"><label for="cN">Lineups</label><input type="number" id="cN" min="1" max="50" value="20"></div>
+        <details class="adv" id="cAdv"><summary>More settings <small>FORGE's defaults are already set; change them only to experiment</small></summary>
         <div class="field"><label for="cUniq">Min players different between lineups</label><input type="number" id="cUniq" min="1" max="6" value="3"></div>
         <div class="field"><label for="cExp">Max exposure per player (%)</label><input type="number" id="cExp" min="5" max="100" value="50"></div>
-        <details class="adv" id="cAdv"><summary>More settings <small>salary floor, games, DST, stacking rules</small></summary>
         <div class="field"><label for="cMinSal">Min salary used</label><input type="number" id="cMinSal" min="40000" max="50000" step="100" value="49500"></div>
         <div class="field"><label for="cGames">Max games in a lineup</label><input type="number" id="cGames" min="2" max="9" value="6"></div>
         <div class="field"><label for="cDstCap">Max lineups per DST</label><input type="number" id="cDstCap" min="1" max="50" value="7"></div>
@@ -756,21 +756,21 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     <p class="lede">Build your own set. Edit any projection, lock or exclude players, set the rules, then press Forge. Your browser checks all 1.4 million possible combinations, keeps the legal ones under your rules, and picks the best under your caps.</p>
     <div class="builder">
       <form class="controls" id="bform">
-        <h3>Start from</h3>
-        <div class="recipes" id="recipes">
+        <h3 hidden>Start from</h3>
+        <div class="recipes" id="recipes" hidden>
           <button type="button" class="recipe" data-r="gpp" aria-pressed="true"><b>Tournament · FORGE default</b><small>FORGE Pick, exactly what FORGE enters: 10 lineups, the best 5 top-projected 5-1 stacks plus the simulator's 5 best picks (in a 20-entry contest each goes in twice); captains = FORGE's 3 most likely top scorers, more lineups for the likeliest; FORGE's per-player cap; cheap players adjusted; ownership forecast normalized. For 20-max and big GPPs.</small><span class="ev" id="evGpp"></span></button>
           <button type="button" class="recipe" data-r="se" aria-pressed="false"><b>Single entry</b><small>Lineup #1 of FORGE Pick (its highest-projected lineup). With FORGE Pick built, the DraftKings tab puts #1 in your single-entry contests automatically.</small><span class="ev">18 past Showdowns: +11.8% ROI, +23.2% on real prize tables; the simulator's top pick did +6.7%</span></button>
           <button type="button" class="recipe" data-r="cash" aria-pressed="false"><b>Cash · Double Up, 50/50</b><small>The highest projected lineup of any shape. Floor over ceiling.</small><span class="ev">Top 44% in 86% of 37 tested fields (upper bound)</span></button>
         </div>
-        <div class="custom-note" id="customNote"></div>
+        <div class="custom-note" id="customNote" hidden></div>
         <h3>Rules</h3>
         <div class="field"><label for="bEntries">Entries you're playing</label><input type="text" id="bEntries" inputmode="numeric" autocomplete="off" value="20"><small class="note">One number per contest: <b>20, 5, 2, 1</b> = a 20-max, a 5-entry contest, a 2-entry GPP and a single entry (28 entries). FORGE builds every entry with its tested plan for that contest size.</small><input type="number" id="bN" min="1" max="150" value="20" hidden></div>
         <div class="field"><label>Method</label><div class="seg segwrap" id="bMethod"><button type="button" data-v="mix4" aria-pressed="true">FORGE Pick</button><button type="button" data-v="plain" aria-pressed="false">2nd best tested method so far</button><button type="button" data-v="hyb" aria-pressed="false">3rd: FORGE Pick before 10/29</button><button type="button" data-v="p51" aria-pressed="false">Top Projected Stacks</button><button type="button" hidden data-v="ev" aria-pressed="false">Simulation's Best Payout</button><button type="button" hidden data-v="hyb0" aria-pressed="false">FORGE Pick – original</button></div><p class="note" id="methodNote"></p></div>
+        <details class="adv" id="bAdv"><summary>More settings <small>FORGE sets all of these for the method you pick; change them only to experiment</small></summary>
         <div class="field"><label>Structure</label><div class="seg" id="bStruct"><button type="button" aria-pressed="false" data-v="any">Any split</button><button type="button" aria-pressed="false" data-v="51">5-1 only</button><button type="button" aria-pressed="true" data-v="hedge">Half 5-1</button></div></div>
         <div class="field"><label for="bCap">Max lineups per captain</label><input type="number" id="bCap" min="1" max="150" value="6"><small class="note" id="bCapNote" hidden>Auto: FORGE Pick splits lineups across its 3 captains by their top-scorer chances (untick "FORGE Pick captains" below to set your own cap).</small></div>
         <div class="field"><label for="bExp">Max exposure per player (%)</label><input type="number" id="bExp" min="10" max="100" value="" placeholder="Auto"><p class="note" id="bExpNote">Auto = FORGE's per-player cap (FORGE Pick). Type a % to use your own flat cap instead.</p></div>
         <div class="field"><label for="bUniq">Min players different between lineups</label><input type="number" id="bUniq" min="1" max="4" value="1"></div>
-        <details class="adv" id="bAdv"><summary>More settings <small>salary floor, captain rules</small></summary>
         <div class="field" hidden><label for="bSeed">Variation (seed)</label><input type="number" id="bSeed" min="0" max="999999" value="0"><label for="bVar" style="margin-top:8px">Share of simulated games used when varying (%)</label><input type="number" id="bVar" min="1" max="100" value="25"><p class="note">Seed 0 = FORGE's exact simulation: the same settings give the same lineups every time. Any other seed scores the lineups on a random sample of the simulated games (the share above), so each seed gives a somewhat different set. A smaller share varies more.</p></div>
         <div class="field"><label for="bMinSal">Min salary used</label><input type="number" id="bMinSal" min="40000" max="50000" step="100" value="47000"></div>
         <div class="field"><label for="bPunt">Max FLEX at $1,000 or less</label><input type="number" id="bPunt" min="0" max="5" value="1"></div>
@@ -810,6 +810,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     <div class="controls nbaform">
       <h3>Rules</h3>
       <label>Entries you're playing <input type="text" id="nbaEntries" inputmode="numeric" autocomplete="off" value="20"></label><small class="note">One number per contest: <b>20, 5, 2, 1</b> = a 20-max, a 5-entry contest, a 2-entry GPP and a single entry (28 entries). FORGE builds every entry with its tested plan for that contest size.</small><input type="number" id="nbaN" min="1" max="150" value="20" hidden>
+      <details class="adv" id="nbaAdv"><summary>More settings <small>FORGE's defaults are already set; change them only to experiment</small></summary>
       <label>Min players different <input type="number" id="nbaUniq" min="1" max="6" value="2"></label>
       <label>Max exposure % <input type="number" id="nbaExp" min="10" max="100" value="100"></label>
       <label class="check sdonly"><input type="checkbox" id="nbaTop3" checked> FORGE Pick captains: FORGE's 3 most likely top DraftKings scorers, more lineups for the likeliest (FORGE's Showdown default)</label>
@@ -817,6 +818,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
       <label class="check clonly"><input type="checkbox" id="nbaBlow"> At most 1 player from likely blowouts (spread 9+)</label>
       <p class="note">Both rules start off (FORGE's NBA default since 10/22: highest projection, no forced stack). On the only graded night so far (10/21 main slate) projection-only lineups returned +335% vs +45% with the forced stack. One night is thin: all four rules are graded every night.</p>
       <label class="check clonly" id="nbaVaryBox" hidden><input type="checkbox" id="nbaVary" checked> <span id="nbaVaryLab">Fresh set every press: projections jittered 5% each time, so you and a friend (or two contests) get different lineups. Tested on 7 past nights: 5 of 5 draws profitable, average +68% vs +47% for the exact set; two presses share about 1 of 20 lineups.</span></label>
+      </details>
       <button type="button" class="btn primary" id="nbaRun">Forge NBA lineups</button><span class="status" id="nbaStatus" role="status"></span>
     </div>
     <div style="min-width:0">
@@ -1702,7 +1704,9 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   }
   function setMethod(v) { if (v !== 'p51' && v !== 'plain' && v !== 'mix4' && !(D && D.simpack)) v = 'plain'; builder.method = v; $$('#bMethod button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === v))); if (typeof syncCap === 'function' && $('#bCapNote')) syncCap();
     // 2026-10-21 PI decision: captain can be anyone by default; the box stays as an option
-    $('#methodNote').textContent = (D && !D.simpack && v === 'p51' ? 'Simulation methods appear after FORGE builds this game. ' : '') + METHOD_NOTE[v]; if (v !== builder.method_prev) setStruct((v === 'ev' || v === 'plain' || v === 'mix4') ? 'any' : (v === 'p51' ? builder.struct : 'hedge')); builder.method_prev = v; }   // 2026-10-16: structure is editable for every method; each method starts on its own default
+    $('#methodNote').textContent = (D && !D.simpack && v === 'p51' ? 'Simulation methods appear after FORGE builds this game. ' : '') + METHOD_NOTE[v]; if (v !== builder.method_prev) setStruct((v === 'ev' || v === 'plain' || v === 'mix4') ? 'any' : (v === 'p51' ? builder.struct : 'hedge')); if (v !== builder.method_prev) { const md = { mix4: [3, 20, 100], plain: [3, 20, 100], hyb: [1, 6, ''], hyb0: [1, 6, ''], p51: [1, 6, 100], ev: [1, 6, 100] }[v] || [1, 6, 100];   // (2026-10-29, FORGE: defaults only) each method's own tested settings
+      $('#bUniq').value = md[0]; $('#bExp').value = md[2]; if (!$('#bCap').disabled) $('#bCap').value = md[1]; else $('#bCap').dataset.v = md[1]; if (v === 'hyb') { $('#bTop3').checked = true; $('#bTop5').checked = true; } if (typeof syncCap === 'function' && $('#bCapNote')) syncCap(); }
+    builder.method_prev = v; }   // 2026-10-16: structure is editable for every method; each method starts on its own default
   $$('#bMethod button').forEach(b => b.addEventListener('click', () => { setMethod(b.dataset.v); markCustom(); }));
   $('#bOwn').addEventListener('input', () => { const v = parseInt($('#bOwn').value); $('#bOwnV').textContent = v === 0 ? 'off' : v < 0 ? `fade popular ${-v}%` : `play popular ${v}%`; });
   function setStruct(v) { builder.struct = v; $$('#bStruct button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === v))); }
