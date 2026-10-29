@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="ed10a99b5e95"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="a730d910a793"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -832,7 +832,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
   <section class="panel" id="p-dk" hidden>
     <div class="nba-only"><ol class="steps">
       <li><b>Get your entries file.</b> On DraftKings: <b>Lineups → Edit Entries → Download</b> for this slate (it lists every contest you joined).</li>
-      <li><b>Fill it here.</b> <label class="btn primary filebtn"><input type="file" id="nbaDkFile">Choose your DKEntries file</label> FORGE builds one different lineup per entry (OUT players removed) and fills it. Untick any contest you want left alone.</li>
+      <li><b>Fill it here.</b> <label class="btn primary filebtn"><input type="file" id="nbaDkFile">Choose your DKEntries file</label> FORGE fills your biggest contest with different lineups and gives each smaller contest its top lineups (single entry = #1), OUT players removed. Untick any contest you want left alone.</li>
       <li><b>Upload.</b> DraftKings → <b>Lineups → Edit Entries → Upload</b>, pick the filled file.</li></ol>
       <div id="nbaDkResult" aria-live="polite"></div>
       <p class="note">New entries without an entries file: <b>Download for DraftKings</b> under your lineups gives DraftKings' <b>Upload Lineups</b> format (no entry IDs). <a class="btn small" href="https://www.draftkings.com/lineup/upload" target="_blank" rel="noopener">Open DraftKings upload</a></p>
@@ -1733,7 +1733,8 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const ek = D.owner && !edited ? Object.keys(D.builds || {}).find(k => /^(Entered|FORGE) build \(MIX4\)/.test(k) && (D.builds[k] || []).length) : null;
     if (ek) {   // owner, no edits: FORGE's own server set (exact, the bigger simulation), so the Builder = what FORGE enters
       const by = {}; D.builds[ek].forEach(l => (by[l.contest] = by[l.contest] || []).push(l)); const gs = Object.values(by).sort((a, b) => b.length - a.length);
-      const g20 = gs[0], se = (gs.find(g => g.length === 1) || g20)[0], mini = gs.find(g => g.length > 1 && g.length < g20.length) || g20;
+      const g20 = gs[0], se = (gs.find(g => g.length === 1) || g20)[0], uk = Object.keys(D.builds).find(k => /PLAIN-U3/.test(k) && (D.builds[k] || []).length),
+        mini = gs.find(g => g.length > 1 && g.length < g20.length) || (uk ? Object.values(groupBy(D.builds[uk])).sort((a, b) => b.length - a.length)[0] : g20);   // smaller contests = 3-different #1-n (SD-EXTEND)
       const sal = Object.fromEntries(D.players.map(p => [p.name, p.sal])), mk = l => ({ cpt: l.cpt, flex: l.flex, proj: l.proj, sal: l.sal || (1.5 * (sal[l.cpt] || 0) + l.flex.reduce((t, x) => t + (sal[x] || 0), 0)), pct: null, own: null });
       builder.result = g20.map(mk); builder.resultMethod = 'mix4'; builder.mix = { se: mk(se), mini: mini.map(mk) };
       st0.className = 'status'; st0.textContent = `Forged ${g20.length} lineups: FORGE's own FORGE Pick set for this game (simulator top 5 + 3-different #1-5 & #11-15 + 1-different #1-5), exactly what FORGE enters.`;
@@ -2215,12 +2216,22 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
         const key = JSON.stringify([perContest, src.gpp.map(l => l.cpt + '|' + l.flex.join(',')), twice0]);
         if (!AUTO || AUTO.key !== key) { say('<p class="note">Building the lineups each contest needs, the same way FORGE builds its own entries…</p>'); prepAuto(perContest, src.gpp, twice0).then(m => { AUTO = { key, map: m.map, why: m.why }; fillDK(text); }).catch(e => say('<div class="err">Could not build the extra lineups (' + e.message + ').</div>')); return; }
       }
+      // (2026-10-29 SD-EXTEND) FORGE's lineups on your own contests: biggest contest = the FORGE Pick 20, every smaller contest = 3-different #1-n,
+      // single entry = FORGE Pick's single-entry lineup -- the same as "My Builder lineups" and FORGE's own entries
+      let FM = null;
+      if (DKSRC === 'forge' && kind === 'showdown' && !Object.keys(perContest).some(c => src.byContest[c])) {
+        const B = D.builds || {}, ek = Object.keys(B).find(k => /MIX4/.test(k) && (B[k] || []).length), uk = Object.keys(B).find(k => /PLAIN-U3/.test(k) && (B[k] || []).length);
+        if (ek) { const gs = Object.values(groupBy(B[ek])).sort((a, b) => b.length - a.length), g20 = gs[0], u3 = uk ? Object.values(groupBy(B[uk])).sort((a, b) => b.length - a.length)[0] : g20;
+          src.se = (gs.find(g => g.length === 1) || g20)[0]; FM = {};
+          Object.keys(perContest).filter(c => !CASHRX.test(c) && !(SERX.test(c) || perContest[c] === 1)).sort((a, b) => perContest[b] - perContest[a])
+            .forEach((c, j) => FM[c] = j === 0 ? [g20, 'FORGE Pick (20 different lineups)'] : [u3.slice(0, perContest[c]), `3-different #1-${Math.min(perContest[c], u3.length)} (FORGE's tested plan for smaller contests)`]); } }
       // (2026-10-21 Round 41) single entry gets lineup #1, which also stays in the multi-entry contests (the tested plan)
       let gp = 0; const used = {}, out = [], errs = [], plan = {}, skipped = [], expo = [], twice = !!($('#dkTwice') && $('#dkTwice').checked);
       const status = {}; D.players.forEach(p => status[p.name] = p.status || '');
       for (const r of entries) {
         const c = r[1].trim(); used[c] = used[c] || 0; let lu, why;
-        if (DKSRC === 'forge' && src.byContest[c] && src.byContest[c][used[c]]) { lu = src.byContest[c][used[c]]; why = 'FORGE set for this contest'; }
+        if (FM && FM[c]) { lu = FM[c][0][used[c]]; why = FM[c][1]; }
+        else if (DKSRC === 'forge' && src.byContest[c] && src.byContest[c][used[c]]) { lu = src.byContest[c][used[c]]; why = 'FORGE set for this contest'; }
         else if (DKSRC === 'mine' && AUTO && AUTO.map && AUTO.map[c] && !CASHRX.test(c) && !(SERX.test(c) || perContest[c] === 1)) { lu = AUTO.map[c][used[c]]; why = AUTO.why[c] || 'your lineups'; }
         else if (CASHRX.test(c)) { lu = src.cash; why = 'cash lineup'; }
         else if (SERX.test(c) || perContest[c] === 1) { lu = src.se; why = 'top lineup'; }
@@ -2888,14 +2899,17 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       // (2026-10-24, FORGE: "as smoothly as NFL") FORGE builds the lineups itself: one distinct lineup per selected entry, OUT players never used;
       // it rebuilds whenever the built set is too small or holds a player who is now ruled out
       const stale = (NB.result || []).some(c => c.lu.some(p => NBOUT(D.players.find(q => q.name === p.name) || {})));
-      if (!auto && ((NB.result || []).length < ent.length || stale)) {
-        say(`<p class="note">Building ${ent.length} different lineups with FORGE's default settings (OUT players removed)…</p>`);
-        $('#nbaN').value = Math.min(150, ent.length); await nbaBuild(); return nbaFillDK(text, true);
+      // (2026-10-29 NBA-EXTEND) the biggest contest gets lineups #1-n; every smaller contest gets the top lineups again (#1-n, single entry #1):
+      // reusing the top beat the next unused lineups on 9 slates (2-entry GPPs +159% vs +124%), the same as the NFL test (SD-EXTEND)
+      const per = {}; ent.forEach(r => per[r[1].trim()] = (per[r[1].trim()] || 0) + 1); const need = Math.max(...Object.values(per));
+      if (!auto && ((NB.result || []).length < need || stale)) {
+        say(`<p class="note">Building ${need} different lineups with FORGE's default settings (OUT players removed)…</p>`);
+        $('#nbaN').value = Math.min(150, need); await nbaBuild(); return nbaFillDK(text, true);
       }
       const L = NB.result || []; if (!L.length) return say('<div class="err">FORGE could not build lineups for this slate: ' + ($('#nbaStatus').textContent || '') + '</div>');
-      const out = [], errs = [], skipped = [], plan = {}; let k = 0;
+      const out = [], errs = [], skipped = [], plan = {}, k = {};
       for (const r of ent) {
-        const c = r[1].trim(); const lu = L[k++]; if (!lu) { skipped.push(r[0]); continue; }
+        const c = r[1].trim(); k[c] = k[c] || 0; const lu = L[k[c]++]; if (!lu) { skipped.push(r[0]); continue; }
         const names = lu.lu.map(p => p.name);
         const ids = names.map((n, j) => pool[sd ? n + '|' + (j ? 'UTIL' : 'CPT') : n]);
         const miss = names.filter((n, j) => !ids[j]); if (miss.length) { errs.push(`${miss.join(', ')} not in your file's player list`); continue; }
@@ -2913,7 +2927,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       const fname = `DKEntries_FORGE_${D.slate.id || 'slate'}.csv`;
       logBuild('nba_export', { fname, skipped: skipped.length, contests: plan }, out.map(o => ({ entry: o[0], contest: o[1] })));
       sendEntries(csv, D.slate.id || 'slate');
-      say(`<div class="ok">✓ ${out.length} entries filled with ${out.length} different lineups, checked against DraftKings' player list (IDs, ${ti ? 'tiers' : 'slots, $50,000'}).</div>${skipped.length ? `<p class="note"><b>${skipped.length} selected entries have no lineup yet</b>: FORGE could make only ${L.length} different lineups (${esc($('#nbaStatus').textContent)}). They are left out of the file and stay as they are on DraftKings; choose the file again later when more lines are posted.</p>` : ''}
+      say(`<div class="ok">✓ ${out.length} entries filled (biggest contest: ${Math.min(need, L.length)} different lineups; each smaller contest gets FORGE's top lineups, single entry #1), checked against DraftKings' player list (IDs, ${ti ? 'tiers' : 'slots, $50,000'}).</div>${skipped.length ? `<p class="note"><b>${skipped.length} selected entries have no lineup yet</b>: FORGE could make only ${L.length} different lineups (${esc($('#nbaStatus').textContent)}). They are left out of the file and stay as they are on DraftKings; choose the file again later when more lines are posted.</p>` : ''}
         <div class="tbl-wrap"><table><thead><tr><th>Contest</th><th class="n">Entries filled</th></tr></thead><tbody>${Object.entries(plan).map(([c, v]) => `<tr><td>${c}</td><td class="n">${v}</td></tr>`).join('')}</tbody></table></div>
         <div class="toolbar"><button class="btn primary" type="button" id="nbaDkDl">Download filled file</button><button class="btn small" type="button" id="nbaDkCopy">Copy instead</button></div>
         <p class="note">Then DraftKings → Lineups → Edit Entries → Upload, and pick ${fname}.</p>`);
