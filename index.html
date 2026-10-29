@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="c7f542a9aa9f"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="3d98dd63a4f7"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -346,10 +346,16 @@ details.about p:last-child { margin-bottom: 0; }
 .story { display: grid; gap: 10px; margin: 0 0 18px; padding: 0; list-style: none; max-width: 70ch; }
 .story li { padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); line-height: 1.5; }
 .story li:first-child { font-family: var(--font-display); font-size: 18px; border-color: var(--line-strong); }
-.pcols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 0 0 18px; }
-.pcols > div { border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; background: var(--surface); min-width: 0; }
-.pcols h4 { margin: 0 0 8px; font: 700 12px/16px var(--font-display); letter-spacing: .06em; text-transform: uppercase; }
-.pcols p { margin: 4px 0; }
+.rcols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 0 0 18px; }
+.rcols > div { border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; background: var(--surface); min-width: 0; }
+.rcols h4 { margin: 0 0 8px; font: 700 12px/16px var(--font-display); letter-spacing: .06em; text-transform: uppercase; }
+.rcols p { margin: 4px 0; }
+.rnight { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); margin: 0 0 10px; }
+.rnight > summary { list-style: none; cursor: pointer; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; padding: 12px 14px; }
+.rnight > summary::-webkit-details-marker { display: none; }
+.rnight > summary b { font-family: var(--font-display); font-size: 16px; min-width: 9.5em; }
+.rnight > summary .rn { margin-left: auto; font: 600 16px/20px var(--font-data); }
+.rnight .tbl-wrap { margin: 0 14px 12px; }
 .mverd { font: 700 12px/16px var(--font-display); letter-spacing: .06em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line-strong); }
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 0 0 20px; }
 .tile { padding: 14px 16px; display: grid; gap: 5px; align-content: start; }
@@ -541,6 +547,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     <button class="tab" role="tab" id="tab-sims" aria-selected="false" data-p="sims">Sims</button>
     <button class="tab" role="tab" id="tab-dk" aria-selected="false" data-p="dk">Entries</button>
     <button class="tab" role="tab" id="tab-recap" aria-selected="false" data-p="recap">Last night</button>
+    <button class="tab" role="tab" id="tab-real" aria-selected="false" data-p="real">Real results</button>
     <button class="tab" role="tab" id="tab-record" aria-selected="false" data-p="record" data-grp="lineups past">Results</button>
   </nav>
 </div>
@@ -847,6 +854,12 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
   <section class="panel" id="p-recap" hidden>
     <div id="morningBox"><p class="note">Last night's recap appears here after about 2 AM.</p></div>
   </section>
+  <section class="panel" id="p-real" hidden>
+    <h3 class="subh">Real results</h3>
+    <p class="lede">What actually happened: DraftKings' final standings for every contest we entered, priced with each contest's real prize table. A night shows up here once its standings are sent in, usually the morning after.</p>
+    <div id="realBox"><p class="note">Loading…</p></div>
+  </section>
+
   <section class="panel" id="p-record" hidden>
     <div class="seg subnav" role="group" aria-label="Results"><button type="button" data-go="record" aria-pressed="true">Live record</button><button type="button" data-go="lineups" aria-pressed="false">How FORGE played</button><button type="button" data-go="past" aria-pressed="false">Past contests</button></div>
     <p class="note nba-only">No NBA slates graded yet: the results below are NFL.</p>
@@ -918,7 +931,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     document.body.dataset.tab = p;   // the slate picker shows on the Slate tab only; elsewhere the header carries a Change slate button   // 2026-10-28 redesign: overlay alerts live on the Slate brief
     $$('.tab[data-p]').forEach(t => t.setAttribute('aria-selected', String(t.dataset.p === p || (t.dataset.grp || '').split(' ').includes(p))));
     $$('.panel').forEach(x => x.hidden = x.id !== 'p-' + p); $$('.subnav button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.go === p)));
-    LS.set('forge_tab', p); if (p === 'past' && typeof renderPast === 'function') renderPast(); if (p === 'recap' && typeof renderMorning === 'function') renderMorning(); if (p === 'sims' && typeof simsReady === 'function') simsReady();
+    LS.set('forge_tab', p); if (p === 'past' && typeof renderPast === 'function') renderPast(); if (p === 'recap' && typeof renderMorning === 'function') renderMorning(); if (p === 'real' && typeof renderReal === 'function') renderReal(); if (p === 'sims' && typeof simsReady === 'function') simsReady();
   }
   const toTop = () => { if (window.scrollY > 200) window.scrollTo({ top: 0, behavior: 'smooth' }); };
   $$('.tab[data-p]').forEach(t => t.addEventListener('click', () => { show(t.dataset.p); toTop(); }));
@@ -2180,19 +2193,49 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     if (!M || !M.contests) { box.innerHTML = ''; ban.innerHTML = ''; return; }
     const d = new Date(M.date + 'T12:00:00'), dl = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
     const cls = M.est_profit >= 0 ? 'gain' : 'loss', fresh = (Date.now() - d.getTime()) < 2.5 * 864e5;
-    ban.innerHTML = fresh ? `<div class="mbanner"><span class="mverd">${esc(M.verdict)}</span><span><b>Last night (${esc(dl)})</b> · estimated ${usd2(M.est_winnings)} back on ${usd2(M.fees)} · <span class="${cls}">${usd2(M.est_profit)}</span></span><button type="button" class="linkbtn" data-go="recap">Full recap</button></div>` : '';
+    const RR = await getReal(), RN = RR && RR.nights ? RR.nights.find(n => n.date === M.date) : null;   // real standings in -> show them over the estimate
+    ban.innerHTML = !fresh ? '' : RN
+      ? `<div class="mbanner"><span class="mverd">Final</span><span><b>Last night (${esc(dl)})</b> · ${usd2(RN.won)} back on ${usd2(RN.fees)} · <span class="${RN.net >= 0 ? 'gain' : 'loss'}">${usd2(RN.net)}</span></span><button type="button" class="linkbtn" data-go="real">Real results</button></div>`
+      : `<div class="mbanner"><span class="mverd">${esc(M.verdict)}</span><span><b>Last night (${esc(dl)})</b> · estimated ${usd2(M.est_winnings)} back on ${usd2(M.fees)} · <span class="${cls}">${usd2(M.est_profit)}</span></span><button type="button" class="linkbtn" data-go="recap">Full recap</button></div>`;
     $$('[data-go]', ban).forEach(b => b.onclick = () => { show(b.dataset.go); window.scrollTo({ top: 0, behavior: 'smooth' }); });
     const rows = M.contests.map(c => `<tr><td class="who"><b>${esc(c.contest)}</b><small>${c.entries} ${c.entries === 1 ? 'entry' : 'entries'} · ${c.field.toLocaleString('en-US')} in the field</small></td><td>${usd2(c.fees)}</td><td>${c.est_cashed == null ? '—' : c.est_cashed + ' of ' + c.entries}</td><td>about ${ordn(c.best_place)} <small>(top ${Math.max(0.1, c.best_pct).toFixed(c.best_pct < 1 ? 1 : 0)}%)</small></td><td>${c.est_winnings == null ? 'no prize table' : usd2(c.est_winnings)}</td></tr>`).join('');
     const ST = M.story || {}, pl = (L, f) => (L || []).length ? L.map(f).join('') : '<p class="note">None.</p>';
     const tag = p => `<p><b>${esc(p.name)}</b> · ${(+p.pts).toFixed(1)} pts <span class="${p.diff >= 0 ? 'gain' : 'loss'}">(${p.diff > 0 ? '+' : ''}${(+p.diff).toFixed(1)})</span>${p.share != null && p.lineups ? ` · in ${Math.round(p.share)}% of lineups` : ''}</p>`;
     box.innerHTML = `<h3 class="subh">${esc(dl)} <span class="mverd">${esc(M.verdict)}</span></h3>
+      ${RN ? `<div class="mbanner"><span class="mverd">Final</span><span>The real standings are in: <b>${usd2(RN.won)}</b> back on ${usd2(RN.fees)}, <span class="${RN.net >= 0 ? 'gain' : 'loss'}">${usd2(RN.net)}</span>; best finish ${ordn(RN.best.place)} of ${RN.best.field.toLocaleString('en-US')}. The estimate below was made before they came in.</span><button type="button" class="linkbtn" data-go="real">Real results</button></div>` : ''}
       ${(ST.lines || []).length ? `<ul class="story">${ST.lines.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
       <div class="tiles"><div class="tile"><small>Entry fees</small><b>${usd2(M.fees)}</b><span>${M.contests.reduce((a, c) => a + c.entries, 0)} lineups in ${M.contests.length} contests</span></div>
       <div class="tile"><small>Estimated back</small><b>${usd2(M.est_winnings)}</b><span>${M.all_payouts_known ? 'from the prize tables' : 'some contests have no prize table yet'}</span></div>
       <div class="tile"><small>Estimated profit</small><b class="${cls}">${usd2(M.est_profit)}</b><span>${M.est_roi > 0 ? '+' : ''}${M.est_roi}% · ${esc(M.verdict)}</span></div></div>
-      <div class="pcols"><div><h4>Carried us</h4>${pl(ST.heroes, tag)}</div><div><h4>Let us down</h4>${pl(ST.busts, tag)}</div><div><h4>Got away</h4>${pl(ST.missed, tag)}</div></div>
+      <div class="rcols"><div><h4>Carried us</h4>${pl(ST.heroes, tag)}</div><div><h4>Let us down</h4>${pl(ST.busts, tag)}</div><div><h4>Got away</h4>${pl(ST.missed, tag)}</div></div>
       <div class="tbl-wrap"><table><thead><tr><th>Contest</th><th>Fees</th><th>Cashed (est.)</th><th>Best finish (est.)</th><th>Back (est.)</th></tr></thead><tbody>${rows}</tbody></table></div>
       <p class="note">An estimate from the night's box scores and past contests, made before DraftKings' final standings are in: finishes can be off by a lot, cash or no cash is right about 4 times in 5. Players and how often we used them are shown; lineups never are.</p>`;
+    $$('[data-go]', box).forEach(b => b.onclick = () => { show(b.dataset.go); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
+
+  // (2026-10-29, FORGE: "a tab that shows the actual results for my mom and others to see after I have submitted them") real results from the
+  // contest standings (tools/real_results.py -> data/results.enc.json). Money, finishes, contest names; never lineups.
+  let REAL = undefined;
+  async function getReal() { if (REAL === undefined) { try { REAL = await getJSON('results'); } catch (e) { REAL = null; } } return REAL; }
+  async function renderReal() {
+    const box = $('#realBox'); if (!box) return; const R = await getReal();
+    if (!R || !R.nights || !R.nights.length) { box.innerHTML = '<p class="note">No results sent in yet.</p>'; return; }
+    const cl = v => v == null ? '' : (v >= 0 ? 'gain' : 'loss'), pct = v => v == null ? '—' : (v > 0 ? '+' : '') + v + '%';
+    const dl = d => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    const mname = new Date(R.this_month.month + '-15T12:00:00').toLocaleDateString('en-US', { month: 'long' });
+    const tile = (lab, T, sub) => `<div class="tile"><small>${lab}</small><b class="${cl(T.net)}">${usd2(T.net)}</b><span>${usd2(T.won)} back on ${usd2(T.fees)} · ${pct(T.roi)}${sub ? ' · ' + sub : ''}</span></div>`;
+    const N = R.nights, wins = N.filter(n => n.net > 0).length, big = N.reduce((a, n) => (n.net > (a ? a.net : -1e9) ? n : a), null);
+    const sp = R.by_sport || {};
+    const nights = N.map((n, i) => {
+      const rows = n.contests_list.map(c => `<tr><td class="who"><b>${esc(c.contest)}</b><small>${esc(c.slate)} · ${c.entries} ${c.entries === 1 ? 'entry' : 'entries'} · ${c.field.toLocaleString('en-US')} in the field</small></td><td>${c.priced ? `<span class="${cl(c.won - c.fees)}">${usd2(c.won)}</span>` : '<small>prize table missing</small>'}</td><td>${usd2(c.fees)}</td><td>${c.cashed == null ? '—' : c.cashed + ' of ' + c.entries}</td><td>${ordn(c.best_place)} <small>(top ${Math.max(0.01, c.best_pct).toFixed(c.best_pct < 1 ? 2 : 0)}%)</small></td></tr>`).join('');
+      return `<details class="rnight"${i === 0 ? ' open' : ''}><summary><b>${esc(dl(n.date))}</b><span>${n.sports.join(' + ')} · ${n.contests} contest${n.contests === 1 ? '' : 's'} · best ${ordn(n.best.place)} of ${n.best.field.toLocaleString('en-US')}</span><span class="rn ${cl(n.net)}">${usd2(n.net)}</span></summary>
+        <div class="tbl-wrap"><table><thead><tr><th>Contest</th><th>Won</th><th>Fees</th><th>Cashed</th><th>Best finish</th></tr></thead><tbody>${rows}</tbody></table></div>
+        <p class="note" style="margin:0 14px 12px">${usd2(n.won)} back on ${usd2(n.fees)}${n.unpriced_fees ? ` (plus ${usd2(n.unpriced_fees)} in contests whose prize table was never saved, left out)` : ''}.</p></details>`;
+    }).join('');
+    box.innerHTML = `<div class="tiles">${tile('All time', R.all, R.all.top1 + ' top-1% finishes')}${tile(esc(mname), R.this_month)}${sp.NBA ? tile('NBA', sp.NBA) : ''}${sp.NFL ? tile('NFL', sp.NFL) : ''}</div>
+      <p class="lede">${wins} winning nights out of ${N.length}.${big && big.net > 0 ? ` Best night: ${esc(dl(big.date))}, ${usd2(big.net)}.` : ''} Tap a night for every contest.</p>
+      ${nights}
+      <p class="note">Each finish is DraftKings' final rank; ties are split the way DraftKings splits them. Contests whose prize table was never saved show their finish but count no money. Updated ${esc(R.updated_utc)} UTC. Lineups stay private.</p>`;
   }
   // record
   let REC = null, OREC = null;   // 2026-10-21: one current record for every slate (data/record*.enc.json, tools/site_record.py)
