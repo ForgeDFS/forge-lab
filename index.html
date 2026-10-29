@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="d393b05d91c7"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="c7f542a9aa9f"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -343,6 +343,13 @@ details.about p:last-child { margin-bottom: 0; }
 /* record, results */
 .mbanner { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r-md); padding: 10px 14px; margin: 0 0 16px; }
 .mbanner b { font-family: var(--font-display); letter-spacing: .02em; }
+.story { display: grid; gap: 10px; margin: 0 0 18px; padding: 0; list-style: none; max-width: 70ch; }
+.story li { padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); line-height: 1.5; }
+.story li:first-child { font-family: var(--font-display); font-size: 18px; border-color: var(--line-strong); }
+.pcols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 0 0 18px; }
+.pcols > div { border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; background: var(--surface); min-width: 0; }
+.pcols h4 { margin: 0 0 8px; font: 700 12px/16px var(--font-display); letter-spacing: .06em; text-transform: uppercase; }
+.pcols p { margin: 4px 0; }
 .mverd { font: 700 12px/16px var(--font-display); letter-spacing: .06em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line-strong); }
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 0 0 20px; }
 .tile { padding: 14px 16px; display: grid; gap: 5px; align-content: start; }
@@ -533,6 +540,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     <button class="tab" role="tab" id="tab-builder" aria-selected="false" data-p="builder">Build</button>
     <button class="tab" role="tab" id="tab-sims" aria-selected="false" data-p="sims">Sims</button>
     <button class="tab" role="tab" id="tab-dk" aria-selected="false" data-p="dk">Entries</button>
+    <button class="tab" role="tab" id="tab-recap" aria-selected="false" data-p="recap">Last night</button>
     <button class="tab" role="tab" id="tab-record" aria-selected="false" data-p="record" data-grp="lineups past">Results</button>
   </nav>
 </div>
@@ -836,9 +844,11 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     <div class="nosd"><div class="pnl"><div class="empty-state"><h3>Simulation runs on NFL Showdowns</h3><p>FORGE's in-browser simulator scores Showdown lineups against a modeled field. It isn't built for NBA or Classic slates yet, so this tab has nothing to score here. Pick an NFL Showdown at the top to use it.</p></div></div></div>
   </section>
 
+  <section class="panel" id="p-recap" hidden>
+    <div id="morningBox"><p class="note">Last night's recap appears here after about 2 AM.</p></div>
+  </section>
   <section class="panel" id="p-record" hidden>
     <div class="seg subnav" role="group" aria-label="Results"><button type="button" data-go="record" aria-pressed="true">Live record</button><button type="button" data-go="lineups" aria-pressed="false">How FORGE played</button><button type="button" data-go="past" aria-pressed="false">Past contests</button></div>
-    <div id="morningBox"></div>
     <p class="note nba-only">No NBA slates graded yet: the results below are NFL.</p>
     <div class="tiles" id="recTiles"></div>
     <div id="ourBox"></div>
@@ -908,7 +918,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     document.body.dataset.tab = p;   // the slate picker shows on the Slate tab only; elsewhere the header carries a Change slate button   // 2026-10-28 redesign: overlay alerts live on the Slate brief
     $$('.tab[data-p]').forEach(t => t.setAttribute('aria-selected', String(t.dataset.p === p || (t.dataset.grp || '').split(' ').includes(p))));
     $$('.panel').forEach(x => x.hidden = x.id !== 'p-' + p); $$('.subnav button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.go === p)));
-    LS.set('forge_tab', p); if (p === 'past' && typeof renderPast === 'function') renderPast(); if (p === 'sims' && typeof simsReady === 'function') simsReady();
+    LS.set('forge_tab', p); if (p === 'past' && typeof renderPast === 'function') renderPast(); if (p === 'recap' && typeof renderMorning === 'function') renderMorning(); if (p === 'sims' && typeof simsReady === 'function') simsReady();
   }
   const toTop = () => { if (window.scrollY > 200) window.scrollTo({ top: 0, behavior: 'smooth' }); };
   $$('.tab[data-p]').forEach(t => t.addEventListener('click', () => { show(t.dataset.p); toTop(); }));
@@ -2170,15 +2180,19 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     if (!M || !M.contests) { box.innerHTML = ''; ban.innerHTML = ''; return; }
     const d = new Date(M.date + 'T12:00:00'), dl = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
     const cls = M.est_profit >= 0 ? 'gain' : 'loss', fresh = (Date.now() - d.getTime()) < 2.5 * 864e5;
-    ban.innerHTML = fresh ? `<div class="mbanner"><span class="mverd">${esc(M.verdict)}</span><span><b>Last night (${esc(dl)})</b> · estimated ${usd2(M.est_winnings)} back on ${usd2(M.fees)} · <span class="${cls}">${usd2(M.est_profit)}</span></span><button type="button" class="linkbtn" data-go="record">Details</button></div>` : '';
+    ban.innerHTML = fresh ? `<div class="mbanner"><span class="mverd">${esc(M.verdict)}</span><span><b>Last night (${esc(dl)})</b> · estimated ${usd2(M.est_winnings)} back on ${usd2(M.fees)} · <span class="${cls}">${usd2(M.est_profit)}</span></span><button type="button" class="linkbtn" data-go="recap">Full recap</button></div>` : '';
     $$('[data-go]', ban).forEach(b => b.onclick = () => { show(b.dataset.go); window.scrollTo({ top: 0, behavior: 'smooth' }); });
     const rows = M.contests.map(c => `<tr><td class="who"><b>${esc(c.contest)}</b><small>${c.entries} ${c.entries === 1 ? 'entry' : 'entries'} · ${c.field.toLocaleString('en-US')} in the field</small></td><td>${usd2(c.fees)}</td><td>${c.est_cashed == null ? '—' : c.est_cashed + ' of ' + c.entries}</td><td>about ${ordn(c.best_place)} <small>(top ${Math.max(0.1, c.best_pct).toFixed(c.best_pct < 1 ? 1 : 0)}%)</small></td><td>${c.est_winnings == null ? 'no prize table' : usd2(c.est_winnings)}</td></tr>`).join('');
-    box.innerHTML = `<h3 class="subh">Last night · ${esc(dl)} <span class="mverd">${esc(M.verdict)}</span></h3>
+    const ST = M.story || {}, pl = (L, f) => (L || []).length ? L.map(f).join('') : '<p class="note">None.</p>';
+    const tag = p => `<p><b>${esc(p.name)}</b> · ${(+p.pts).toFixed(1)} pts <span class="${p.diff >= 0 ? 'gain' : 'loss'}">(${p.diff > 0 ? '+' : ''}${(+p.diff).toFixed(1)})</span>${p.share != null && p.lineups ? ` · in ${Math.round(p.share)}% of lineups` : ''}</p>`;
+    box.innerHTML = `<h3 class="subh">${esc(dl)} <span class="mverd">${esc(M.verdict)}</span></h3>
+      ${(ST.lines || []).length ? `<ul class="story">${ST.lines.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
       <div class="tiles"><div class="tile"><small>Entry fees</small><b>${usd2(M.fees)}</b><span>${M.contests.reduce((a, c) => a + c.entries, 0)} lineups in ${M.contests.length} contests</span></div>
       <div class="tile"><small>Estimated back</small><b>${usd2(M.est_winnings)}</b><span>${M.all_payouts_known ? 'from the prize tables' : 'some contests have no prize table yet'}</span></div>
       <div class="tile"><small>Estimated profit</small><b class="${cls}">${usd2(M.est_profit)}</b><span>${M.est_roi > 0 ? '+' : ''}${M.est_roi}% · ${esc(M.verdict)}</span></div></div>
+      <div class="pcols"><div><h4>Carried us</h4>${pl(ST.heroes, tag)}</div><div><h4>Let us down</h4>${pl(ST.busts, tag)}</div><div><h4>Got away</h4>${pl(ST.missed, tag)}</div></div>
       <div class="tbl-wrap"><table><thead><tr><th>Contest</th><th>Fees</th><th>Cashed (est.)</th><th>Best finish (est.)</th><th>Back (est.)</th></tr></thead><tbody>${rows}</tbody></table></div>
-      <p class="note">An estimate from the night's box scores and past contests, made before DraftKings' final standings are in: finishes can be off by a lot, cash or no cash is right about 4 times in 5. The real result replaces it once the standings are loaded. Lineups are never shown.</p>`;
+      <p class="note">An estimate from the night's box scores and past contests, made before DraftKings' final standings are in: finishes can be off by a lot, cash or no cash is right about 4 times in 5. Players and how often we used them are shown; lineups never are.</p>`;
   }
   // record
   let REC = null, OREC = null;   // 2026-10-21: one current record for every slate (data/record*.enc.json, tools/site_record.py)
