@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="8a54fbdee074"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="047a4e8f3ae8"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -2754,6 +2754,18 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     })(0, 0);
     return best || lu;
   }
+  // NBA_LEV: null = off (default). {mode, k}: the last k lineups each built around one stud ($7k+) ranked by mode, using the slate's
+  // own_fc (NBA-OWN1 ownership forecast) and p6x (S1 chance of 6x salary). Set from docs/PREREG_NBA_OWN1_LEV1_2026-10-29.md.
+  const NBA_LEV = { mode: 'OWNLEV', k: 4 };   // (2026-10-29 NBA-LEV1 round 2: OWNLEV-4 best passing arm under the stricter rule; QOWN-3 paper shadow)
+  function nbaLevStuds(P) {
+    const cfg = NBA_LEV; if (!cfg || D.slate.kind !== 'nba_classic') return null;
+    const st = P.filter(p => p.sal >= 7000 && p.own_fc != null && p.p6x != null && !NB.lock.has(p.name)); if (!st.length) return null;
+    const med = st.map(p => p.p6x).sort((a, b) => a - b)[Math.floor((st.length - 1) / 2)], q = st.filter(p => p.p6x >= med);
+    const R = cfg.mode === 'QOWN' ? q.slice().sort((a, b) => b.p6x / Math.max(b.own_fc, 0.1) - a.p6x / Math.max(a.own_fc, 0.1))
+      : cfg.mode === 'QCEIL' ? q.filter(p => p.own_fc <= 10).sort((a, b) => b.p6x - a.p6x)
+      : st.slice().sort((a, b) => b.p6x / Math.max(b.own_fc, 0.1) - a.p6x / Math.max(a.own_fc, 0.1));
+    return { k: cfg.k, studs: R };
+  }
   async function nbaBuild() {
     const st = $('#nbaStatus'), t0 = performance.now(); st.className = 'status'; st.textContent = 'Building…';
     let g; try { g = await glpk(); } catch (e) { st.className = 'status err'; st.textContent = 'The optimizer could not load: ' + e.message; return; }
@@ -2767,11 +2779,11 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const games = [...new Set(P.map(p => p.game))], xv = (p, s) => `x${p.i}_${s}`, el = (p, s) => NEL[s].some(z => p.pos.split('/').includes(z));
     const B = (lo, hi) => lo === hi ? { type: g.GLP_FX, lb: lo, ub: hi } : hi == null ? { type: g.GLP_LO, lb: lo, ub: 0 } : lo == null ? { type: g.GLP_UP, lb: 0, ub: hi } : { type: g.GLP_DB, lb: lo, ub: hi };
     const chosen = [], cnt = {};
-    for (let k = 0; k < N; k++) {
+    const solve = async (force) => {
       const V = [], sub = [], row = (name, vars, lo, hi) => { if (vars.length) sub.push({ name, vars, bnds: B(lo, hi) }); };
       P.forEach(p => NSLOT.forEach(s => { if (el(p, s)) V.push({ p, s, name: xv(p, s) }); }));
       NSLOT.forEach(s => row('s' + s, V.filter(v => v.s === s).map(v => ({ name: v.name, coef: 1 })), 1, 1));
-      P.forEach(p => { const vs = V.filter(v => v.p === p).map(v => ({ name: v.name, coef: 1 })); row('p' + p.i, vs, NB.lock.has(p.name) ? 1 : null, NB.lock.has(p.name) ? 1 : (cnt[p.i] || 0) >= capP ? 0 : 1); });
+      P.forEach(p => { const vs = V.filter(v => v.p === p).map(v => ({ name: v.name, coef: 1 })); row('p' + p.i, vs, (NB.lock.has(p.name) || p.i === force) ? 1 : null, (NB.lock.has(p.name) || p.i === force) ? 1 : (cnt[p.i] || 0) >= capP ? 0 : 1); });
       row('sal', V.map(v => ({ name: v.name, coef: v.p.sal })), null, 50000);
       games.forEach((gm, j) => row('gx' + j, V.filter(v => v.p.game === gm).map(v => ({ name: v.name, coef: 1 })), null, blowG.includes(gm) ? 1 : 7));   // DK: 2+ games
       const yv = stackG.map((gm, j) => 'y' + j);
@@ -2780,13 +2792,22 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       chosen.forEach((c, j) => row('u' + j, V.filter(v => c.ids.has(v.p.i)).map(v => ({ name: v.name, coef: 1 })), null, 8 - uniq));
       const lp = { name: 'nba', objective: { direction: g.GLP_MAX, name: 'obj', vars: V.map(v => ({ name: v.name, coef: v.p.q })) }, subjectTo: sub, binaries: [...V.map(v => v.name), ...yv] };
       const r = await Promise.resolve(g.solve(lp, { msglev: g.GLP_MSG_OFF, presol: true }));
-      if (!r || !r.result || (r.result.status !== g.GLP_OPT && r.result.status !== g.GLP_FEAS)) break;
-      const pick = V.filter(v => r.result.vars[v.name] > 0.5); if (pick.length !== 8) break;
-      const lu = nbaFlex(NSLOT.map(s => pick.find(v => v.s === s).p)); chosen.push({ lu, ids: new Set(lu.map(p => p.i)), s: lu.reduce((t, p) => t + PJ(p), 0) }); lu.forEach(p => cnt[p.i] = (cnt[p.i] || 0) + 1);
+      if (!r || !r.result || (r.result.status !== g.GLP_OPT && r.result.status !== g.GLP_FEAS)) return null;
+      const pick = V.filter(v => r.result.vars[v.name] > 0.5); if (pick.length !== 8) return null;
+      return nbaFlex(NSLOT.map(s => pick.find(v => v.s === s).p)); };
+    // (2026-10-29 NBA-LEV1) leverage studs: the last k of the set are built around high-ceiling, low-forecast-ownership studs (NBA_LEV below)
+    const LV = nbaLevStuds(P), levK = LV ? Math.min(LV.k, N) : 0; let si = 0; NB.levInfo = [];
+    for (let k = 0; k < N; k++) {
+      let lu = null, st0 = null;
+      if (k >= N - levK) while (!lu && si < LV.studs.length) { st0 = LV.studs[si++]; lu = await solve(st0.i); }
+      if (!lu) { st0 = null; lu = await solve(null); }
+      if (!lu) break;
+      if (st0) NB.levInfo.push({ n: k + 1, name: st0.name, own: st0.own_fc, p6: st0.p6x });
+      chosen.push({ lu, ids: new Set(lu.map(p => p.i)), s: lu.reduce((t, p) => t + PJ(p), 0) }); lu.forEach(p => cnt[p.i] = (cnt[p.i] || 0) + 1);
       if (k % 5 === 4) st.textContent = `Forging… ${k + 1} of ${N}`;
     }
     if (!chosen.length) { st.className = 'status err'; st.textContent = 'No legal lineup fits these rules.'; return; }
-    NB.result = chosen; st.textContent = `Forged ${chosen.length} of ${N} lineups in ${((performance.now() - t0) / 1000).toFixed(1)} s` + (stackG.length ? ' · stack games: ' + stackG.join(', ') : '') + (chosen.length < N ? ` · stopped at ${chosen.length}: only ${P.length} players are in the pool (OUT players and players without betting lines are left out).` : '');
+    NB.result = chosen; st.textContent = `Forged ${chosen.length} of ${N} lineups in ${((performance.now() - t0) / 1000).toFixed(1)} s` + (stackG.length ? ' · stack games: ' + stackG.join(', ') : '') + (chosen.length < N ? ` · stopped at ${chosen.length}: only ${P.length} players are in the pool (OUT players and players without betting lines are left out).` : '') + ((NB.levInfo || []).length ? ` · leverage lineups (tested 10/29, NBA-LEV1): ${NB.levInfo.map(x => `#${x.n} built around ${x.name} (forecast ${x.own.toFixed(1)}% owned)`).join('; ')}` : '');
     const ex = {}; chosen.forEach(c => c.lu.forEach(p => ex[p.name] = (ex[p.name] || 0) + 1));
     $('#nbaExpo').innerHTML = Object.entries(ex).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span class="chip">${k} <b>${Math.round(100 * v / chosen.length)}%</b></span>`).join('');
     $('#nbaGrid').innerHTML = chosen.map((c, i) => `<article class="lu"><header><span>#${i + 1}</span><span><b>${fmt(c.s)}</b> pts · <b>${money(c.lu.reduce((t, p) => t + p.sal, 0))}</b></span></header><ol>${c.lu.map((p, j) => `<li><span>${NSLOT[j]} ${p.name}</span><span class="p">${p.team} · ${p.game}</span></li>`).join('')}</ol></article>`).join('');
