@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="200047e1fabd"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="cac4222c7445"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -341,6 +341,9 @@ details.about p:last-child { margin-bottom: 0; }
 .empty-state p { margin: 0; max-width: 60ch; font-size: 13.5px; line-height: 20px; }
 
 /* record, results */
+.mbanner { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r-md); padding: 10px 14px; margin: 0 0 16px; }
+.mbanner b { font-family: var(--font-display); letter-spacing: .02em; }
+.mverd { font: 700 12px/16px var(--font-display); letter-spacing: .06em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line-strong); }
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 0 0 20px; }
 .tile { padding: 14px 16px; display: grid; gap: 5px; align-content: start; }
 .tile small { font: 600 10.5px/14px var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
@@ -553,6 +556,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
   <div class="rpbanner" id="rpBanner" hidden></div>
 
   <section class="panel" id="p-slate">
+    <div id="morningBanner"></div>
     <div class="start" id="startCard" hidden><h3>Start here <button class="btn small" id="startX" type="button">Got it</button></h3><ol>
       <li><b>Pick a slate</b> at the top: NBA or NFL, then a Classic slate, a Showdown or Tiers.</li>
       <li><b>Build</b> and press <b>Forge lineups</b>. It starts on FORGE Pick, the settings FORGE enters with.</li>
@@ -834,6 +838,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
 
   <section class="panel" id="p-record" hidden>
     <div class="seg subnav" role="group" aria-label="Results"><button type="button" data-go="record" aria-pressed="true">Live record</button><button type="button" data-go="lineups" aria-pressed="false">How FORGE played</button><button type="button" data-go="past" aria-pressed="false">Past contests</button></div>
+    <div id="morningBox"></div>
     <p class="note nba-only">No NBA slates graded yet: the results below are NFL.</p>
     <div class="tiles" id="recTiles"></div>
     <div id="ourBox"></div>
@@ -956,7 +961,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     CUR = id; renderPicker(); $('#statusText').textContent = 'Loading';
     try { const d = await getJSON(id); const ob = await ownerBuilds(id); if (ob) { d.builds = ob; d.owner = true; } else d.builds = d.builds || {};
       document.body.classList.toggle('owner', !!ob); init(d, IDX.find(x => x.id === id)); LS.set('forge_slate', id); renderOwnerLink(); document.body.dataset.slate = id;
-      try { renderBrief(); renderPropCards(); simsReady(); } catch (e) { console.error(e); } } catch (e) { fail(e); }
+      try { renderBrief(); renderPropCards(); simsReady(); renderMorning(); } catch (e) { console.error(e); } } catch (e) { fail(e); }
   }
   async function start() {
     IDX = (await getJSON('index')).slates || []; if (!IDX.length) throw new Error('no slates published');
@@ -2074,6 +2079,24 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       }
     } catch (e) { say('Could not send: ' + e.message, true); }
   }
+  // (2026-10-28, FORGE: morning report for his mom) the owner's filled entries file goes to FORGE's inbox (inbox/entries/) so the morning report
+  // knows the exact entries; silent, owner devices only, never shown to friends.
+  async function sendEntries(csv, tag) {
+    try {
+      if (!OPW || !ENC) return; const r = await fetch('data/upload.owner.enc.json', { cache: 'no-cache' }); if (!r.ok) return;
+      const cfg = await odec(await r.json()); const H = { Authorization: 'Bearer ' + cfg.token, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' }, A = 'https://api.github.com/repos/' + cfg.repo;
+      const d = new Date(), day = new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10), path = 'inbox/entries/' + day + '_' + String(tag).replace(/[^A-Za-z0-9._-]/g, '_') + '.csv';
+      const j = async (url, opt) => { const x = await fetch(url, Object.assign({ headers: H }, opt)); if (!x.ok) throw new Error(x.status); return x.json(); };
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const ref = await j(A + '/git/ref/heads/main'), com = await j(A + '/git/commits/' + ref.object.sha), blob = await j(A + '/git/blobs', { method: 'POST', body: JSON.stringify({ content: btoa(unescape(encodeURIComponent(csv))), encoding: 'base64' }) });
+          const tree = await j(A + '/git/trees', { method: 'POST', body: JSON.stringify({ base_tree: com.tree.sha, tree: [{ path, mode: '100644', type: 'blob', sha: blob.sha }] }) });
+          const nc = await j(A + '/git/commits', { method: 'POST', body: JSON.stringify({ message: 'entries via the app: ' + path, tree: tree.sha, parents: [ref.object.sha] }) });
+          await j(A + '/git/refs/heads/main', { method: 'PATCH', body: JSON.stringify({ sha: nc.sha }) }); return;
+        } catch (e) { if (attempt === 2) throw e; await new Promise(z => setTimeout(z, 1500)); }
+      }
+    } catch (e) { console.warn('entries not sent to FORGE', e); }
+  }
   if ($('#stFile')) $('#stFile').addEventListener('change', async ev => { const f = ev.target.files[0]; if (!f) return; await sendStandings(f.name, await f.arrayBuffer()); ev.target.value = ''; });
   async function pickupShared() {
     if (!/[?&]shared=1/.test(location.search) || !('caches' in window)) return;
@@ -2127,6 +2150,26 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     $$('[data-goto]', el).forEach(b => b.onclick = () => { show(b.dataset.goto); window.scrollTo({ top: 0, behavior: 'smooth' }); });
     const rs = $('#entSum'); if (rs) rs.innerHTML = S ? '<h3 style="font-size:22px;margin:22px 0 10px">How we played this slate</h3>' + sumHTML(S) : '';
   }
+
+  // (2026-10-28, FORGE: "my mom likes to know my results each morning") last night's estimate for FORGE's exact entries, from box scores
+  // (tools/morning_report.py -> data/morning.enc.json). Everyone sees it; lineups never shown.
+  let MORN = undefined;
+  async function renderMorning() {
+    if (MORN === undefined) { try { MORN = await getJSON('morning'); } catch (e) { MORN = null; } }
+    const M = MORN, box = $('#morningBox'), ban = $('#morningBanner'); if (!box || !ban) return;
+    if (!M || !M.contests) { box.innerHTML = ''; ban.innerHTML = ''; return; }
+    const d = new Date(M.date + 'T12:00:00'), dl = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    const cls = M.est_profit >= 0 ? 'gain' : 'loss', fresh = (Date.now() - d.getTime()) < 2.5 * 864e5;
+    ban.innerHTML = fresh ? `<div class="mbanner"><span class="mverd">${esc(M.verdict)}</span><span><b>Last night (${esc(dl)})</b> · estimated ${usd2(M.est_winnings)} back on ${usd2(M.fees)} · <span class="${cls}">${usd2(M.est_profit)}</span></span><button type="button" class="linkbtn" data-go="record">Details</button></div>` : '';
+    $$('[data-go]', ban).forEach(b => b.onclick = () => { show(b.dataset.go); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    const rows = M.contests.map(c => `<tr><td class="who"><b>${esc(c.contest)}</b><small>${c.entries} ${c.entries === 1 ? 'entry' : 'entries'} · ${c.field.toLocaleString('en-US')} in the field</small></td><td>${usd2(c.fees)}</td><td>${c.est_cashed == null ? '—' : c.est_cashed + ' of ' + c.entries}</td><td>about ${ordn(c.best_place)} <small>(top ${Math.max(0.1, c.best_pct).toFixed(c.best_pct < 1 ? 1 : 0)}%)</small></td><td>${c.est_winnings == null ? 'no prize table' : usd2(c.est_winnings)}</td></tr>`).join('');
+    box.innerHTML = `<h3 class="subh">Last night · ${esc(dl)} <span class="mverd">${esc(M.verdict)}</span></h3>
+      <div class="tiles"><div class="tile"><small>Entry fees</small><b>${usd2(M.fees)}</b><span>${M.contests.reduce((a, c) => a + c.entries, 0)} lineups in ${M.contests.length} contests</span></div>
+      <div class="tile"><small>Estimated back</small><b>${usd2(M.est_winnings)}</b><span>${M.all_payouts_known ? 'from the prize tables' : 'some contests have no prize table yet'}</span></div>
+      <div class="tile"><small>Estimated profit</small><b class="${cls}">${usd2(M.est_profit)}</b><span>${M.est_roi > 0 ? '+' : ''}${M.est_roi}% · ${esc(M.verdict)}</span></div></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Contest</th><th>Fees</th><th>Cashed (est.)</th><th>Best finish (est.)</th><th>Back (est.)</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p class="note">An estimate from the night's box scores and past contests, made before DraftKings' final standings are in: finishes can be off by a lot, cash or no cash is right about 4 times in 5. The real result replaces it once the standings are loaded. Lineups are never shown.</p>`;
+  }
   // record
   let REC = null, OREC = null;   // 2026-10-21: one current record for every slate (data/record*.enc.json, tools/site_record.py)
   async function loadRecord(force) {
@@ -2139,6 +2182,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   const ordn = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th'));
   const selName = s => s === 'DREW-SET' ? "FORGE's entered set" : setInfo(s).name;
   async function renderRecord() {
+    renderMorning();
     getJSON('learn_nba').then(L => {      // (2026-10-28) NBA learning loop: tools/nba_learn.py, rules knowledge/nba_learn_rules.json
       const I = L.items || {}, f2 = v => v == null ? '—' : (+v).toFixed(2), pc = v => v == null ? '—' : (v > 0 ? '+' : '') + (+v).toFixed(1) + '%';
       const row = (lab, what, val, st) => `<tr><td class="who"><b>${lab}</b><small>${what}</small></td><td>${val}</td><td>${esc(st || '')}</td></tr>`;
@@ -2542,6 +2586,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       if (!sd && !ti) { try { LS.set('forge_nba_filled_' + D.slate.id, JSON.stringify({ at: Date.now(), src: text, rows: Object.fromEntries(out.map(o => [o[0], o.slice(4)])) })); } catch (e) {} }   // (2026-10-28) late swap works from this without a new download
       const fname = `DKEntries_FORGE_${D.slate.id || 'slate'}.csv`;
       logBuild('nba_export', { fname, skipped: skipped.length, contests: plan }, out.map(o => ({ entry: o[0], contest: o[1] })));
+      sendEntries(csv, D.slate.id || 'slate');
       say(`<div class="ok">✓ ${out.length} entries filled with ${out.length} different lineups, checked against DraftKings' player list (IDs, ${ti ? 'tiers' : 'slots, $50,000'}).</div>${skipped.length ? `<p class="note"><b>${skipped.length} selected entries have no lineup yet</b>: FORGE could make only ${L.length} different lineups (${esc($('#nbaStatus').textContent)}). They are left out of the file and stay as they are on DraftKings; choose the file again later when more lines are posted.</p>` : ''}
         <div class="tbl-wrap"><table><thead><tr><th>Contest</th><th class="n">Entries filled</th></tr></thead><tbody>${Object.entries(plan).map(([c, v]) => `<tr><td>${c}</td><td class="n">${v}</td></tr>`).join('')}</tbody></table></div>
         <div class="toolbar"><button class="btn primary" type="button" id="nbaDkDl">Download filled file</button><button class="btn small" type="button" id="nbaDkCopy">Copy instead</button></div>
