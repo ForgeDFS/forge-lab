@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="cac4222c7445"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="fb7f4b6050b1"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -1776,8 +1776,13 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const n = L.length, ex = {}; L.forEach(l => l.players.forEach(p => ex[p.name] = (ex[p.name] || 0) + 1)); $('#cExpo').innerHTML = Object.entries(ex).sort((a, b) => b[1] - a[1]).slice(0, 40).map(([k, v]) => `<span class="chip">${k} <b>${Math.round(100 * v / n)}%</b></span>`).join(''); }
   function slotOrder(lu) {
     const by = pz => lu.filter(p => p.pos === pz).sort((a, b) => b.sal - a.sal); const qb = by('QB'), rb = by('RB'), wr = by('WR'), te = by('TE'), dst = by('DST');
-    const flex = [...rb.slice(2), ...wr.slice(3), ...te.slice(1)][0];
-    return [qb[0], rb[0], rb[1], wr[0], wr[1], wr[2], te[0], flex, dst[0]].map((p, k) => ({ ...p, slot: ['QB', 'RB', 'RB', 'WR', 'WR', 'WR', 'TE', 'FLEX', 'DST'][k] }));
+    // (2026-10-28, FORGE: late-swap seating, as NBA) FLEX = the latest kickoff of the position that has the extra player (ties: the pricier one),
+    // so the most swappable player sits in the most flexible slot
+    const key = p => (Date.parse(p.start || '') / 60000 || 0) * 1e6 + (p.sal || 0), pick = g => g.reduce((a, b) => key(b) > key(a) ? b : a);
+    const grp = rb.length > 2 ? rb : wr.length > 3 ? wr : te.length > 1 ? te : null, flex = grp ? pick(grp) : null;
+    const rest = g => g.filter(p => p !== flex);
+    const rb2 = rest(rb), wr2 = rest(wr), te2 = rest(te);
+    return [qb[0], rb2[0], rb2[1], wr2[0], wr2[1], wr2[2], te2[0], flex, dst[0]].map((p, k) => ({ ...p, slot: ['QB', 'RB', 'RB', 'WR', 'WR', 'WR', 'TE', 'FLEX', 'DST'][k] }));
   }
   function cCard(l, i) {
     const ps = l.players || (l.lineup || []).map(n => { const p = D.players.find(z => z.name === n) || { name: n }; return p; });
