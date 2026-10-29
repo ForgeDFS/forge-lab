@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="3d98dd63a4f7"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="baa64b28845d"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -356,6 +356,7 @@ details.about p:last-child { margin-bottom: 0; }
 .rnight > summary b { font-family: var(--font-display); font-size: 16px; min-width: 9.5em; }
 .rnight > summary .rn { margin-left: auto; font: 600 16px/20px var(--font-data); }
 .rnight .tbl-wrap { margin: 0 14px 12px; }
+.rhead { margin: 18px 0 8px; font: 700 12px/16px var(--font-display); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
 .mverd { font: 700 12px/16px var(--font-display); letter-spacing: .06em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line-strong); }
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 0 0 20px; }
 .tile { padding: 14px 16px; display: grid; gap: 5px; align-content: start; }
@@ -856,7 +857,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
   </section>
   <section class="panel" id="p-real" hidden>
     <h3 class="subh">Real results</h3>
-    <p class="lede">What actually happened: DraftKings' final standings for every contest we entered, priced with each contest's real prize table. A night shows up here once its standings are sent in, usually the morning after.</p>
+    <p class="lede">What actually happened: DraftKings' final standings for every contest we entered, priced with each contest's real prize table. Last night first, then every night before it. A night shows up here once its standings are sent in.</p>
     <div id="realBox"><p class="note">Loading…</p></div>
   </section>
 
@@ -2222,20 +2223,17 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     if (!R || !R.nights || !R.nights.length) { box.innerHTML = '<p class="note">No results sent in yet.</p>'; return; }
     const cl = v => v == null ? '' : (v >= 0 ? 'gain' : 'loss'), pct = v => v == null ? '—' : (v > 0 ? '+' : '') + v + '%';
     const dl = d => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-    const mname = new Date(R.this_month.month + '-15T12:00:00').toLocaleDateString('en-US', { month: 'long' });
-    const tile = (lab, T, sub) => `<div class="tile"><small>${lab}</small><b class="${cl(T.net)}">${usd2(T.net)}</b><span>${usd2(T.won)} back on ${usd2(T.fees)} · ${pct(T.roi)}${sub ? ' · ' + sub : ''}</span></div>`;
-    const N = R.nights, wins = N.filter(n => n.net > 0).length, big = N.reduce((a, n) => (n.net > (a ? a.net : -1e9) ? n : a), null);
-    const sp = R.by_sport || {};
+    const N = R.nights;
     const nights = N.map((n, i) => {
       const rows = n.contests_list.map(c => `<tr><td class="who"><b>${esc(c.contest)}</b><small>${esc(c.slate)} · ${c.entries} ${c.entries === 1 ? 'entry' : 'entries'} · ${c.field.toLocaleString('en-US')} in the field</small></td><td>${c.priced ? `<span class="${cl(c.won - c.fees)}">${usd2(c.won)}</span>` : '<small>prize table missing</small>'}</td><td>${usd2(c.fees)}</td><td>${c.cashed == null ? '—' : c.cashed + ' of ' + c.entries}</td><td>${ordn(c.best_place)} <small>(top ${Math.max(0.01, c.best_pct).toFixed(c.best_pct < 1 ? 2 : 0)}%)</small></td></tr>`).join('');
       return `<details class="rnight"${i === 0 ? ' open' : ''}><summary><b>${esc(dl(n.date))}</b><span>${n.sports.join(' + ')} · ${n.contests} contest${n.contests === 1 ? '' : 's'} · best ${ordn(n.best.place)} of ${n.best.field.toLocaleString('en-US')}</span><span class="rn ${cl(n.net)}">${usd2(n.net)}</span></summary>
         <div class="tbl-wrap"><table><thead><tr><th>Contest</th><th>Won</th><th>Fees</th><th>Cashed</th><th>Best finish</th></tr></thead><tbody>${rows}</tbody></table></div>
         <p class="note" style="margin:0 14px 12px">${usd2(n.won)} back on ${usd2(n.fees)}${n.unpriced_fees ? ` (plus ${usd2(n.unpriced_fees)} in contests whose prize table was never saved, left out)` : ''}.</p></details>`;
     }).join('');
-    box.innerHTML = `<div class="tiles">${tile('All time', R.all, R.all.top1 + ' top-1% finishes')}${tile(esc(mname), R.this_month)}${sp.NBA ? tile('NBA', sp.NBA) : ''}${sp.NFL ? tile('NFL', sp.NFL) : ''}</div>
-      <p class="lede">${wins} winning nights out of ${N.length}.${big && big.net > 0 ? ` Best night: ${esc(dl(big.date))}, ${usd2(big.net)}.` : ''} Tap a night for every contest.</p>
-      ${nights}
-      <p class="note">Each finish is DraftKings' final rank; ties are split the way DraftKings splits them. Contests whose prize table was never saved show their finish but count no money. Updated ${esc(R.updated_utc)} UTC. Lineups stay private.</p>`;
+    const first = nights.indexOf('</details>') + '</details>'.length;
+    const yest = new Date(Date.now() - 864e5).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+    box.innerHTML = `<h4 class="rhead">${N[0].date >= yest ? 'Last night' : 'Most recent night'}</h4>${nights.slice(0, first)}${N.length > 1 ? `<h4 class="rhead">Earlier nights</h4><p class="note">Tap a night for every contest.</p>${nights.slice(first)}` : ''}
+      <p class="note">Each finish is DraftKings' final rank; ties are split the way DraftKings splits them. A contest whose prize table was never saved shows its finish but no money. Lineups stay private.</p>`;
   }
   // record
   let REC = null, OREC = null;   // 2026-10-21: one current record for every slate (data/record*.enc.json, tools/site_record.py)
