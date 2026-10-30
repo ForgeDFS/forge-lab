@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="cebfc3afb567"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="c824d5a3c414"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -2212,7 +2212,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       changed.push({ r, nu, gain: newP - oldP, relaxed, swaps: nu.map((n, s_) => n !== cur[s_] ? `${cur[s_]} → ${n}` : null).filter(Boolean) });
       if (k % 5 === 0) { st.textContent = `Re-optimising… ${k} of ${entries.length}`; await new Promise(z => setTimeout(z, 0)); }
     }
-    logBuild('lateswap_classic', { entries: entries.length, changed: changed.length }, changed.map(c => ({ players: c.nu, swaps: c.swaps })));
+    logBuild('lateswap_classic', { entries: entries.length, changed: changed.length }, changed.map(c => ({ entry: String(c.r[0] || '').trim(), players: c.nu, swaps: c.swaps })));
     if (!changed.length) { st.textContent = `Checked ${entries.length} entries: no swap gains 0.5 projected points.`; out.innerHTML = notes.map(n => `<p class="note">${n}</p>`).join(''); return; }
     const EOL = text.includes('\r\n') ? '\r\n' : '\n', cell = n => `${n} (${PL[n].id})`;
     const lines = [hdr.slice(0, qi + 9).map(csvCell).join(',')];
@@ -2911,7 +2911,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       if (nu.reduce((t, p) => t + p.sal, 0) > 50000 || new Set(nu.map(p => p.name)).size !== 8 || nu.some((p, s) => !el(p, s))) { notes.push(`Entry ${r[0]}: check failed, left unchanged.`); continue; }
       changed.push({ r, nu, gain: newP - oldP, swaps: nu.map((p, s) => p !== cur[s] ? `${NSLOT[s]}: ${cur[s].name} → ${p.name}` : null).filter(Boolean) });
     }
-    logBuild('lateswap_nba', { entries: entries.length, changed: changed.length }, changed.map(c => ({ players: c.nu.map(p => p.name), swaps: c.swaps })));
+    logBuild('lateswap_nba', { entries: entries.length, changed: changed.length }, changed.map(c => ({ entry: String(c.r[0] || '').trim(), players: c.nu.map(p => p.name), swaps: c.swaps })));
     if (!changed.length) { st.textContent = `Checked ${entries.length} entries: keep them as they are (nobody in a game still to start is ruled out${$('#nbaLsAll').checked ? ', and no swap gains 0.5 projected points' : ''}).`; out.innerHTML = notes.map(n => `<p class="note">${n}</p>`).join(''); return; }
     const EOL = text.includes('\r\n') ? '\r\n' : '\n', lines = [hdr.slice(0, qi + 8).map(csvCell).join(',')];
     changed.forEach(c => { const rr = c.r.slice(0, qi + 8); c.nu.forEach((p, s) => rr[qi + s] = `${p.name} (${p.id})`); lines.push(rr.map(v => csvCell(String(v))).join(',')); });
@@ -2994,7 +2994,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
         $('#nbaN').value = Math.min(150, need); await nbaBuild(); return nbaFillDK(text, true);
       }
       const L = NB.result || []; if (!L.length) return say('<div class="err">FORGE could not build lineups for this slate: ' + ($('#nbaStatus').textContent || '') + '</div>');
-      const out = [], errs = [], skipped = [], plan = {}, k = {};
+      const out = [], onames = [], errs = [], skipped = [], plan = {}, k = {};
       for (const r of ent) {
         const c = r[1].trim(); k[c] = k[c] || 0; const lu = L[k[c]++]; if (!lu) { skipped.push(r[0]); continue; }
         const names = lu.lu.map(p => p.name);
@@ -3005,14 +3005,14 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
         const sal = ids.reduce((t, e) => t + e.sal, 0); if (sal > 50000) { errs.push(`lineup over the cap ($${sal})`); continue; }
         if (new Set(names).size !== nS) { errs.push('a player appears twice'); continue; }
         const outP = names.filter(n => /^(OUT|O|INJ)$/.test(status[n] || '')); if (outP.length) { errs.push(`${outP.join(', ')} is ruled out`); continue; }
-        out.push([r[0], r[1], r[2], r[3], ...ids.map(e => e.nid)]); plan[c] = (plan[c] || 0) + 1;
+        out.push([r[0], r[1], r[2], r[3], ...ids.map(e => e.nid)]); onames.push(names); plan[c] = (plan[c] || 0) + 1;
       }
       if (errs.length) return say('<div class="err">Not filled. Fix this first:</div><ul>' + [...new Set(errs)].slice(0, 8).map(e => `<li>${e}</li>`).join('') + '</ul>');
       if (!out.length) return say(`<div class="err">You built ${L.length} lineups; the selected entries need ${ent.length}. Build more lineups first.</div>`);
       const csv = [hdr.slice(0, 4 + nS).map(csvCell).join(','), ...out.map(r => r.map(x => csvCell(String(x))).join(','))].join('\r\n') + '\r\n';
       if (!sd && !ti) { try { LS.set('forge_nba_filled_' + D.slate.id, JSON.stringify({ at: Date.now(), src: text, rows: Object.fromEntries(out.map(o => [o[0], o.slice(4)])) })); } catch (e) {} }   // (2026-10-28) late swap works from this without a new download
       const fname = `DKEntries_FORGE_${D.slate.id || 'slate'}.csv`;
-      logBuild('nba_export', { fname, skipped: skipped.length, contests: plan }, out.map(o => ({ entry: o[0], contest: o[1] })));
+      logBuild('nba_export', { fname, skipped: skipped.length, contests: plan }, out.map((o, i) => ({ entry: o[0], contest: o[1], names: onames[i] })));   // (2026-10-30) names: the morning report reads the owner's exact entries from here
       sendEntries(csv, D.slate.id || 'slate');
       say(`<div class="ok">✓ ${out.length} entries filled (biggest contest: ${Math.min(need, L.length)} different lineups; each smaller contest gets FORGE's top lineups, single entry #1), checked against DraftKings' player list (IDs, ${ti ? 'tiers' : 'slots, $50,000'}).</div>${skipped.length ? `<p class="note"><b>${skipped.length} selected entries have no lineup yet</b>: FORGE could make only ${L.length} different lineups (${esc($('#nbaStatus').textContent)}). They are left out of the file and stay as they are on DraftKings; choose the file again later when more lines are posted.</p>` : ''}
         <div class="tbl-wrap"><table><thead><tr><th>Contest</th><th class="n">Entries filled</th></tr></thead><tbody>${Object.entries(plan).map(([c, v]) => `<tr><td>${c}</td><td class="n">${v}</td></tr>`).join('')}</tbody></table></div>
