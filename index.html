@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="d0f9775061bc"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="cebfc3afb567"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -1277,7 +1277,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     D = data; const s = D.slate;
     builder.proj = {}; builder.lock.clear(); builder.out.clear(); builder.cpt.clear(); builder.result = []; $('#bOut').hidden = true; $('#bStatus').textContent = '';
     $('#tAway').textContent = s.away; $('#tHome').textContent = s.home;
-    $('#kick').textContent = 'Kickoff ' + s.kickoff + ' · data updated ' + builtET(s.built_utc);
+    $('#kick').textContent = 'Kickoff ' + s.kickoff + ' · data updated ' + builtET(s.built_utc) + (s.status_checked_utc ? ' · injuries checked ' + builtET(s.status_checked_utc) : '');
     const sp = s.spread_home; $('#mSpread').textContent = sp === 0 ? 'PK' : (sp > 0 ? s.away + ' −' + sp : s.home + ' −' + (-sp));
     $('#mTotal').textContent = fmt(s.total, 1); $('#mWeek').textContent = s.week;
     const st = (meta.status === 'live' || meta.status === 'complete') ? meta.status : s.status; const pill = $('#statusPill'); pill.className = 'pill ' + (st === 'final' || st === 'complete' ? 'ok' : st === 'live' ? '' : 'hot');
@@ -1985,7 +1985,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   function initClassic(data, meta) {
     const s = data.slate, P = data.players; CL.proj = {}; CL.lock.clear(); CL.out.clear(); CL.result = []; $('#cOut').hidden = true; $('#cStatus').textContent = '';
     $('#tAway').textContent = 'Classic'; $('#tAt').textContent = '·'; $('#tHome').textContent = s.games + ' games';
-    $('#kick').textContent = 'Main slate locks ' + new Date(s.kickoff_utc).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' · data updated ' + builtET(s.built_utc);
+    $('#kick').textContent = 'Main slate locks ' + new Date(s.kickoff_utc).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' · data updated ' + builtET(s.built_utc) + (s.status_checked_utc ? ' · injuries checked ' + builtET(s.status_checked_utc) : '');
     const nm = P.filter(p => p.source === 'market').length, nf = P.filter(p => p.source === 'salary-fit').length, nn = P.filter(p => p.source === 'none').length;
     $('#fresh').textContent = (s.odds_as_of ? 'Odds as of ' + new Date(String(s.odds_as_of).replace(' UTC', 'Z').replace(' ', 'T')).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' · ' : '') + `${nm} market projections, ${nf} salary-based` + (nn ? `, ${nn} waiting for lines` : '');
     $('#mSpread').textContent = Object.keys(data.lines || {}).length + '/' + s.games; $('#lSpread').textContent = 'Games with lines';
