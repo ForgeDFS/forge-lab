@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="8e90b45c6c49"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="d0f9775061bc"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -2738,7 +2738,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const TI = String(s.kind).includes('tiers'); $('#nbaBTitle').textContent = TI ? `Builder · ${s.sport} Tiers (one player from each tier, no salary cap)` : SD ? 'Builder · NBA Showdown (Captain + 5 UTIL)' : 'Builder · NBA Classic'; $('#nbaOut').hidden = true; $('#nbaStatus').textContent = '';
     if (SD) { const [a, h] = (s.game_list || [''])[0].split('@'); $('#tAway').textContent = a; $('#tAt').textContent = '@'; $('#tHome').textContent = h; }
     else { $('#tAway').textContent = TI ? s.sport + ' Tiers' : 'NBA'; $('#tAt').textContent = '·'; $('#tHome').textContent = s.games + ' games'; }
-    $('#kick').textContent = 'First game ' + new Date(s.kickoff_utc).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' · data updated ' + builtET(s.built_utc);
+    $('#kick').textContent = 'First game ' + new Date(s.kickoff_utc).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' · data updated ' + builtET(s.built_utc) + (s.status_checked_utc ? ' · injuries checked ' + builtET(s.status_checked_utc) : '');
     $('#fresh').textContent = s.odds_file ? 'FanDuel props snapshot ' + s.odds_file.replace('.json', '') : '';
     $('#mSpread').textContent = Object.keys(data.game_lines || {}).length + '/' + s.games; $('#lSpread').textContent = 'Games with lines';
     $('#mTotal').textContent = P.filter(p => p.proj != null).length; $('#lTotal').textContent = 'Projected players'; $('#mWeek').textContent = '—';
