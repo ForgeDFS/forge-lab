@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="31f2287b6fe6"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="8e90b45c6c49"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -2895,7 +2895,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     for (const r of entries) {
       const cur = NSLOT.map((_, s) => cellP(r[qi + s])); if (cur.some(p => !p)) { notes.push(`Entry ${r[0]}: lineup not complete, skipped.`); continue; }
       const outOnly = !$('#nbaLsAll').checked;   // (2026-10-28) default: replace only players who can't score (ruled out / no projection), so the built set's variety survives
-      const locked = cur.map((p, s) => /\(LOCKED\)/i.test(r[qi + s] || '') || (p.kick != null && p.kick <= now) || (outOnly && p.proj != null && !/^(OUT|O|IR|INJ|D|SUSP)$/i.test(p.st || ''))); if (locked.every(Boolean)) continue;
+      const locked = cur.map((p, s) => /\(LOCKED\)/i.test(r[qi + s] || '') || (p.kick != null && p.kick <= now) || (outOnly && p.proj != null && !p.out && !/^(OUT|O|IR|INJ|D|SUSP)$/i.test(p.st || ''))); if (locked.every(Boolean)) continue;
       const keep = new Set(cur.filter((p, s) => locked[s]).map(p => p.name)), lockSal = cur.reduce((t, p, s) => t + (locked[s] ? p.sal : 0), 0);
       const cand = P.filter(p => ok(p) && !keep.has(p.name)), X = [];
       NSLOT.forEach((_, s) => { if (!locked[s]) cand.forEach((p, j) => { if (el(p, s)) X.push({ v: `x${s}_${j}`, s, p }); }); });
