@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="0d02b4fd1be8"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="a6b1a8a0e972"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -2798,11 +2798,11 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const st = $('#nbaStatus'), t0 = performance.now(); st.className = 'status'; st.textContent = 'Building…';
     let g; try { g = await glpk(); } catch (e) { st.className = 'status err'; st.textContent = 'The optimizer could not load: ' + e.message; return; }
     const N = Math.max(1, Math.min(150, parseInt($('#nbaN').value) || 20)), uniq = (D.slate.kind === 'nba_classic' && !$('#nbaUniq').dataset.touched && new Set(D.players.map(p => p.game)).size >= 5) ? 1 : Math.max(1, Math.min(6, parseInt($('#nbaUniq').value) || 2)) /* (2026-10-29 NBA-SIZE-S1) 5+ game Classic slates: 1 different */, capP = Math.max(1, Math.ceil(N * Math.min(100, Math.max(10, parseFloat($('#nbaExp').value) || 100)) / 100));
-    NB.vz = null; if (VARY_S && D.slate.kind === 'nba_classic' && $('#nbaVary').checked && +($('#nbaN').value || 0) > 1) {   // (2026-10-31, FORGE) a single lineup is always FORGE's exact #1: no jitter
+    NB.vz = null; if (VARY_S && D.slate.kind === 'nba_classic' && $('#nbaVary').checked && +($('#nbaN').value || 0) > 1) {   // (2026-10-31, FORGE) lineup #1 is always FORGE's exact #1 (built unjittered below); #2-n get the fresh 5% draw
       NB.vz = {}; D.players.forEach(p => NB.vz[p.name] = Math.max(0.2, 1 + VARY_S * gauss())); }   // fresh draw every press
     if (D.slate.kind === 'nba_showdown') return nbaShowdown(g, st, t0, N, uniq, capP);
     if (String(D.slate.kind).includes('tiers')) return buildTiers(st, t0, N, uniq, capP);
-    const P = D.players.map((p, i) => ({ ...p, i, q: QJ(p) })).filter(p => p.proj != null && !NB.out.has(p.name) && !NBOUT(p)), GL = D.game_lines || {};
+    const P = D.players.map((p, i) => ({ ...p, i, q: QJ(p), q0: PJ(p) })).filter(p => p.proj != null && !NB.out.has(p.name) && !NBOUT(p)), GL = D.game_lines || {};
     const stackG = $('#nbaStack').checked ? Object.entries(GL).filter(([k, v]) => v.home_spread != null && Math.abs(v.home_spread) <= 7).sort((a, b) => (b[1].total || 0) - (a[1].total || 0)).slice(0, 3).map(x => x[0]) : [];
     const blowG = $('#nbaBlow').checked ? Object.entries(GL).filter(([k, v]) => v.home_spread != null && Math.abs(v.home_spread) >= 9).map(x => x[0]) : [];
     const games = [...new Set(P.map(p => p.game))], xv = (p, s) => `x${p.i}_${s}`, el = (p, s) => NEL[s].some(z => p.pos.split('/').includes(z));
@@ -2819,7 +2819,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       stackG.forEach((gm, j) => row('st' + j, [...V.filter(v => v.p.game === gm).map(v => ({ name: v.name, coef: 1 })), { name: 'y' + j, coef: -3 }], 0, null));
       if (yv.length) row('sty', yv.map(y => ({ name: y, coef: 1 })), 1, null);
       chosen.forEach((c, j) => row('u' + j, V.filter(v => c.ids.has(v.p.i)).map(v => ({ name: v.name, coef: 1 })), null, 8 - uniq));
-      const lp = { name: 'nba', objective: { direction: g.GLP_MAX, name: 'obj', vars: V.map(v => ({ name: v.name, coef: v.p.q })) }, subjectTo: sub, binaries: [...V.map(v => v.name), ...yv] };
+      const lp = { name: 'nba', objective: { direction: g.GLP_MAX, name: 'obj', vars: V.map(v => ({ name: v.name, coef: chosen.length ? v.p.q : v.p.q0 })) }, subjectTo: sub, binaries: [...V.map(v => v.name), ...yv] };
       const r = await Promise.resolve(g.solve(lp, { msglev: g.GLP_MSG_OFF, presol: true }));
       if (!r || !r.result || (r.result.status !== g.GLP_OPT && r.result.status !== g.GLP_FEAS)) return null;
       const pick = V.filter(v => r.result.vars[v.name] > 0.5); if (pick.length !== 8) return null;
@@ -2828,7 +2828,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const LV = nbaLevStuds(P), levK = LV ? Math.min(LV.k, N) : 0; let si = 0; NB.levInfo = [];
     for (let k = 0; k < N; k++) {
       let lu = null, st0 = null;
-      if (k >= Math.min(N, 20) - levK && k < Math.min(N, 20)) while (!lu && si < LV.studs.length) { st0 = LV.studs[si++]; lu = await solve(st0.i); }
+      if (k >= Math.max(1, Math.min(N, 20) - levK) && k < Math.min(N, 20)) while (!lu && si < LV.studs.length) { st0 = LV.studs[si++]; lu = await solve(st0.i); }
       if (!lu) { st0 = null; lu = await solve(null); }
       if (!lu) break;
       if (st0) NB.levInfo.push({ n: k + 1, name: st0.name, own: st0.own_fc, p6: st0.p6x });
