@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="c687d502f768"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="014f2f3e4346"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -2899,10 +2899,13 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const B = (lo, hi) => lo === hi ? { type: g.GLP_FX, lb: lo, ub: hi } : lo == null ? { type: g.GLP_UP, lb: 0, ub: hi } : { type: g.GLP_DB, lb: lo, ub: hi };
     const entries = rows.slice(1).filter(r => /^\d+$/.test((r[0] || '').trim()) && (r[1] || '').trim() && (!ov || ov[(r[0] || '').trim()])), changed = [], notes = [];
     if (ov) entries.forEach(r => { const c = ov[r[0].trim()]; for (let s = 0; s < 8; s++) r[qi + s] = c[s]; });   // the lineups FORGE filled on this phone
+    const seen = {}, keyOf = L => L.map(p => p.name).sort().join('|'), mark = (r, L) => { const c = (r[1] || '').trim(); (seen[c] = seen[c] || []).push(new Set(L.map(p => p.name))); };   // (2026-10-31, FORGE) lineups stay distinct within each contest
     for (const r of entries) {
       const cur = NSLOT.map((_, s) => cellP(r[qi + s])); if (cur.some(p => !p)) { notes.push(`Entry ${r[0]}: lineup not complete, skipped.`); continue; }
       const outOnly = !$('#nbaLsAll').checked;   // (2026-10-28) default: replace only players who can't score (ruled out / no projection), so the built set's variety survives
-      const locked = cur.map((p, s) => /\(LOCKED\)/i.test(r[qi + s] || '') || (p.kick != null && p.kick <= now) || (outOnly && p.proj != null && !p.out && !/^(OUT|O|IR|INJ|D|SUSP)$/i.test(p.st || ''))); if (locked.every(Boolean)) continue;
+      const locked = cur.map((p, s) => /\(LOCKED\)/i.test(r[qi + s] || '') || (p.kick != null && p.kick <= now) || (outOnly && p.proj != null && !p.out && !/^(OUT|O|IR|INJ|D|SUSP)$/i.test(p.st || ''))); const prevC = seen[(r[1] || '').trim()] || [], dup = prevC.some(S => S.size === 8 && cur.every(p => S.has(p.name)));
+      if (locked.every(Boolean)) { mark(r, cur); continue; }
+      if (dup) locked.forEach((l, s) => { if (l && !(/\(LOCKED\)/i.test(r[qi + s] || '') || (cur[s].kick != null && cur[s].kick <= now))) locked[s] = false; });   // a duplicate may change any player whose game has not started
       const keep = new Set(cur.filter((p, s) => locked[s]).map(p => p.name)), lockSal = cur.reduce((t, p, s) => t + (locked[s] ? p.sal : 0), 0);
       const cand = P.filter(p => ok(p) && !keep.has(p.name)), X = [];
       NSLOT.forEach((_, s) => { if (!locked[s]) cand.forEach((p, j) => { if (el(p, s)) X.push({ v: `x${s}_${j}`, s, p }); }); });
@@ -2910,12 +2913,14 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       NSLOT.forEach((_, s) => { if (!locked[s]) sub.push({ name: 's' + s, vars: X.filter(x => x.s === s).map(x => ({ name: x.v, coef: 1 })), bnds: B(1, 1) }); });
       cand.forEach((p, j) => { const v = X.filter(x => x.p === p).map(x => ({ name: x.v, coef: 1 })); if (v.length > 1) sub.push({ name: 'p' + j, vars: v, bnds: B(null, 1) }); });
       sub.push({ name: 'sal', vars: X.map(x => ({ name: x.v, coef: x.p.sal })), bnds: B(null, 50000 - lockSal) });
+      prevC.forEach((S, k) => { const sh = [...keep].filter(n => S.has(n)).length, v = X.filter(x => S.has(x.p.name)).map(x => ({ name: x.v, coef: 1 })); if (v.length && sh <= 7) sub.push({ name: 'd' + k, vars: v, bnds: B(null, 7 - sh) }); });
       const res = await Promise.resolve(g.solve({ name: 'nls', objective: { direction: g.GLP_MAX, name: 'o', vars: X.map(x => ({ name: x.v, coef: x.p.proj })) }, subjectTo: sub, binaries: X.map(x => x.v) }, { msglev: g.GLP_MSG_OFF, presol: true }));
-      if (!res || !res.result || (res.result.status !== g.GLP_OPT && res.result.status !== g.GLP_FEAS)) { notes.push(`Entry ${r[0]}: no legal swap found.`); continue; }
+      if (!res || !res.result || (res.result.status !== g.GLP_OPT && res.result.status !== g.GLP_FEAS)) { notes.push(`Entry ${r[0]}: no legal swap found.`); mark(r, cur); continue; }
       const nu = [...cur]; X.forEach(x => { if (res.result.vars[x.v] > 0.5) nu[x.s] = x.p; });
       const oldP = cur.reduce((t, p, s) => t + (locked[s] ? 0 : (ok(p) ? p.proj : 0)), 0), newP = nu.reduce((t, p, s) => t + (locked[s] ? 0 : p.proj), 0), bad = cur.filter((p, s) => !locked[s] && !ok(p));
-      if (outOnly ? !bad.length : (newP - oldP < 0.5 && !bad.length)) continue;
-      if (nu.reduce((t, p) => t + p.sal, 0) > 50000 || new Set(nu.map(p => p.name)).size !== 8 || nu.some((p, s) => !el(p, s))) { notes.push(`Entry ${r[0]}: check failed, left unchanged.`); continue; }
+      if (!dup && (outOnly ? !bad.length : (newP - oldP < 0.5 && !bad.length))) { mark(r, cur); continue; }
+      if (nu.reduce((t, p) => t + p.sal, 0) > 50000 || new Set(nu.map(p => p.name)).size !== 8 || nu.some((p, s) => !el(p, s))) { notes.push(`Entry ${r[0]}: check failed, left unchanged.`); mark(r, cur); continue; }
+      mark(r, nu);
       changed.push({ r, nu, gain: newP - oldP, swaps: nu.map((p, s) => p !== cur[s] ? `${NSLOT[s]}: ${cur[s].name} → ${p.name}` : null).filter(Boolean) });
     }
     logBuild('lateswap_nba', { entries: entries.length, changed: changed.length }, changed.map(c => ({ entry: String(c.r[0] || '').trim(), players: c.nu.map(p => p.name), swaps: c.swaps })));
