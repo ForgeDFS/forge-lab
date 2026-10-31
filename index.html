@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="a6b1a8a0e972"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="c687d502f768"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -2040,7 +2040,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   }
   function markCCustom() { if (capplying) return; $('#cCustomNote').textContent = 'Custom: started from ' + CRECIPES[CL.recipe].label + '. Click it again to reset the rules.'; }
   $$('#crecipes .recipe').forEach(b => b.addEventListener('click', () => applyCRecipe(b.dataset.r)));
-  $$('#cform input').forEach(i => i.addEventListener('change', markCCustom));
+  $$('#cform input').forEach(i => { if (i.id !== 'cN') i.addEventListener('change', markCCustom); });   // (2026-10-31) the number of lineups is not a rule change
   $('#cReset').addEventListener('click', () => { D.players.forEach(p => { CL.proj[p.name] = p.proj; }); CL.lock.clear(); CL.out.clear(); D.players.forEach(p => { if (/^(OUT|IR|D)$/.test(p.status) || p.proj == null) CL.out.add(p.name); }); renderCBuilder(); applyCRecipe(CL.recipe); });
   let GLPK_ = null;
   async function glpk() { if (!GLPK_) { const m = await import('https://cdn.jsdelivr.net/npm/glpk.js@4.0.2/dist/index.js'); GLPK_ = await m.default(); } return GLPK_; }
@@ -2052,15 +2052,21 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   });
   async function runClassic(g) {
     const st = $('#cStatus'), t0 = performance.now(); const opt = {
-      n: Math.max(1, Math.min(50, parseInt($('#cN').value) || 20)), minSal: parseInt($('#cMinSal').value) || 0, games: parseInt($('#cGames').value) || 9,
+      n: Math.max(1, Math.min(150, parseInt($('#cN').value) || 20)), minSal: parseInt($('#cMinSal').value) || 0, games: parseInt($('#cGames').value) || 9,
       uniq: Math.max(1, Math.min(6, parseInt($('#cUniq').value) || 1)), exp: Math.max(5, Math.min(100, parseFloat($('#cExp').value) || 100)), dstCap: parseInt($('#cDstCap').value) || 50,
       stack: $('#cStack').checked, bring: $('#cBring').checked, ownRb: $('#cOwnRb').checked, dstOpp: $('#cDstOpp').checked, ownDst: $('#cOwnDst').checked, value: $('#cValue').checked, noQ: $('#cNoQ').checked };
     const P = D.players.map((p, i) => ({ ...p, i, q: CL.proj[p.name] })).filter(p => p.q != null && !CL.out.has(p.name) && !/^(OUT|IR|D)$/.test(p.status) && !(opt.noQ && p.status === 'Q' && !CL.lock.has(p.name)));
     if ($('#cMine').checked && !D.owner) { const qq = P.map(p => p.q); personal(P, qq, true); P.forEach((p, k) => p.q = qq[k]); }
     const x = p => 'x' + p.i, teams = [...new Set(P.map(p => p.team))], gamesL = [...new Set(P.map(p => p.game))];
     const capP = Math.max(1, Math.ceil(opt.n * opt.exp / 100)), cnt = {}, chosen = [];
+    // (2026-10-31, FORGE: everyone gets the best settings; the best lineup is always #1 at any number) FORGE's published Classic default (BRK2, NFL-CL-BREAK)
+    // fills #1..n in its order whenever the rules, projections, locks and Outs are untouched; the browser builder only adds lineups beyond it (different from all).
+    const CD = (D.classic_default && D.classic_default.lineups) || [], byN = new Map(P.map(p => [p.name, p]));
+    const untouched = !$('#cCustomNote').textContent && !CL.lock.size && D.players.every(p => CL.proj[p.name] == null || p.proj == null || Math.abs(CL.proj[p.name] - p.proj) < 0.005);
+    if (untouched) for (const L of CD) { if (chosen.length >= opt.n) break; const lu = L.map(n => byN.get(n)); if (lu.some(p => !p)) continue; chosen.push({ lu, s: lu.reduce((t, p) => t + p.q, 0), fd: true }); lu.forEach(p => cnt[p.i] = (cnt[p.i] || 0) + 1); }
+    const k0 = chosen.length;
     const B = (lo, hi) => lo === hi ? { type: g.GLP_FX, lb: lo, ub: hi } : hi == null ? { type: g.GLP_LO, lb: lo, ub: 0 } : lo == null ? { type: g.GLP_UP, lb: 0, ub: hi } : { type: g.GLP_DB, lb: lo, ub: hi };
-    for (let k = 0; k < opt.n; k++) {
+    for (let k = k0; k < opt.n; k++) {
       const sub = []; const row = (name, vars, lo, hi) => { const v = vars.filter(t => t.coef !== 0); if (v.length) sub.push({ name, vars: v, bnds: B(lo, hi) }); };
       const pick = f => P.filter(f).map(p => ({ name: x(p), coef: 1 }));
       row('sal', P.map(p => ({ name: x(p), coef: p.sal })), opt.minSal, 50000);
