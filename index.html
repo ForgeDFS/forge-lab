@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="dcd0ad181b21"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="fea90e438d70"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -2964,7 +2964,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       mark(r, nu);
       changed.push({ r, nu, gain: newP - oldP, swaps: nu.map((p, s) => p !== cur[s] ? `${NSLOT[s]}: ${cur[s].name} → ${p.name}` : null).filter(Boolean) });
     }
-    logBuild('lateswap_nba', { entries: entries.length, changed: changed.length }, changed.map(c => ({ entry: String(c.r[0] || '').trim(), players: c.nu.map(p => p.name), swaps: c.swaps })));
+    logBuild('lateswap_nba', { entries: entries.length, changed: changed.length, reopt: !!$('#nbaLsAll').checked }, changed.map(c => ({ entry: String(c.r[0] || '').trim(), players: c.nu.map(p => p.name), swaps: c.swaps })));
     if (!changed.length) { st.textContent = `Checked ${entries.length} entries: keep them as they are (nobody in a game still to start is ruled out${$('#nbaLsAll').checked ? ', and no swap gains 0.5 projected points' : ''}).`; out.innerHTML = notes.map(n => `<p class="note">${n}</p>`).join(''); return; }
     const EOL = text.includes('\r\n') ? '\r\n' : '\n', lines = [hdr.slice(0, qi + 8).map(csvCell).join(',')];
     changed.forEach(c => { const rr = c.r.slice(0, qi + 8); c.nu.forEach((p, s) => rr[qi + s] = `${p.name} (${p.id})`); lines.push(rr.map(v => csvCell(String(v))).join(',')); });
