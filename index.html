@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="a1478c73cb9a"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="3bddaa26504a"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -1037,7 +1037,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       const next = tips.find(x => x > now); if (next == null) { el.textContent = ''; return; }
       const f = (FINALC || {})[key(next)], win = sp === 'nba' ? [28, 13] : [45, 35];
       el.innerHTML = f ? `<b>✓ Final update for the ${t(next)} tip done at ${t(f.done_utc)}</b> — build or export now; nothing newer is coming before that tip.`
-        : `Final update for the ${t(next)} tip: not yet — due about ${t(next - win[0] * 6e4)}–${t(next - win[1] * 6e4 + 6e5)}. Build again after it shows ✓.`;
+        : `Final update for the ${t(next)} tip: not yet — usually done ${t(next - (win[0] - 8) * 6e4)}–${t(next - (win[1]) * 6e4)} (later only if GitHub starts it late). Build again after it shows ✓.`;
     } catch (e) { }
   }
   async function getJSON(name) {
