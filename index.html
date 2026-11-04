@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="d19ac719b346"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="a1478c73cb9a"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -1024,6 +1024,22 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(enc.iv) }, okeys[k], b64(enc.ct)); return JSON.parse(new TextDecoder().decode(pt)); }
   async function ownerTry(pw) { const r = await fetch('data/owner.enc.json', { cache: 'no-cache' }); if (!r.ok) throw new Error('no owner file'); return odec(await r.json(), pw); }   // -> {pw: friends' password}
   async function ownerBuilds(id) { if (!OPW || !ENC) return null; try { const r = await fetch('data/' + id + '.owner.enc.json', { cache: 'no-cache' }); if (!r.ok) return null; return (await odec(await r.json())).builds || null; } catch (e) { return null; } }
+  // (2026-11-04, FORGE: "how do I know the last update is done so I don't capture the wrong one?") under the slate line: the final pre-tip update for the
+  // next tip time -- done (with its time) or when it is due. Source: data/final_checks (tools/pulse.py records each final check when it finishes).
+  let FINALC;
+  async function showFinal(s, P) {
+    try {
+      let el = $('#finalChk'); if (!el) { el = document.createElement('div'); el.id = 'finalChk'; el.className = 'note'; el.style.marginTop = '2px'; const k = $('#kick'); if (!k) return; k.insertAdjacentElement('afterend', el); }
+      try { FINALC = await getJSON('final_checks'); } catch (e) { FINALC = FINALC || {}; }
+      const sp = String(s.sport || (String(s.kind || '').startsWith('nba') ? 'NBA' : 'NFL')).toLowerCase() === 'nba' ? 'nba' : 'nfl';
+      const tips = [...new Set([s.kickoff_utc, ...P.map(p => p.start).filter(Boolean)].map(x => new Date(x).getTime()).filter(x => !isNaN(x)))].sort((a, b) => a - b);
+      const now = Date.now(), t = (x) => new Date(x).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), key = x => sp + '|' + new Date(x).toISOString().replace('.000Z', 'Z');
+      const next = tips.find(x => x > now); if (next == null) { el.textContent = ''; return; }
+      const f = (FINALC || {})[key(next)], win = sp === 'nba' ? [28, 13] : [45, 35];
+      el.innerHTML = f ? `<b>✓ Final update for the ${t(next)} tip done at ${t(f.done_utc)}</b> — build or export now; nothing newer is coming before that tip.`
+        : `Final update for the ${t(next)} tip: not yet — due about ${t(next - win[0] * 6e4)}–${t(next - win[1] * 6e4 + 6e5)}. Build again after it shows ✓.`;
+    } catch (e) { }
+  }
   async function getJSON(name) {
     const r = await fetch('data/' + name + (ENC ? '.enc.json' : '.json'), { cache: 'no-cache' }); if (!r.ok) throw new Error(r.status);
     return ENC ? dec(await r.json()) : r.json();
@@ -1279,7 +1295,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     D = data; const s = D.slate;
     builder.proj = {}; builder.lock.clear(); builder.out.clear(); builder.cpt.clear(); builder.result = []; $('#bOut').hidden = true; $('#bStatus').textContent = '';
     $('#tAway').textContent = s.away; $('#tHome').textContent = s.home;
-    $('#kick').textContent = 'Kickoff ' + s.kickoff + ' · data updated ' + builtET(s.built_utc) + (s.status_checked_utc ? ' · injuries checked ' + builtET(s.status_checked_utc) : '') + (s.stale ? ' · ⚠ ' + s.stale : '');
+    $('#kick').textContent = 'Kickoff ' + s.kickoff + ' · data updated ' + builtET(s.built_utc) + (s.status_checked_utc ? ' · injuries checked ' + builtET(s.status_checked_utc) : '') + (s.stale ? ' · ⚠ ' + s.stale : ''); showFinal(s, (typeof D !== 'undefined' && D && D.players) || []);
     const sp = s.spread_home; $('#mSpread').textContent = sp === 0 ? 'PK' : (sp > 0 ? s.away + ' −' + sp : s.home + ' −' + (-sp));
     $('#mTotal').textContent = fmt(s.total, 1); $('#mWeek').textContent = s.week;
     const st = (meta.status === 'live' || meta.status === 'complete') ? meta.status : s.status; const pill = $('#statusPill'); pill.className = 'pill ' + (st === 'final' || st === 'complete' ? 'ok' : st === 'live' ? '' : 'hot');
@@ -1987,7 +2003,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   function initClassic(data, meta) {
     const s = data.slate, P = data.players; CL.proj = {}; CL.lock.clear(); CL.out.clear(); CL.result = []; $('#cOut').hidden = true; $('#cStatus').textContent = '';
     $('#tAway').textContent = 'Classic'; $('#tAt').textContent = '·'; $('#tHome').textContent = s.games + ' games';
-    $('#kick').textContent = 'Main slate locks ' + new Date(s.kickoff_utc).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' · data updated ' + builtET(s.built_utc) + (s.status_checked_utc ? ' · injuries checked ' + builtET(s.status_checked_utc) : '') + (s.stale ? ' · ⚠ ' + s.stale : '');
+    $('#kick').textContent = 'Main slate locks ' + new Date(s.kickoff_utc).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' · data updated ' + builtET(s.built_utc) + (s.status_checked_utc ? ' · injuries checked ' + builtET(s.status_checked_utc) : '') + (s.stale ? ' · ⚠ ' + s.stale : ''); showFinal(s, (typeof D !== 'undefined' && D && D.players) || []);
     const nm = P.filter(p => p.source === 'market').length, nf = P.filter(p => p.source === 'salary-fit').length, nn = P.filter(p => p.source === 'none').length;
     $('#fresh').textContent = (s.odds_as_of ? 'Odds as of ' + new Date(String(s.odds_as_of).replace(' UTC', 'Z').replace(' ', 'T')).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' · ' : '') + `${nm} market projections, ${nf} salary-based` + (nn ? `, ${nn} waiting for lines` : '');
     $('#mSpread').textContent = Object.keys(data.lines || {}).length + '/' + s.games; $('#lSpread').textContent = 'Games with lines';
@@ -2782,7 +2798,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const TI = String(s.kind).includes('tiers'); $('#nbaBTitle').textContent = TI ? `Builder · ${s.sport} Tiers (one player from each tier, no salary cap)` : SD ? 'Builder · NBA Showdown (Captain + 5 UTIL)' : 'Builder · NBA Classic'; $('#nbaOut').hidden = true; $('#nbaStatus').textContent = '';
     if (SD) { const [a, h] = (s.game_list || [''])[0].split('@'); $('#tAway').textContent = a; $('#tAt').textContent = '@'; $('#tHome').textContent = h; }
     else { $('#tAway').textContent = TI ? s.sport + ' Tiers' : 'NBA'; $('#tAt').textContent = '·'; $('#tHome').textContent = s.games + ' games'; }
-    $('#kick').textContent = 'First game ' + new Date(s.kickoff_utc).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' · data updated ' + builtET(s.built_utc) + (s.status_checked_utc ? ' · injuries checked ' + builtET(s.status_checked_utc) : '') + (s.stale ? ' · ⚠ ' + s.stale : '');
+    $('#kick').textContent = 'First game ' + new Date(s.kickoff_utc).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' · data updated ' + builtET(s.built_utc) + (s.status_checked_utc ? ' · injuries checked ' + builtET(s.status_checked_utc) : '') + (s.stale ? ' · ⚠ ' + s.stale : ''); showFinal(s, P || []);
     $('#fresh').textContent = s.odds_file ? 'FanDuel props snapshot ' + s.odds_file.replace('.json', '') : '';
     $('#mSpread').textContent = Object.keys(data.game_lines || {}).length + '/' + s.games; $('#lSpread').textContent = 'Games with lines';
     $('#mTotal').textContent = P.filter(p => p.proj != null).length; $('#lTotal').textContent = 'Projected players'; $('#mWeek').textContent = '—';
