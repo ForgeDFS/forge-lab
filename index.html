@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="c7668dbfb091"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="d945eab5f01b"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -937,7 +937,8 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     <div id="live"></div>
     <div id="entSum"></div>
     <div class="appbox owner-only" id="stBox"><b>Send contest standings to FORGE.</b> After a contest ends, download its standings on DraftKings (the contest page, then Export / Download standings), then tap Share and pick FORGE, or choose the file here. FORGE archives it, grades every build and learns from it on its own.
-      <div class="toolbar" style="margin-top:8px"><label class="btn filebtn"><input type="file" id="stFile" accept=".zip,.csv">Choose standings file</label><span class="status" id="stStatus" role="status"></span></div></div>
+      <div class="toolbar" style="margin-top:8px"><label class="btn filebtn"><input type="file" id="stFile" accept=".zip,.csv" multiple>Choose standings files (any number, plus the contest-history CSV)</label><span class="status" id="stStatus" role="status"></span></div>
+      <div id="stTodo"></div></div>
     <section class="nba-only"><h3 class="subh">What FORGE is learning · NBA</h3><div id="learnNba"><p class="note">Loading…</p></div></section>
     <h3 class="subh">What everyone's builds are teaching FORGE</h3>
     <div id="learnBox"><p class="note">Loading…</p></div>
@@ -2454,7 +2455,42 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       }
     } catch (e) { console.warn('entries not sent to FORGE', e); }
   }
-  if ($('#stFile')) $('#stFile').addEventListener('change', async ev => { const f = ev.target.files[0]; if (!f) return; await sendStandings(f.name, await f.arrayBuffer()); ev.target.value = ''; });
+  if ($('#stFile')) $('#stFile').addEventListener('change', async ev => { const F = [...ev.target.files]; if (!F.length) return; await sendStandingsMany(F); ev.target.value = ''; });
+  // (2026-11-04, FORGE: one seamless flow) many files -> ONE commit (one FORGE ingest run, not one per file); the contest-history CSV goes the same way
+  async function sendStandingsMany(F) {
+    const st = $('#stStatus'); const say = (m, err) => { if (st) { st.className = 'status' + (err ? ' err' : ''); st.textContent = m; } };
+    try {
+      if (!OPW) return say('Sign in as owner first (footer: Owner sign-in), then choose the files again.', true);
+      const r = await fetch('data/upload.owner.enc.json', { cache: 'no-cache' }); if (!r.ok) return say('The upload key is not set up yet (secret FORGE_UPLOAD_TOKEN).', true);
+      const cfg = await odec(await r.json()); const H = { Authorization: 'Bearer ' + cfg.token, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' }, A = 'https://api.github.com/repos/' + cfg.repo;
+      const ok = F.filter(f => /\d{8,}/.test(f.name) || /contest-entry-history/i.test(f.name)), skip = F.length - ok.length; if (!ok.length) return say('None of these look like DraftKings standings files (contest-standings-<number>) or the contest-history CSV.', true);
+      const j = async (url, opt) => { const x = await fetch(url, Object.assign({ headers: H }, opt)); if (!x.ok) throw new Error(url.split('/repos/')[1] + ' ' + x.status); return x.json(); };
+      const tree = [];
+      for (let i = 0; i < ok.length; i++) {
+        say(`Uploading ${i + 1} of ${ok.length}…`); const u8 = new Uint8Array(await ok[i].arrayBuffer()); let b = ''; for (let k = 0; k < u8.length; k += 0x8000) b += String.fromCharCode.apply(null, u8.subarray(k, k + 0x8000));
+        const blob = await j(A + '/git/blobs', { method: 'POST', body: JSON.stringify({ content: btoa(b), encoding: 'base64' }) });
+        tree.push({ path: cfg.path + '/' + ok[i].name.replace(/[^A-Za-z0-9._-]/g, '_'), mode: '100644', type: 'blob', sha: blob.sha });
+      }
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const ref = await j(A + '/git/ref/heads/main'), com = await j(A + '/git/commits/' + ref.object.sha), t = await j(A + '/git/trees', { method: 'POST', body: JSON.stringify({ base_tree: com.tree.sha, tree }) });
+          const nc = await j(A + '/git/commits', { method: 'POST', body: JSON.stringify({ message: `standings via the app: ${ok.length} file(s)`, tree: t.sha, parents: [ref.object.sha] }) });
+          await j(A + '/git/refs/heads/main', { method: 'PATCH', body: JSON.stringify({ sha: nc.sha }) });
+          return say(`Sent ${ok.length} file(s)${skip ? ` (${skip} skipped: not standings files)` : ''}. FORGE is archiving and grading them now.`);
+        } catch (e) { if (attempt === 2) throw e; await new Promise(z => setTimeout(z, 1500)); }
+      }
+    } catch (e) { say('Could not send: ' + e.message, true); }
+  }
+  // (2026-11-04) the morning list of standings worth downloading (tools/standings_todo.py; DraftKings keeps them ~10 days), owner only
+  async function renderTodo() {
+    const el = $('#stTodo'); if (!el || !OPW || !ENC) return;
+    try { const r = await fetch('data/standings_todo.owner.enc.json', { cache: 'no-cache' }); if (!r.ok) return; const T = await odec(await r.json()); const L = T.contests || [];
+      if (!L.length) { el.innerHTML = '<p class="note">No standings waiting: FORGE has every contest it wants from the last 10 days.</p>'; return; }
+      const dd = s => new Date(s).toLocaleDateString([], { weekday: 'short', month: 'numeric', day: 'numeric' });
+      el.innerHTML = `<p class="note" style="margin-top:10px"><b>${L.length} standings to download</b> (list from ${esc(T.built_utc)}; yours first, then the ones DraftKings deletes soonest). Tap each, then choose them all above in one go.</p><ol class="todo">` +
+        L.slice(0, 250).map(c => `<li><a href="${c.url}" target="_blank" rel="noopener">${esc(c.name)}</a> <small class="dim">${c.sport} · $${c.fee} · ${c.max_per_user === 1 ? 'single entry' : c.max_per_user + '-max'} · gone ~${dd(c.deadline)}${c.ours ? ' · <b>you entered</b>' : ''}</small></li>`).join('') + '</ol>';
+    } catch (e) { }
+  }
   async function pickupShared() {
     if (!/[?&]shared=1/.test(location.search) || !('caches' in window)) return;
     try {
@@ -2579,6 +2615,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     if (REC && !force && (OREC || !OPW)) return;
     try { REC = await getJSON('record'); } catch (e) { REC = null; }
     OREC = null; if (OPW && ENC) { try { const r = await fetch('data/record.owner.enc.json', { cache: 'no-cache' }); if (r.ok) OREC = await odec(await r.json()); } catch (e) { OREC = null; } }
+    renderTodo();
   }
   const usd2 = v => v == null ? '—' : (v < 0 ? '−$' : '$') + Math.abs(v).toFixed(2);
   const sgn = v => v == null ? '—' : (v > 0 ? '+' : '') + v;
@@ -2760,7 +2797,8 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     $$('#nbaTable th[data-k]').forEach(th => th.onclick = () => { const k = th.dataset.k; NB.dir = NB.sort === k ? -NB.dir : -1; NB.sort = k; renderNBATable(); });
     renderNBATable(); try { nbaTeams(); rangeChart('#nbaRangeBox', '#nbaRange', 40); NSIM = null; $('#nbaSimOut').innerHTML = ''; $('#nbaSimStatus').textContent = data.simnba ? 'Build lineups on the Build tab, then simulate them here.' : 'No simulation for this slate yet.'; } catch (e) { console.error(e); }
     $('#nbaBGame').innerHTML = $('#nbaGame').innerHTML; $('#nbaBSearch').value = ''; renderNBABuild();
-    $('#nbaVaryBox').hidden = !(VARY_S && s.kind === 'nba_classic');
+    $('#nbaVaryBox').hidden = !(VARY_S && s.kind === 'nba_classic') || !!data.owner;   // (2026-11-04 A10) owner builds are exact (no jitter); friends keep the variety
+    { const la = $('#nbaLsAll'); if (la) { if (data.owner) la.checked = false; la.closest('label').hidden = !!data.owner; } }   // owner late swap = replace OUT players only (re-optimize untested; 10/31 cost)
   }
   function renderNBATable() {
     const q = ($('#nbaSearch').value || '').toLowerCase(), g = $('#nbaGame').value;
@@ -2804,7 +2842,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const st = $('#nbaStatus'), t0 = performance.now(); st.className = 'status'; st.textContent = 'Building…';
     let g; try { g = await glpk(); } catch (e) { st.className = 'status err'; st.textContent = 'The optimizer could not load: ' + e.message; return; }
     const N = Math.max(1, Math.min(150, parseInt($('#nbaN').value) || 20)), uniq = (D.slate.kind === 'nba_classic' && !$('#nbaUniq').dataset.touched && new Set(D.players.map(p => p.game)).size >= 5) ? 1 : Math.max(1, Math.min(6, parseInt($('#nbaUniq').value) || 2)) /* (2026-10-29 NBA-SIZE-S1) 5+ game Classic slates: 1 different */, capP = Math.max(1, Math.ceil(N * Math.min(100, Math.max(10, parseFloat($('#nbaExp').value) || 100)) / 100));
-    NB.vz = null; if (VARY_S && D.slate.kind === 'nba_classic' && $('#nbaVary').checked && +($('#nbaN').value || 0) > 1) {   // (2026-10-31, FORGE) lineup #1 is always FORGE's exact #1 (built unjittered below); #2-n get the fresh 5% draw
+    NB.vz = null; if (VARY_S && !D.owner && D.slate.kind === 'nba_classic' && $('#nbaVary').checked && +($('#nbaN').value || 0) > 1) {   /* (2026-11-04 audit A10) owner: no jitter -- the same data always gives the same set, so re-running after an update only changes what the update changes */   // (2026-10-31, FORGE) lineup #1 is always FORGE's exact #1 (built unjittered below); #2-n get the fresh 5% draw
       NB.vz = {}; D.players.forEach(p => NB.vz[p.name] = Math.max(0.2, 1 + VARY_S * gauss())); }   // fresh draw every press
     if (D.slate.kind === 'nba_showdown') return nbaShowdown(g, st, t0, N, uniq, capP);
     if (String(D.slate.kind).includes('tiers')) return buildTiers(st, t0, N, uniq, capP);
