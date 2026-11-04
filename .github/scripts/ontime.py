@@ -17,6 +17,11 @@ def ts(s): return dt.datetime.fromisoformat(s.replace('Z', '+00:00'))
 now = lambda: dt.datetime.now(dt.timezone.utc)
 if not TOK: print('no FORGE_DISPATCH_TOKEN secret yet -- nothing to do'); raise SystemExit(0)
 end = now() + dt.timedelta(hours=HOURS); fired = set()
+try:   # one status line per start, so Claude can see the key works without Actions logs (times only)
+    a0 = plan(); st = dict(started=now().strftime('%Y-%m-%dT%H:%MZ'), key='ok', aims=len(a0), next=min([a['at'] for a in a0 if ts(a['at']) > now()], default=None))
+except Exception as e: st = dict(started=now().strftime('%Y-%m-%dT%H:%MZ'), key=f'FAILED: {e}')
+print(st); open('.github/ontime_status.json', 'w').write(json.dumps(st) + '\n')
+os.system('git config user.name Claude; git config user.email noreply@anthropic.com; git add .github/ontime_status.json && git commit -qm "ontime status" && git push -q origin HEAD:main || true')
 while now() < end:
     try: aims = plan()
     except Exception as e: print('plan read failed:', e); aims = []

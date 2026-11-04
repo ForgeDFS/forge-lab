@@ -9,13 +9,13 @@ on:
     branches: [main]
     paths: [".github/ontime_now"]   # Claude commits this to start a copy now
 concurrency: { group: ontime, cancel-in-progress: true }
-permissions: { contents: read }
+permissions: { contents: write }
 jobs:
   wait:
     runs-on: ubuntu-latest
     timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
-        with: { sparse-checkout: .github/scripts, sparse-checkout-cone-mode: false }
+        with: { sparse-checkout: .github, sparse-checkout-cone-mode: false }
       - env: { TOKEN: "${{ secrets.FORGE_DISPATCH_TOKEN }}" }
         run: python3 -u .github/scripts/ontime.py
