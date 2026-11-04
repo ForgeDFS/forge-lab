@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="d945eab5f01b"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="d19ac719b346"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -1000,6 +1000,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     $$('.tab[data-p]').forEach(t => t.setAttribute('aria-selected', String(t.dataset.p === p || (t.dataset.grp || '').split(' ').includes(p))));
     $$('.panel').forEach(x => x.hidden = x.id !== 'p-' + p); $$('.subnav button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.go === p)));
     LS.set('forge_tab', p); if (p === 'past' && typeof renderPast === 'function') renderPast(); if (p === 'recap' && typeof renderMorning === 'function') renderMorning(); if (p === 'real' && typeof renderReal === 'function') renderReal(); if (p === 'sims' && typeof simsReady === 'function') simsReady();
+    if (p === 'record' && typeof renderRecord === 'function') { try { Promise.resolve(renderRecord()).catch(e => console.error(e)); } catch (e) { console.error(e); } }   // (2026-11-04) Results filled on open for NBA too (it was only rendered when an NFL slate loaded -> 'Loading…' forever on NBA)
   }
   const toTop = () => { if (window.scrollY > 200) window.scrollTo({ top: 0, behavior: 'smooth' }); };
   $$('.tab[data-p]').forEach(t => t.addEventListener('click', () => { show(t.dataset.p); toTop(); }));
