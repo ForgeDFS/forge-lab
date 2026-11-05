@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="3bddaa26504a"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="1d6b5aac090b"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -1309,7 +1309,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const loc = u => { if (!u) return null; const d = new Date(String(u).replace(' UTC', 'Z').replace(' ', 'T')); return isNaN(d) ? null : d.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); };
     const fr = loc(s.odds_as_of); $('#fresh').textContent = fr ? 'Odds as of ' + fr + (s.refreshed_utc ? ' · projections refreshed ' + loc(s.refreshed_utc) : '') : '';
     if (!LS.get('forge_start_seen')) $('#startCard').hidden = false;
-    loadRecord().then(() => { const BC = REC && REC.current_backtest, A = BC && BC.patterns && BC.patterns[0]; $('#evGpp').textContent = A ? `Backtest, ${A.games} real 2026 Showdowns: ${sgn(A.roi)}% ROI at $7.50 a slate (every prize counted)` : ''; }).catch(() => {});
+    loadRecord().then(() => { const BC = REC && REC.current_backtest, A = BC && BC.patterns && BC.patterns[0]; $('#evGpp').textContent = A ? `Walk-forward backtest, ${A.games} real 2026 Showdowns: ${sgn(A.roi)}% ROI${A.roi_wo_big != null ? `, ${sgn(A.roi_wo_big)}% without its biggest prize` : ''} (every prize counted)` : ''; }).catch(() => {});
     renderBanner(); renderPastTop(); renderPast();
     renderPlayers(); initLineups(); renderBuilderTable(); renderRecord(); applyRecipe(LS.get('forge_recipe') || 'gpp', true); initTester();
     const t = LS.get('forge_tab'); if (t && $('#p-' + t)) show(t);
@@ -2672,10 +2672,10 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     else tiles.push(`<div class="tile"><small>Live slates graded</small><b>0</b><span>Review point: 6 slates</span></div>`);
     const BC = REC && REC.current_backtest;
     if (BC && BC.patterns && BC.patterns.length) { const A = BC.patterns[0]; tiles.push(`<div class="tile"><small>Backtest · today's FORGE Pick</small><b class="${A.roi >= 0 ? 'gain' : 'loss'}">${sgn(A.roi)}%</b><span>ROI on ${A.games} real 2026 Showdowns, ${A.name.split(':')[1].trim()} · every prize counted</span></div>`); }
-    $('#btCur').innerHTML = !(BC && BC.patterns) ? '<p class="note">No backtest for the current build in this data yet.</p>' : `<p class="lede">The exact settings the Builder starts on (the 10 best lineups: best 5 stacks + the simulator's best 5, each entered twice in a 20-entry contest; weighted top-3 captain pool; corrected ownership forecast), replayed on ${BC.patterns[0].games} real 2026 Showdowns from pre-game data only, ${BC.seeds} simulation runs per game, graded on the real contest results with two real entry patterns. Every prize counts in full. Backtest, not live money.</p>
+    $('#btCur').innerHTML = !(BC && BC.patterns) ? '<p class="note">No backtest for the current build in this data yet.</p>' : `<p class="lede">${BC.description || ''}</p>
       <div class="tiles">${BC.patterns.map(P => `<div class="tile"><small>${P.name.split(':')[1].trim()}</small><b class="${P.roi >= 0 ? 'gain' : 'loss'}">${sgn(P.roi)}%</b><span>average $${P.avg_back.toFixed(2)} back on $${P.fee.toFixed(2)} · in profit on ${P.in_profit}% of slates${P.real_roi != null ? ` · games with the real prize table only (${P.real_games}): ${sgn(P.real_roi)}%` : ''}</span></div>`).join('')}</div>
-      <details class="about"><summary>Game by game</summary><div class="tbl-wrap"><table><thead><tr><th>Game</th><th class="n">Week</th>${BC.patterns.map(P => `<th class="n">${P.name.split(':')[0]} back</th>`).join('')}<th>Prize table</th></tr></thead><tbody>${BC.patterns[0].by_game.map((g, i) => `<tr><td>${g.game}</td><td class="n">${g.week}</td>${BC.patterns.map(P => { const x = P.by_game[i]; return `<td class="n ${x.avg_back >= P.fee ? 'netpos' : 'netneg'}">$${x.avg_back.toFixed(2)}</td>`; }).join('')}<td class="dim">${g.real ? 'real' : 'estimated'}</td></tr>`).join('')}</tbody></table></div>
-      <p class="note">Pattern A = the 10 best twice in a $0.25 20-max (20 entries) + 5 × $0.50 (150-max), $7.50 a slate. Pattern B = the 10 best in a $0.10 and a $0.25 20-max + 5 × $0.50, $6 a slate. "Estimated" = that game's real field graded on the closest real prize table of the same contest type.</p></details>`;
+      <details class="about"><summary>Game by game</summary><div class="tbl-wrap"><table><thead><tr><th>Game</th><th class="n">Week</th>${BC.patterns.map(P => `<th class="n">${P.name.split(':')[0]} back</th>`).join('')}<th>Prize table</th></tr></thead><tbody>${BC.patterns[0].by_game.map((g, i) => `<tr><td>${g.game}</td><td class="n">${g.week}</td>${BC.patterns.map(P => { const x = P.by_game[i]; return `<td class="n ${x.avg_back >= (x.fee != null ? x.fee : P.fee) ? 'netpos' : 'netneg'}">$${x.avg_back.toFixed(2)}</td>`; }).join('')}<td class="dim">${g.real ? 'real' : 'estimated'}</td></tr>`).join('')}</tbody></table></div>
+      <p class="note">${BC.note || ''}</p></details>`;
     $('#recTiles').innerHTML = tiles.join('');
     // owner: our real contests, by slate
     const K3 = (O && O.by_kind) || (REC && REC.ours_summary), money = !!(O && O.by_kind), kc = ['showdown', 'classic', 'combined'], kn = { showdown: 'Showdown', classic: 'Classic', combined: 'Combined' };
