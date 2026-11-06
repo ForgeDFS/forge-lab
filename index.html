@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="bcde6b8d40c3"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="1b07f2254d0a"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -578,6 +578,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
 .todo-done .tname{text-decoration:none;opacity:.75}.todo-sum{display:flex;gap:16px;flex-wrap:wrap;align-items:baseline;margin:12px 0}
 .todo-sum .todo-need b{color:#e74c3c;font-size:1.3em}.todo-sum .todo-done b{color:#2ecc71;font-size:1.3em}.todo-sum .todo-opt b{font-size:1.3em}
 .todo-got .tdot{background:#2d6cdf!important;color:#fff!important;border:none!important}.todo-got .tname a{color:#8aa4c8}.gotlbl{color:#5b8def}.todo-sum .todo-gotsum b{color:#5b8def;font-size:1.3em}
+.todo-dlall{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:4px 0 12px}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -2529,6 +2530,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     } catch (e) { say('Could not send: ' + e.message, true); }
   }
   // (2026-11-04) the morning list of standings worth downloading (tools/standings_todo.py; DraftKings keeps them ~10 days), owner only
+  let TODO_L = [];
   async function renderTodo() {
     const el = $('#stTodo'); if (!el || !OPW || !ENC) return;
     try { const r = await fetch('data/standings_todo.owner.enc.json', { cache: 'no-cache' }); if (!r.ok) return; const T = await odec(await r.json()); const L = T.contests || [];
@@ -2540,11 +2542,24 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       const row = (c, st) => { const g = st !== 'done' && got[c.cid]; if (g && st === 'opt') return ''; return `<li class="todo-${st}${g ? ' todo-got' : ''}" data-cid="${c.cid}"><span class="tdot">${st === 'done' ? '✓' : g ? '↓' : st === 'need' ? '!' : '○'}</span><span class="tname">${st === 'done' ? esc(c.name) : `<a href="${c.url}" target="_blank" rel="noopener">${esc(c.name)}</a>`}</span><small class="dim">${fmt(c)}${c.deadline ? ' · gone ~' + dd(c.deadline) : ''}${g ? ' · <b class="gotlbl">downloaded, not sent yet</b>' : ''}</small></li>`; };
       const nGot = L.filter(c => got[c.cid]).length;
       el.innerHTML = `<div class="todo-sum"><span class="todo-need"><b>${mine.length}</b> of yours still needed</span><span class="todo-done"><b>${R.length}</b> of yours received</span><span class="todo-opt"><b>${rest.length}</b> optional</span>${nGot ? `<span class="todo-gotsum"><b>${nGot}</b> downloaded on this device</span> <button type="button" class="linkbtn" id="todoClear">clear marks</button>` : ''}<small class="dim">list from ${esc(T.built_utc)}</small></div>` +
+        `<div class="todo-dlall"><button type="button" class="btn small primary" data-dlall="all">Download all ${L.filter(c => !got[c.cid]).length} left</button> <button type="button" class="btn small" data-dlall="mine">Yours only (${mine.filter(c => !got[c.cid]).length})</button> <span class="dim" id="dlallMsg">One tap downloads every file, about 2 seconds apart. If Chrome asks to allow multiple downloads, choose Allow.</span></div>` +
         `<h4 class="subh">Your contests</h4><ul class="todo">${mine.map(c => row(c, 'need')).join('') + R.map(c => row(c, 'done')).join('') || '<li class="dim">Nothing of yours waiting.</li>'}</ul>` +
         (mine.length ? '' : '<p class="note gain">All of your contests are in. FORGE has graded them.</p>') +
-        Object.entries(bySport).map(([sp, cs]) => `<details class="rnight"${cs.some(c => got[c.cid]) ? ' open' : ''}><summary><b>Optional: ${sp}</b><span>${cs.filter(c => !got[c.cid]).length} left${cs.some(c => got[c.cid]) ? ` · ${cs.filter(c => got[c.cid]).length} downloaded (hidden)` : ''} · helps FORGE learn · soonest to disappear first</span></summary><ul class="todo">${cs.slice(0, 200).map(c => row(c, 'opt')).join('')}</ul></details>`).join('');
-      if (!el.dataset.wired) { el.dataset.wired = '1'; el.addEventListener('click', ev => {
+        Object.entries(bySport).map(([sp, cs]) => `<details class="rnight"${cs.some(c => got[c.cid]) ? ' open' : ''}><summary><b>Optional: ${sp}</b> <button type="button" class="linkbtn" data-dlall="${sp}">download all ${sp}</button><span>${cs.filter(c => !got[c.cid]).length} left${cs.some(c => got[c.cid]) ? ` · ${cs.filter(c => got[c.cid]).length} downloaded (hidden)` : ''} · helps FORGE learn · soonest to disappear first</span></summary><ul class="todo">${cs.slice(0, 200).map(c => row(c, 'opt')).join('')}</ul></details>`).join('');
+      TODO_L = L;
+      if (!el.dataset.wired) { el.dataset.wired = '1'; el.addEventListener('click', async ev => {
         if (ev.target.id === 'todoClear') { try { localStorage.removeItem('forgeTodoClicked'); } catch (e) { } renderTodo(); return; }
+        const dl = ev.target.closest('[data-dlall]');
+        if (dl) {   // (2026-11-06, FORGE) one tap: every remaining file, one hidden frame each, 2 s apart (DraftKings sends them as downloads)
+          ev.preventDefault(); ev.stopPropagation(); let g = {}; try { g = JSON.parse(localStorage.getItem('forgeTodoClicked') || '{}'); } catch (e) { }
+          const w = dl.dataset.dlall, todo = TODO_L.filter(c => !g[c.cid] && (w === 'all' || (w === 'mine' ? c.ours : (!c.ours && c.sport === w))));
+          const msg = $('#dlallMsg'); el.querySelectorAll('[data-dlall]').forEach(b => b.disabled = true);
+          for (let i = 0; i < todo.length; i++) {
+            const c = todo[i], f = document.createElement('iframe'); f.style.display = 'none'; f.src = c.url; document.body.appendChild(f); setTimeout(() => f.remove(), 60000);
+            g[c.cid] = Date.now(); try { localStorage.setItem('forgeTodoClicked', JSON.stringify(g)); } catch (e) { }
+            if (msg) msg.textContent = `Downloading ${i + 1} of ${todo.length}: ${c.name}`; await new Promise(r => setTimeout(r, 2000)); }
+          if (msg) msg.textContent = `Done: ${todo.length} files sent to your Downloads folder. Now choose them all with "Choose standings files" above.`;
+          setTimeout(renderTodo, 4000); return; }
         const a = ev.target.closest('a'), li = a && a.closest('li[data-cid]'); if (!li) return;
         try { const g = JSON.parse(localStorage.getItem('forgeTodoClicked') || '{}'); g[li.dataset.cid] = Date.now(); localStorage.setItem('forgeTodoClicked', JSON.stringify(g)); } catch (e) { }
         if (li.classList.contains('todo-opt')) { li.style.transition = 'opacity .4s'; li.style.opacity = '0'; setTimeout(() => li.remove(), 450); return; }   // optional: gone once tapped (FORGE 11/06)
