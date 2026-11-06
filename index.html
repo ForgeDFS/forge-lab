@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="553102239982"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="59998e3f4a30"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -572,6 +572,11 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
 @media (max-width: 640px) { #statusPill { display: none; } body[data-tab]:not([data-tab="slate"]) .meta, body[data-tab]:not([data-tab="slate"]) .sub.fresh { display: none; } }
 @media (max-width: 380px) { .wordmark { display: none; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+.todo{list-style:none;padding-left:0}.todo li{display:flex;gap:8px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--line,#2a2f3a);flex-wrap:wrap}
+.tdot{display:inline-flex;width:20px;height:20px;border-radius:50%;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex:none}
+.todo-need .tdot{background:#c0392b;color:#fff}.todo-done .tdot{background:#2e8b57;color:#fff}.todo-opt .tdot{color:#888;border:1px solid #666}
+.todo-done .tname{text-decoration:none;opacity:.75}.todo-sum{display:flex;gap:16px;flex-wrap:wrap;align-items:baseline;margin:12px 0}
+.todo-sum .todo-need b{color:#e74c3c;font-size:1.3em}.todo-sum .todo-done b{color:#2ecc71;font-size:1.3em}.todo-sum .todo-opt b{font-size:1.3em}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -2527,9 +2532,14 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const el = $('#stTodo'); if (!el || !OPW || !ENC) return;
     try { const r = await fetch('data/standings_todo.owner.enc.json', { cache: 'no-cache' }); if (!r.ok) return; const T = await odec(await r.json()); const L = T.contests || [];
       if (!L.length) { el.innerHTML = '<p class="note">No standings waiting: FORGE has every contest it wants from the last 10 days.</p>'; return; }
-      const dd = s => new Date(s).toLocaleDateString([], { weekday: 'short', month: 'numeric', day: 'numeric' });
-      el.innerHTML = `<p class="note" style="margin-top:10px"><b>${L.length} standings to download</b> (list from ${esc(T.built_utc)}; yours first, then the ones DraftKings deletes soonest). Tap each, then choose them all above in one go.</p><ol class="todo">` +
-        L.slice(0, 250).map(c => `<li><a href="${c.url}" target="_blank" rel="noopener">${esc(c.name)}</a> <small class="dim">${c.sport} · $${c.fee} · ${c.max_per_user === 1 ? 'single entry' : c.max_per_user + '-max'} · gone ~${dd(c.deadline)}${c.ours ? ' · <b>you entered</b>' : ''}</small></li>`).join('') + '</ol>';
+      const dd = s => new Date(s).toLocaleDateString([], { weekday: 'short', month: 'numeric', day: 'numeric' }), R = T.received || [];
+      const fmt = c => `${c.sport} · $${c.fee} · ${c.max_per_user === 1 ? 'single entry' : c.max_per_user + '-max'}`;
+      const mine = L.filter(c => c.ours), rest = L.filter(c => !c.ours), bySport = {}; rest.forEach(c => (bySport[c.sport] = bySport[c.sport] || []).push(c));
+      const row = (c, st) => `<li class="todo-${st}"><span class="tdot">${st === 'done' ? '✓' : st === 'need' ? '!' : '○'}</span><span class="tname">${st === 'done' ? esc(c.name) : `<a href="${c.url}" target="_blank" rel="noopener">${esc(c.name)}</a>`}</span><small class="dim">${fmt(c)}${c.deadline ? ' · gone ~' + dd(c.deadline) : ''}</small></li>`;
+      el.innerHTML = `<div class="todo-sum"><span class="todo-need"><b>${mine.length}</b> of yours still needed</span><span class="todo-done"><b>${R.length}</b> of yours received</span><span class="todo-opt"><b>${rest.length}</b> optional</span><small class="dim">list from ${esc(T.built_utc)}</small></div>` +
+        `<h4 class="subh">Your contests</h4><ul class="todo">${mine.map(c => row(c, 'need')).join('') + R.map(c => row(c, 'done')).join('') || '<li class="dim">Nothing of yours waiting.</li>'}</ul>` +
+        (mine.length ? '' : '<p class="note gain">All of your contests are in. FORGE has graded them.</p>') +
+        Object.entries(bySport).map(([sp, cs]) => `<details class="rnight"><summary><b>Optional: ${sp}</b><span>${cs.length} contests · helps FORGE learn · soonest to disappear first</span></summary><ul class="todo">${cs.slice(0, 200).map(c => row(c, 'opt')).join('')}</ul></details>`).join('');
     } catch (e) { }
   }
   async function pickupShared() {
