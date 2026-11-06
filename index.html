@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="f080892830e0"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="553102239982"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -835,7 +835,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
   <section class="panel" id="p-dk" hidden>
     <div class="nba-only"><ol class="steps">
       <li><b>Get your entries file.</b> On DraftKings: <b>Lineups → Edit Entries → Download</b> for this slate (it lists every contest you joined).</li>
-      <li><b>Fill it here.</b> <label class="btn primary filebtn"><input type="file" id="nbaDkFile">Choose your DKEntries file</label> FORGE fills your biggest contest with different lineups and gives each smaller contest its top lineups (single entry = #1), OUT players removed. Untick any contest you want left alone.</li>
+      <li><b>Fill it here.</b> <label class="btn primary filebtn"><input type="file" id="nbaDkFile">Choose your DKEntries file</label> FORGE fills your biggest contest with different lineups and gives each smaller contest its top lineups (single entry = #1), OUT players removed. Untick any contest you want left alone. Any contest can be set to <b>Experiment: weave in players unused elsewhere</b> (tracked separately).</li>
       <li><b>Upload.</b> DraftKings → <b>Lineups → Edit Entries → Upload</b>, pick the filled file.</li></ol>
       <div id="nbaDkResult" aria-live="polite"></div>
       <p class="note">New entries without an entries file: <b>Download for DraftKings</b> under your lineups gives DraftKings' <b>Upload Lineups</b> format (no entry IDs). <a class="btn small" href="https://www.draftkings.com/lineup/upload" target="_blank" rel="noopener">Open DraftKings upload</a></p>
@@ -2313,7 +2313,8 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
             .forEach((c, j) => FM[c] = j === 0 ? [g20.concat(builder.mix && builder.mix.ext || []), 'FORGE Pick (20 different lineups)' + (perContest[c] > 20 ? ' + next-best groups' : '')] : null);
           // (2026-11-05) smaller contests: FORGE's 3-different lineups not already entered in another contest (no repeats across the file)
           const lk = l => l.cpt + '|' + [...l.flex].sort().join(','), usedK = new Set([src.se, ...Object.values(FM).filter(Boolean).flatMap(v => v[0].slice(0, perContest[Object.keys(FM).find(k => FM[k] === v)]))].map(lk));
-          Object.keys(FM).filter(c => !FM[c] && !DKEXP[c]).forEach(c => { const L = u3.filter(l => !usedK.has(lk(l))).slice(0, perContest[c]); L.forEach(l => usedK.add(lk(l))); FM[c] = [L, `3-different lineups not used in your other contests (#1-${L.length})`]; });
+          // (2026-11-05 20:57, FORGE's standing rule) smaller contests get FORGE's top lineups, duplicates of other contests allowed
+          Object.keys(FM).filter(c => !FM[c] && !DKEXP[c]).forEach(c => { const L = u3.slice(0, perContest[c]); L.forEach(l => usedK.add(lk(l))); FM[c] = [L, `FORGE's top 3-different lineups #1-${L.length}`]; });
           const usedN = new Set(); Object.values(FM).filter(Boolean).forEach(v => v[0].forEach(l => [l.cpt, ...l.flex].forEach(n => usedN.add(n)))); [src.se.cpt, ...src.se.flex].forEach(n => usedN.add(n));
           Object.keys(FM).filter(c => !FM[c] && DKEXP[c] === 'cover').forEach(c => { const r = coverSet(perContest[c], pool, usedK, usedN); r.lus.forEach(l => usedK.add(lk(l)));
             FM[c] = [r.lus, `EXPERIMENT (untested): ${r.unused.length ? 'unused players woven in: ' + r.unused.join(', ') : 'no unused players, projection order'}; core kept, 3+ different, no repeats`]; }); } }
@@ -2936,6 +2937,15 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       if (k % 5 === 4) st.textContent = `Forging… ${k + 1} of ${N}`;
     }
     if (!chosen.length) { st.className = 'status err'; st.textContent = 'No legal lineup fits these rules.'; return; }
+    NB.cover = null;
+    if (NB.coverReq && NB.coverReq.n > 0) {   // (2026-11-05, FORGE) experiment contests: players unused in the other contests, each forced into FORGE's best lineup with him, round robin
+      const main = chosen.length, usedN = new Set(chosen.slice(0, Math.min(main, NB.coverReq.base)).flatMap(c => c.lu.map(p => p.name)));
+      const unc = P.filter(p => !usedN.has(p.name) && p.props !== false).sort((a, b) => PJ(b) - PJ(a)), cover = [];
+      for (let r = 0; r < NB.coverReq.n && unc.length && cover.length < NB.coverReq.n; r++) for (const u of unc) {
+        if (cover.length >= NB.coverReq.n) break; const lu = await solve(u.i); if (!lu || !lu.some(p => p.i === u.i)) continue;
+        const c = { lu, ids: new Set(lu.map(p => p.i)), s: lu.reduce((t, p) => t + PJ(p), 0) }; chosen.push(c); cover.push(c); lu.forEach(p => cnt[p.i] = (cnt[p.i] || 0) + 1); }
+      while (cover.length < NB.coverReq.n) { const lu = await solve(null); if (!lu) break; const c = { lu, ids: new Set(lu.map(p => p.i)), s: lu.reduce((t, p) => t + PJ(p), 0) }; chosen.push(c); cover.push(c); }
+      NB.cover = cover; NB.coverUnused = unc.map(p => p.name); NB.coverKey = JSON.stringify(NB.coverReq); chosen.length = main; }
     NB.result = chosen; st.textContent = `Forged ${chosen.length} of ${N} lineups in ${((performance.now() - t0) / 1000).toFixed(1)} s` + (stackG.length ? ' · stack games: ' + stackG.join(', ') : '') + (chosen.length < N ? ` · stopped at ${chosen.length}: only ${P.length} players are in the pool (OUT players and players without betting lines are left out).` : '') + ((NB.levInfo || []).length ? ` · leverage lineups (tested 10/29, NBA-LEV1): ${NB.levInfo.map(x => `#${x.n} built around ${x.name} (forecast ${x.own.toFixed(1)}% owned)`).join('; ')}` : '');
     const ex = {}; chosen.forEach(c => c.lu.forEach(p => ex[p.name] = (ex[p.name] || 0) + 1));
     $('#nbaExpo').innerHTML = Object.entries(ex).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span class="chip">${k} <b>${Math.round(100 * v / chosen.length)}%</b></span>`).join('');
@@ -3109,7 +3119,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   // the Builder's NBA lineups (20 distinct by default), checked against the file's own player list (IDs, roster slots, $50,000) and FORGE's OUT list
   async function nbaFillDK(text, auto) {
     const res = $('#nbaDkResult'); let PICK = ''; const say = h => res.innerHTML = PICK + h;
-    res.onchange = ev => { const t = ev.target; if (t && t.dataset && t.dataset.ndkc !== undefined) { NBADKONLY = new Set([...res.querySelectorAll('[data-ndkc]')].filter(x => x.checked).map(x => x.dataset.ndkc)); nbaFillDK(NBADK); } };
+    res.onchange = ev => { const t = ev.target; if (t && t.dataset && t.dataset.nx !== undefined) { if (t.value) NBAEXP[t.dataset.nx] = t.value; else delete NBAEXP[t.dataset.nx]; nbaFillDK(NBADK); return; } if (t && t.dataset && t.dataset.ndkc !== undefined) { NBADKONLY = new Set([...res.querySelectorAll('[data-ndkc]')].filter(x => x.checked).map(x => x.dataset.ndkc)); nbaFillDK(NBADK); } };
     try {
       const rows = csvParse(text.replace(/^﻿/, '')); const hdr = rows[0] || []; const sdF = hdr.includes('CPT'), clF = hdr.includes('PG'), tiF = hdr.includes('T1');
       if (!sdF && !clF && !tiF) return say('<div class="err">That doesn\'t look like a DraftKings entries file for this page (no PG, CPT or T1 columns). Download it from Lineups → Edit Entries.</div>');
@@ -3126,7 +3136,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       const all = rows.slice(1).filter(r => /^\d+$/.test((r[0] || '').trim()) && (r[1] || '').trim());
       const cn = [...new Set(all.map(r => r[1].trim()))], cc = {}; all.forEach(r => cc[r[1].trim()] = (cc[r[1].trim()] || 0) + 1);
       if (!NBADKONLY || !cn.some(c => NBADKONLY.has(c))) NBADKONLY = new Set(cn);
-      PICK = `<div class="dkpick"><p class="note"><b>Which contests should these lineups go into?</b> Unticked entries stay as they are on DraftKings and are left out of the file.</p>${cn.map(c => `<label style="display:block;margin:4px 0"><input type="checkbox" data-ndkc="${c.replace(/"/g, '&quot;')}" ${NBADKONLY.has(c) ? 'checked' : ''}> ${c} <span class="note">(${cc[c]} entries)</span></label>`).join('')}</div>`;
+      PICK = `<div class="dkpick"><p class="note"><b>Which contests should these lineups go into?</b> Unticked entries stay as they are on DraftKings and are left out of the file.</p>${cn.map(c => `<label style="display:block;margin:4px 0"><input type="checkbox" data-ndkc="${c.replace(/"/g, '&quot;')}" ${NBADKONLY.has(c) ? 'checked' : ''}> ${c} <span class="note">(${cc[c]} entries)</span></label>${clF && cc[c] > 1 ? `<select data-nx="${c.replace(/"/g, '&quot;')}" style="margin:0 0 6px 26px"><option value="">FORGE plan</option><option value="cover" ${NBAEXP[c] === 'cover' ? 'selected' : ''}>Experiment: weave in players unused elsewhere</option></select>` : ''}`).join('')}</div>`;
       const ent = all.filter(r => NBADKONLY.has(r[1].trim()));
       if (!ent.length) return say('<div class="err">No entries selected.</div>');
       const status = {}; D.players.forEach(p => status[p.name] = (p.status || '').toUpperCase());
@@ -3135,15 +3145,17 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       const stale = (NB.result || []).some(c => c.lu.some(p => NBOUT(D.players.find(q => q.name === p.name) || {})));
       // (2026-10-29 NBA-EXTEND) the biggest contest gets lineups #1-n; every smaller contest gets the top lineups again (#1-n, single entry #1):
       // reusing the top beat the next unused lineups on 9 slates (2-entry GPPs +159% vs +124%), the same as the NFL test (SD-EXTEND)
-      const per = {}; ent.forEach(r => per[r[1].trim()] = (per[r[1].trim()] || 0) + 1); const need = Math.max(...Object.values(per));
-      if (!auto && ((NB.result || []).length < need || stale)) {
+      const per = {}; ent.forEach(r => per[r[1].trim()] = (per[r[1].trim()] || 0) + 1);
+      const isX = c => !!(clF && NBAEXP[c] && per[c] > 1), need = Math.max(1, ...Object.keys(per).filter(c => !isX(c)).map(c => per[c])), xN = Object.keys(per).filter(isX).reduce((t, c) => t + per[c], 0);
+      NB.coverReq = xN ? { base: need, n: xN } : null; const coverStale = xN ? (!NB.cover || NB.coverKey !== JSON.stringify(NB.coverReq)) : false;
+      if (!auto && ((NB.result || []).length < need || stale || coverStale)) {
         say(`<p class="note">Building ${need} different lineups with FORGE's default settings (OUT players removed)…</p>`);
         $('#nbaN').value = Math.min(150, need); await nbaBuild(); return nbaFillDK(text, true);
       }
       const L = NB.result || []; if (!L.length) return say('<div class="err">FORGE could not build lineups for this slate: ' + ($('#nbaStatus').textContent || '') + '</div>');
-      const out = [], onames = [], errs = [], skipped = [], plan = {}, k = {};
+      const out = [], onames = [], errs = [], skipped = [], plan = {}, k = {}; let XI = 0;
       for (const r of ent) {
-        const c = r[1].trim(); k[c] = k[c] || 0; const lu = L[k[c]++]; if (!lu) { skipped.push(r[0]); continue; }
+        const c = r[1].trim(); k[c] = k[c] || 0; const lu = isX(c) ? (NB.cover || [])[XI++] : L[k[c]++]; if (isX(c)) k[c]++; if (!lu) { skipped.push(r[0]); continue; }
         const names = lu.lu.map(p => p.name);
         const ids = names.map((n, j) => pool[sd ? n + '|' + (j ? 'UTIL' : 'CPT') : n]);
         const miss = names.filter((n, j) => !ids[j]); if (miss.length) { errs.push(`${miss.join(', ')} not in your file's player list`); continue; }
@@ -3169,6 +3181,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       $('#nbaDkCopy').onclick = e => copy(csv, e.currentTarget);
     } catch (e) { say('<div class="err">Could not read that file (' + e.message + ').</div>'); }
   }
+  let NBAEXP = {};
   $('#nbaDkFile').addEventListener('change', async ev => { const f = ev.target.files[0]; if (!f) return; NBADK = await f.text(); NBADKONLY = null; ev.target.value = ''; nbaFillDK(NBADK); });
   $('#nbaCsv2').addEventListener('click', () => { if (NB.result && NB.result.length) $('#nbaCsv').click(); else $('#nbaCsv2s').textContent = 'No NBA lineups yet: press Forge NBA lineups in Build first.'; });
   $('#nbaCsv').addEventListener('click', () => {
