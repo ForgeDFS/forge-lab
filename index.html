@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="4be4baebbb21"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="ec823166b1ad"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -943,6 +943,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     <p class="note" id="liveNote">Each set graded on the real contest results. ROI counts every prize in full: a win counts as a win.</p>
     <div id="live"></div>
     <div id="entSum"></div>
+    <div class="appbox owner-only" id="frBox"><b>Weak fields tonight (NBA).</b> Contests ranked by how many proven pros played the same contest on past nights (fewest first), with FORGE's backtest there. A lean, not a rule: 1-16 past nights per contest.<div id="fieldRead"></div></div>
     <div class="appbox owner-only" id="stBox"><b>Send contest standings to FORGE.</b> After a contest ends, download its standings on DraftKings (the contest page, then Export / Download standings), then tap Share and pick FORGE, or choose the file here. FORGE archives it, grades every build and learns from it on its own.
       <div class="toolbar" style="margin-top:8px"><label class="btn filebtn"><input type="file" id="stFile" accept=".zip,.csv" multiple>Choose standings files (any number, plus the contest-history CSV)</label><span class="status" id="stStatus" role="status"></span></div>
       <div id="stTodo"></div></div>
@@ -2540,6 +2541,15 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       return say(`Sent ${sent} file(s)${note ? ` (skipped ${note})` : ''}. FORGE is archiving and grading them now; they tick off the list within a few minutes.`);
     } catch (e) { say('Could not send: ' + e.message, true); }
   }
+  // (2026-11-06, FORGE) weak-field read: tools/field_read.py lobby -> site/field_read.json -> data/field_read.owner.enc.json (owner only)
+  async function renderFieldRead() {
+    const el = $('#fieldRead'); if (!el || !OPW || !ENC) return;
+    try { const r = await fetch('data/field_read.owner.enc.json', { cache: 'no-cache' }); if (!r.ok) return; const T = await odec(await r.json()); const L = (T.contests || []).slice(0, 25);
+      if (!L.length) { el.innerHTML = '<p class="note">No NBA contests with a past record in tonight\'s lobby yet.</p>'; return; }
+      const pc = v => v == null ? '–' : (v > 0 ? '+' : '') + v.toFixed(1) + '%';
+      el.innerHTML = `<div class="tbl-wrap"><table><thead><tr><th>Contest</th><th class="n">Fee</th><th class="n">Max</th><th class="n">Pros (past)</th><th class="n">FORGE backtest</th><th class="n">Nights</th></tr></thead><tbody>${L.map(c => `<tr><td>${esc(c.name)}</td><td class="n">$${c.fee}</td><td class="n">${c.per_user}</td><td class="n">${c.pro_share == null ? '–' : c.pro_share.toFixed(1) + '%'}</td><td class="n">${pc(c.forge_roi)}</td><td class="n">${c.graded ? c.profit_nights + ' of ' + c.graded + ' in profit' : c.instances + ' seen'}</td></tr>`).join('')}</tbody></table></div><p class="note">${esc(T.note || '')} Updated ${esc(T.made_utc || '')} UTC.</p>`;
+    } catch (e) { }
+  }
   // (2026-11-04) the morning list of standings worth downloading (tools/standings_todo.py; DraftKings keeps them ~10 days), owner only
   let TODO_L = [];
   async function renderTodo() {
@@ -2718,7 +2728,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     if (REC && !force && (OREC || !OPW)) return;
     try { REC = await getJSON('record'); } catch (e) { REC = null; }
     OREC = null; if (OPW && ENC) { try { const r = await fetch('data/record.owner.enc.json', { cache: 'no-cache' }); if (r.ok) OREC = await odec(await r.json()); } catch (e) { OREC = null; } }
-    renderTodo();
+    renderTodo(); renderFieldRead();
   }
   const usd2 = v => v == null ? '—' : (v < 0 ? '−$' : '$') + Math.abs(v).toFixed(2);
   const sgn = v => v == null ? '—' : (v > 0 ? '+' : '') + v;
@@ -3201,7 +3211,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       const L = NB.result || []; if (!L.length) return say('<div class="err">FORGE could not build lineups for this slate: ' + ($('#nbaStatus').textContent || '') + '</div>');
       const out = [], onames = [], errs = [], skipped = [], plan = {}, k = {}; let XI = 0;
       for (const r of ent) {
-        const c = r[1].trim(); k[c] = k[c] || 0; const lu = isX(c) ? (NB.cover || [])[XI++] : L[k[c]++]; if (isX(c)) k[c]++; if (!lu) { skipped.push(r[0]); continue; }
+        const c = r[1].trim(); k[c] = k[c] || 0; const cashC = /double up|50\/50|50-50|fifty|head ?to ?head|h2h/i.test(c); /* (2026-11-06 CASH-1, FORGE) cash contests: every entry = lineup #1 */ const lu = isX(c) ? (NB.cover || [])[XI++] : cashC ? (k[c]++, L[0]) : L[k[c]++]; if (isX(c)) k[c]++; if (!lu) { skipped.push(r[0]); continue; }
         const names = lu.lu.map(p => p.name);
         const ids = names.map((n, j) => pool[sd ? n + '|' + (j ? 'UTIL' : 'CPT') : n]);
         const miss = names.filter((n, j) => !ids[j]); if (miss.length) { errs.push(`${miss.join(', ')} not in your file's player list`); continue; }
@@ -3219,7 +3229,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       const fname = `DKEntries_FORGE_${D.slate.id || 'slate'}.csv`;
       logBuild('nba_export', { fname, skipped: skipped.length, contests: plan }, out.map((o, i) => ({ entry: o[0], contest: o[1], names: onames[i] })));   // (2026-10-30) names: the morning report reads the owner's exact entries from here
       sendEntries(csv, D.slate.id || 'slate');
-      say(`<div class="ok">✓ ${out.length} entries filled (biggest contest: ${Math.min(need, L.length)} different lineups; each smaller contest gets FORGE's top lineups, single entry #1), checked against DraftKings' player list (IDs, ${ti ? 'tiers' : 'slots, $50,000'}).</div>${skipped.length ? `<p class="note"><b>${skipped.length} selected entries have no lineup yet</b>: FORGE could make only ${L.length} different lineups (${esc($('#nbaStatus').textContent)}). They are left out of the file and stay as they are on DraftKings; choose the file again later when more lines are posted.</p>` : ''}
+      say(`<div class="ok">✓ ${out.length} entries filled (biggest contest: ${Math.min(need, L.length)} different lineups; each smaller contest gets FORGE's top lineups, single entry and Double Ups / 50-50s #1), checked against DraftKings' player list (IDs, ${ti ? 'tiers' : 'slots, $50,000'}).</div>${skipped.length ? `<p class="note"><b>${skipped.length} selected entries have no lineup yet</b>: FORGE could make only ${L.length} different lineups (${esc($('#nbaStatus').textContent)}). They are left out of the file and stay as they are on DraftKings; choose the file again later when more lines are posted.</p>` : ''}
         <div class="tbl-wrap"><table><thead><tr><th>Contest</th><th class="n">Entries filled</th></tr></thead><tbody>${Object.entries(plan).map(([c, v]) => `<tr><td>${c}</td><td class="n">${v}</td></tr>`).join('')}</tbody></table></div>
         <div class="toolbar"><button class="btn primary" type="button" id="nbaDkDl">Download filled file</button><button class="btn small" type="button" id="nbaDkCopy">Copy instead</button></div>
         <p class="note">Then DraftKings → Lineups → Edit Entries → Upload, and pick ${fname}.</p>`);
