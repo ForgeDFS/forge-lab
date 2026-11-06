@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="1b07f2254d0a"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="4be4baebbb21"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -2511,22 +2511,33 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       if (!OPW) return say('Sign in as owner first (footer: Owner sign-in), then choose the files again.', true);
       const r = await fetch('data/upload.owner.enc.json', { cache: 'no-cache' }); if (!r.ok) return say('The upload key is not set up yet (secret FORGE_UPLOAD_TOKEN).', true);
       const cfg = await odec(await r.json()); const H = { Authorization: 'Bearer ' + cfg.token, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' }, A = 'https://api.github.com/repos/' + cfg.repo;
-      const ok = F.filter(f => /\d{8,}/.test(f.name) || /contest-entry-history/i.test(f.name)), skip = F.length - ok.length; if (!ok.length) return say('None of these look like DraftKings standings files (contest-standings-<number>) or the contest-history CSV.', true);
-      const j = async (url, opt) => { const x = await fetch(url, Object.assign({ headers: H }, opt)); if (!x.ok) throw new Error(url.split('/repos/')[1] + ' ' + x.status); return x.json(); };
-      const tree = [];
-      for (let i = 0; i < ok.length; i++) {
-        say(`Uploading ${i + 1} of ${ok.length}…`); const u8 = new Uint8Array(await ok[i].arrayBuffer()); let b = ''; for (let k = 0; k < u8.length; k += 0x8000) b += String.fromCharCode.apply(null, u8.subarray(k, k + 0x8000));
-        const blob = await j(A + '/git/blobs', { method: 'POST', body: JSON.stringify({ content: btoa(b), encoding: 'base64' }) });
-        tree.push({ path: cfg.path + '/' + ok[i].name.replace(/[^A-Za-z0-9._-]/g, '_'), mode: '100644', type: 'blob', sha: blob.sha });
-      }
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          const ref = await j(A + '/git/ref/heads/main'), com = await j(A + '/git/commits/' + ref.object.sha), t = await j(A + '/git/trees', { method: 'POST', body: JSON.stringify({ base_tree: com.tree.sha, tree }) });
-          const nc = await j(A + '/git/commits', { method: 'POST', body: JSON.stringify({ message: `standings via the app: ${ok.length} file(s)`, tree: t.sha, parents: [ref.object.sha] }) });
-          await j(A + '/git/refs/heads/main', { method: 'PATCH', body: JSON.stringify({ sha: nc.sha }) });
-          return say(`Sent ${ok.length} file(s)${skip ? ` (${skip} skipped: not standings files)` : ''}. FORGE is archiving and grading them now.`);
-        } catch (e) { if (attempt === 2) throw e; await new Promise(z => setTimeout(z, 1500)); }
-      }
+      // (2026-11-06, FORGE: 700 files at once failed) send only what FORGE still wants: one file per contest, only contests on the download list
+      // (or the contest-history CSV); then upload in batches of 30 with retries, so one hiccup never loses the whole selection
+      const want = new Set((TODO_L || []).map(c => String(c.cid))), seen = new Set(); let dup = 0, have = 0, other = 0; const ok = [];
+      for (const f of F) {
+        if (/contest-entry-history/i.test(f.name)) { ok.push(f); continue; }
+        const m = f.name.match(/(\d{8,})/); if (!m) { other++; continue; }
+        if (seen.has(m[1])) { dup++; continue; } seen.add(m[1]);
+        if (want.size && !want.has(m[1])) { have++; continue; } ok.push(f); }
+      const note = [dup ? `${dup} duplicates` : '', have ? `${have} FORGE already has` : '', other ? `${other} not standings files` : ''].filter(Boolean).join(', ');
+      if (!ok.length) return say(`Nothing new to send${note ? ' (' + note + ')' : ''}. FORGE already has these.`);
+      const sleep = z => new Promise(r => setTimeout(r, z));
+      const j = async (url, opt) => { for (let t = 0; ; t++) { const x = await fetch(url, Object.assign({ headers: H }, opt)); if (x.ok) return x.json(); if (t >= 4 || ![401, 403, 429, 500, 502, 503].includes(x.status)) throw new Error(url.split('/repos/')[1] + ' ' + x.status); await sleep(3000 * (t + 1)); } };
+      let sent = 0;
+      for (let s0 = 0; s0 < ok.length; s0 += 30) {
+        const part = ok.slice(s0, s0 + 30), tree = [];
+        for (let i = 0; i < part.length; i++) {
+          say(`Uploading ${s0 + i + 1} of ${ok.length}${note ? ' (skipped ' + note + ')' : ''}…`); const u8 = new Uint8Array(await part[i].arrayBuffer()); let b = ''; for (let k = 0; k < u8.length; k += 0x8000) b += String.fromCharCode.apply(null, u8.subarray(k, k + 0x8000));
+          const blob = await j(A + '/git/blobs', { method: 'POST', body: JSON.stringify({ content: btoa(b), encoding: 'base64' }) });
+          tree.push({ path: cfg.path + '/' + part[i].name.replace(/[^A-Za-z0-9._-]/g, '_'), mode: '100644', type: 'blob', sha: blob.sha }); }
+        for (let attempt = 0; attempt < 4; attempt++) {
+          try {
+            const ref = await j(A + '/git/ref/heads/main'), com = await j(A + '/git/commits/' + ref.object.sha), t = await j(A + '/git/trees', { method: 'POST', body: JSON.stringify({ base_tree: com.tree.sha, tree }) });
+            const nc = await j(A + '/git/commits', { method: 'POST', body: JSON.stringify({ message: `standings via the app: ${part.length} file(s)`, tree: t.sha, parents: [ref.object.sha] }) });
+            await j(A + '/git/refs/heads/main', { method: 'PATCH', body: JSON.stringify({ sha: nc.sha }) }); break;
+          } catch (e) { if (attempt === 3) throw new Error(`${e.message} (after ${sent} of ${ok.length} were sent; choose the files again to send the rest)`); await sleep(2000 * (attempt + 1)); } }
+        sent += part.length; await sleep(1500); }
+      return say(`Sent ${sent} file(s)${note ? ` (skipped ${note})` : ''}. FORGE is archiving and grading them now; they tick off the list within a few minutes.`);
     } catch (e) { say('Could not send: ' + e.message, true); }
   }
   // (2026-11-04) the morning list of standings worth downloading (tools/standings_todo.py; DraftKings keeps them ~10 days), owner only
