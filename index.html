@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="1d6b5aac090b"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="772348e7c27e"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -2155,6 +2155,23 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   }
   const csvCell = v => /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
   let DKFILE = null, DKONLY = null;   // DKONLY: contests chosen in the selector (null = all in the file)
+  let DKEXP = {};   // (2026-11-05, FORGE TNF) contest -> experiment rule ('cover' = weave every projected player not used in the other contests into this contest's lineups)
+  function coverSet(n, pool, usedKeys, usedNames) {   // the JAX@BAL 11/05 Dime rule, same as slates/2026-W09-JAXBAL (round robin over unused players, each in the best legal lineup that has him)
+    const P = D.players.filter(p => +p.proj > 0.3 && !/^(OUT|IR|D)$/.test(p.status || '') && pool[p.name + '|CPT'] && pool[p.name + '|FLEX']), m = P.length;
+    const pj = P.map(p => +p.proj), fs = P.map(p => pool[p.name + '|FLEX'].sal), cs = P.map(p => pool[p.name + '|CPT'].sal), tm = P.map(p => p.team);
+    const L = [], S = [];
+    for (let c = 0; c < m; c++) { const R = [...Array(m).keys()].filter(i => i !== c);
+      for (let a = 0; a < R.length; a++) for (let b = a + 1; b < R.length; b++) for (let d = b + 1; d < R.length; d++) for (let e = d + 1; e < R.length; e++) for (let f = e + 1; f < R.length; f++) {
+        const F = [R[a], R[b], R[d], R[e], R[f]]; let sal = cs[c], sc = 1.5 * pj[c]; const teams = new Set([tm[c]]);
+        for (const i of F) { sal += fs[i]; sc += pj[i]; teams.add(tm[i]); } if (sal > 50000 || teams.size < 2) continue; L.push([c, ...F]); S.push(sc); } }
+    const ord = [...L.keys()].sort((x, y) => S[y] - S[x]), key = l => P[l[0]].name + '|' + l.slice(1).map(i => P[i].name).sort().join(',');
+    const diff = (x, y) => (x[0] !== y[0]) + 5 - x.slice(1).filter(i => y.slice(1).includes(i)).length, ch = [];
+    const ok = l => !usedKeys.has(key(l)) && ch.every(y => diff(l, y) >= 3);
+    const unc = P.map((p, i) => i).filter(i => !usedNames.has(P[i].name)).sort((x, y) => pj[y] - pj[x]);
+    for (let r = 0; ch.length < n && unc.length && r < n; r++) for (const u of unc) { if (ch.length >= n) break; const j = ord.find(j => L[j].includes(u) && ok(L[j])); if (j !== undefined) ch.push(L[j]); }
+    for (const j of ord) { if (ch.length >= n) break; if (ok(L[j])) ch.push(L[j]); }
+    return { lus: ch.map(l => ({ cpt: P[l[0]].name, flex: l.slice(1).map(i => P[i].name) })), unused: unc.map(i => P[i].name) };
+  }
   $('#dkFile').addEventListener('change', async ev => { const f = ev.target.files[0]; if (!f) return; DKFILE = await f.text(); DKONLY = null; ev.target.value = ''; fillDK(DKFILE); });
   function forgeSendSet() {     // the set picked on the FORGE Lineups tab (default: the entered/FORGE Pick set), narrowed by its filter
     const keys = Object.keys(D.builds || {}); const sel = $('#buildSel') && $('#buildSel').value; const k = (sel && D.builds[sel] && D.builds[sel].length) ? sel : (keys.find(x => /^(Entered|FORGE build)/.test(x)) || keys[0]);
@@ -2256,7 +2273,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   }
   function fillDK(text) {
     const res = $('#dkResult'); let PICK = ''; const say = (html) => res.innerHTML = PICK + html;
-    res.onchange = ev => { const t = ev.target; if (t && t.dataset && t.dataset.dkc !== undefined) { const all = [...res.querySelectorAll('[data-dkc]')]; DKONLY = new Set(all.filter(x => x.checked).map(x => x.dataset.dkc)); fillDK(DKFILE); } };
+    res.onchange = ev => { const t = ev.target; if (t && t.dataset && t.dataset.dkx !== undefined) { if (t.value) DKEXP[t.dataset.dkx] = t.value; else delete DKEXP[t.dataset.dkx]; fillDK(DKFILE); return; } if (t && t.dataset && t.dataset.dkc !== undefined) { const all = [...res.querySelectorAll('[data-dkc]')]; DKONLY = new Set(all.filter(x => x.checked).map(x => x.dataset.dkc)); fillDK(DKFILE); } };
     try {
       const rows = csvParse(text.replace(/^﻿/, '')); const hdr = rows[0] || []; const isSD = hdr.includes('CPT'), isCL = hdr.includes('QB');
       if (!isSD && !isCL) return say('<div class="err">That doesn\'t look like a DraftKings entries file (no CPT or QB columns). Download it from Lineups → Edit Entries.</div>');
@@ -2270,7 +2287,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       const allEntries = rows.slice(1).filter(r => /^\d+$/.test((r[0] || '').trim()) && (r[1] || '').trim());
       const cnames = [...new Set(allEntries.map(r => r[1].trim()))], ccount = {}; allEntries.forEach(r => ccount[r[1].trim()] = (ccount[r[1].trim()] || 0) + 1);
       if (!DKONLY || !cnames.some(c => DKONLY.has(c))) DKONLY = new Set(cnames);
-      if (cnames.length > 1) PICK = `<div class="dkpick"><p class="note"><b>Which contests should this set fill?</b> Entries you leave unticked stay exactly as they are on DraftKings and are left out of the file FORGE gives back.</p>${cnames.map(c => `<label style="display:block;margin:4px 0"><input type="checkbox" data-dkc="${c.replace(/"/g, '&quot;')}" ${DKONLY.has(c) ? 'checked' : ''}> ${shortContest(c)} <span class="note">(${ccount[c]} entries)</span></label>`).join('')}</div>`;
+      if (cnames.length > 1) PICK = `<div class="dkpick"><p class="note"><b>Which contests should this set fill?</b> Entries you leave unticked stay exactly as they are on DraftKings and are left out of the file FORGE gives back.</p>${cnames.map(c => `<label style="display:block;margin:4px 0"><input type="checkbox" data-dkc="${c.replace(/"/g, '&quot;')}" ${DKONLY.has(c) ? 'checked' : ''}> ${shortContest(c)} <span class="note">(${ccount[c]} entries)</span></label>${D.slate.kind !== 'classic' && ccount[c] > 1 ? `<select data-dkx="${c.replace(/"/g, '&quot;')}" style="margin:0 0 6px 26px"><option value="">FORGE plan</option><option value="cover" ${DKEXP[c] === 'cover' ? 'selected' : ''}>Experiment: weave in players unused elsewhere</option></select>` : ''}`).join('')}</div>`;
       const entries = allEntries.filter(r => DKONLY.has(r[1].trim()));
       if (!entries.length) return say('<div class="err">No entries in this file. Join or reserve your contests first, then download the file again.</div>');
       const kind = D.slate.kind === 'classic' ? 'classic' : 'showdown';
@@ -2292,8 +2309,14 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
         const B = D.builds || {}, ek = Object.keys(B).find(k => /MIX4/.test(k) && (B[k] || []).length), uk = Object.keys(B).find(k => /PLAIN-U3/.test(k) && (B[k] || []).length);
         if (ek) { const gs = Object.values(groupBy(B[ek])).sort((a, b) => b.length - a.length), g20 = gs[0], u3 = uk ? Object.values(groupBy(B[uk])).sort((a, b) => b.length - a.length)[0] : g20;
           src.se = (gs.find(g => g.length === 1) || g20)[0]; FM = {};
-          Object.keys(perContest).filter(c => !CASHRX.test(c) && !(SERX.test(c) || perContest[c] === 1)).sort((a, b) => perContest[b] - perContest[a])
-            .forEach((c, j) => FM[c] = j === 0 ? [g20.concat(builder.mix && builder.mix.ext || []), 'FORGE Pick (20 different lineups)' + (perContest[c] > 20 ? ' + next-best groups' : '')] : [u3.slice(0, perContest[c]), `3-different #1-${Math.min(perContest[c], u3.length)} (FORGE's tested plan for smaller contests)`]); } }
+          Object.keys(perContest).filter(c => !CASHRX.test(c) && !(SERX.test(c) || perContest[c] === 1)).sort((a, b) => (!!DKEXP[a] - !!DKEXP[b]) || perContest[b] - perContest[a])
+            .forEach((c, j) => FM[c] = j === 0 ? [g20.concat(builder.mix && builder.mix.ext || []), 'FORGE Pick (20 different lineups)' + (perContest[c] > 20 ? ' + next-best groups' : '')] : null);
+          // (2026-11-05) smaller contests: FORGE's 3-different lineups not already entered in another contest (no repeats across the file)
+          const lk = l => l.cpt + '|' + [...l.flex].sort().join(','), usedK = new Set([src.se, ...Object.values(FM).filter(Boolean).flatMap(v => v[0].slice(0, perContest[Object.keys(FM).find(k => FM[k] === v)]))].map(lk));
+          Object.keys(FM).filter(c => !FM[c] && !DKEXP[c]).forEach(c => { const L = u3.filter(l => !usedK.has(lk(l))).slice(0, perContest[c]); L.forEach(l => usedK.add(lk(l))); FM[c] = [L, `3-different lineups not used in your other contests (#1-${L.length})`]; });
+          const usedN = new Set(); Object.values(FM).filter(Boolean).forEach(v => v[0].forEach(l => [l.cpt, ...l.flex].forEach(n => usedN.add(n)))); [src.se.cpt, ...src.se.flex].forEach(n => usedN.add(n));
+          Object.keys(FM).filter(c => !FM[c] && DKEXP[c] === 'cover').forEach(c => { const r = coverSet(perContest[c], pool, usedK, usedN); r.lus.forEach(l => usedK.add(lk(l)));
+            FM[c] = [r.lus, `EXPERIMENT (untested): ${r.unused.length ? 'unused players woven in: ' + r.unused.join(', ') : 'no unused players, projection order'}; core kept, 3+ different, no repeats`]; }); } }
       // (2026-10-21 Round 41) single entry gets lineup #1, which also stays in the multi-entry contests (the tested plan)
       let gp = 0; const used = {}, out = [], errs = [], plan = {}, skipped = [], expo = [], twice = false;
       const status = {}; D.players.forEach(p => status[p.name] = p.status || '');
