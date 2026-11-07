@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="ec823166b1ad"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="0fdeab59abdd"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -519,6 +519,7 @@ footer { margin-top: 36px; color: var(--ink-3); font-size: 12px; line-height: 18
 footer .ico { color: var(--ink-3); }
 
 /* show / hide by sport, game type and owner (behaviour; keep) */
+body.ms .tabs, body.ms #slatePicker, body.ms .plate, body.ms .panel { display: none !important; } body:not(.ms) #msBox { display: none !important; }
 body.nba .cl-only, body.nba .sd-only, body.nba .nfl-only, body.nba #rpBanner, body:not(.nba) .nba-only { display: none !important; }
 body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 body.nbasd .clonly, body:not(.nbasd) .sdonly, body:not(.nbasd) .sdcol { display: none; }
@@ -590,7 +591,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
 <div class="top">
   <header class="appbar">
     <button type="button" class="brand" data-go="slate" aria-label="FORGE: slate brief"><svg class="ico" aria-hidden="true"><use href="#i-anvil"/></svg><span class="wordmark">Forge</span></button>
-    <nav class="sports" id="sportPicker" aria-label="Sport"><button type="button" data-sport="NBA" aria-pressed="false">NBA</button><button type="button" data-sport="NFL" aria-pressed="true">NFL</button></nav>
+    <nav class="sports" id="sportPicker" aria-label="Sport"><button type="button" data-sport="NBA" aria-pressed="false">NBA</button><button type="button" data-sport="NFL" aria-pressed="true">NFL</button><button type="button" data-sport="NHL" aria-pressed="false">NHL</button><button type="button" data-sport="CFB" aria-pressed="false">CFB</button><button type="button" data-sport="CBB" aria-pressed="false">CBB</button></nav>
     <span class="spacer"></span>
     <span class="stamp" id="stamp"></span>
     <span id="statusPill" class="pill"><span class="dot"></span><span id="statusText">Loading</span></span>
@@ -609,6 +610,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
   </nav>
 </div>
 <div class="wrap">
+  <section id="msBox" aria-label="More sports"><div id="msPick" class="toolbar"></div><div id="msHead"></div><div id="msBody"><p class="note">Loading…</p></div></section>
   <div class="newver" id="newVer" hidden>A newer version of FORGE is ready. <button type="button" class="btn small primary" id="newVerBtn">Refresh now</button></div>
   <nav id="slatePicker" aria-label="Slates" hidden></nav>
   <section class="plate" aria-label="Slate">
@@ -1068,7 +1070,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   let SPORT = LS.get('forge_sport') || 'NFL';   // 2026-10-21 (FORGE): NFL / NBA tabs up top
   const sportOf = x => (x && x.kind && String(x.kind).startsWith('nba')) ? 'NBA' : 'NFL';
   function renderSports() { $$('#sportPicker button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sport === SPORT))); }
-  $$('#sportPicker button').forEach(b => b.onclick = () => { if (SPORT === b.dataset.sport) return; SPORT = b.dataset.sport; LS.set('forge_sport', SPORT); renderSports();
+  $$('#sportPicker button').forEach(b => b.onclick = () => { if (MS_SPORTS.includes(b.dataset.sport)) { SPORT = b.dataset.sport; LS.set('forge_sport', SPORT); renderSports(); msShow(SPORT); return; } document.body.classList.remove('ms'); if (SPORT === b.dataset.sport) return; SPORT = b.dataset.sport; LS.set('forge_sport', SPORT); renderSports();
     const d = defaultSlate(); if (d && sportOf(d) === SPORT) loadSlate(d.id); else { renderPicker(); document.body.classList.toggle('nba', SPORT === 'NBA'); if (SPORT === 'NBA') { $('#propCards').innerHTML = ''; $('#nbaLeaders').innerHTML = '<p class="note">No NBA slate published yet.</p>'; $('#nbaCount').textContent = 'No NBA slate published yet.'; } } });
   function active(x) { if (x.status === 'complete') return false; return Date.now() < new Date(x.kickoff_utc).getTime() + (x.kind === 'classic' || String(x.kind).includes('tiers') || x.kind === 'nba_classic' ? 12 : 4.5) * 3600e3; }   // live window: Showdown 4.5 h after kickoff, Classic main slate 12 h
   function defaultSlate() { const k = x => new Date(x.kickoff_utc).getTime(), S = IDX.filter(x => sportOf(x) === SPORT).sort((a, b) => k(a) - k(b)), soon = S.filter(x => active(x) && k(x) > Date.now()), up = S.filter(active);   // next slate that has not locked yet, then a live one
@@ -1083,8 +1085,51 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     IDX = (await getJSON('index')).slates || []; if (!IDX.length) throw new Error('no slates published');
     const want = LS.get('forge_slate'), w = IDX.find(x => x.id === want), dflt = defaultSlate();
     if (w && active(w)) { SPORT = sportOf(w); LS.set('forge_sport', SPORT); } renderSports();
+    if (MS_SPORTS.includes(LS.get('forge_sport'))) { SPORT = LS.get('forge_sport'); renderSports(); msShow(SPORT); }
     await loadSlate((w && active(w)) ? w.id : defaultSlate().id);
     pickupShared(); loadOverlays(); setTimeout(flushInbox, 3000); setInterval(() => { if (!document.hidden) loadOverlays(); }, 5 * 60e3);
+  }
+
+  // ---------------------------------------------------------------- (2026-11-06, FORGE: "add it all") NHL / college football / college basketball: FORGE v0
+  // tools/multisport.py -> site/data/<SPORT>-<date>-<CL|SD|TI>-<dg>.json + site/slates_multi.json (published as data/multi.enc.json; lineups owner-only)
+  const MS_SPORTS = ['NHL', 'CFB', 'CBB']; let MSI = null, MSD = null;
+  async function msShow(sp) {
+    document.body.classList.add('ms'); $('#msHead').innerHTML = ''; $('#msBody').innerHTML = '<p class="note">Loading…</p>';
+    try { if (!MSI) MSI = await getJSON('multi'); } catch (e) { $('#msPick').innerHTML = ''; $('#msBody').innerHTML = '<p class="note">No ' + sp + ' slates published yet.</p>'; return; }
+    const L = (MSI.slates || []).filter(x => x.sport === sp && (!x.kickoff_utc || Date.now() < new Date(x.kickoff_utc).getTime() + 5 * 3600e3));
+    if (!L.length) { $('#msPick').innerHTML = ''; $('#msBody').innerHTML = '<p class="note">No upcoming ' + sp + ' slates on DraftKings right now (checked every 2 hours).</p>'; return; }
+    const tm = s => s ? new Date(s).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : '';
+    $('#msPick').innerHTML = L.map(x => `<button type="button" class="btn small" data-ms="${x.id}">${esc(x.label)} <small class="dim">${tm(x.kickoff_utc)} · ${x.projected}/${x.players} projected</small></button>`).join(' ');
+    $$('#msPick [data-ms]').forEach(b => b.onclick = () => msLoad(b.dataset.ms));
+    msLoad((L.find(x => x.lineups) || L[0]).id);
+  }
+  async function msLoad(id) {
+    $$('#msPick [data-ms]').forEach(b => b.classList.toggle('primary', b.dataset.ms === id));
+    try { MSD = await getJSON(id); const ob = await ownerBuilds(id); MSD.builds = ob || MSD.builds || {}; MSD.owner = !!ob; } catch (e) { $('#msBody').innerHTML = '<p class="note">Could not load this slate.</p>'; return; }
+    const S = MSD.slate, P = MSD.players || [], pr = P.filter(p => p.proj != null).sort((a, b) => b.proj - a.proj), L = (MSD.builds || {})['FORGE v0'] || [];
+    $('#msHead').innerHTML = `<h2 class="subh">${esc(S.sport)} · ${esc(S.label)}</h2><p class="note"><b>Untested v0.</b> ${esc(S.model)} Data ${esc(S.built_utc)}.</p>`;
+    const seen = new Set(), rows = pr.filter(p => { const k = p.name + '|' + p.team; if (seen.has(k)) return false; seen.add(k); return true; });
+    const tbl = `<details open><summary><b>FORGE projections</b> <small class="dim">${rows.length} players with a market line · players without one are not projected</small></summary><div class="tbl-wrap"><table><thead><tr><th>Player</th><th>Team</th><th>Pos</th><th class="n">Salary</th><th class="n">Proj</th><th>From</th></tr></thead><tbody>${rows.slice(0, 120).map(p => `<tr><td>${esc(p.name)}</td><td>${esc(p.team)}</td><td>${esc(p.roster)}</td><td class="n">${p.sal ? '$' + p.sal : ''}</td><td class="n">${p.proj.toFixed(1)}</td><td><small class="dim">${esc(p.source)}${p.why ? ' · ' + esc(p.why) : ''}</small></td></tr>`).join('')}</tbody></table></div></details>`;
+    const lus = !L.length ? '<p class="note">No FORGE lineups for this slate: too few players with market lines yet (lines post closer to the games).</p>'
+      : MSD.owner ? `<details open><summary><b>FORGE lineups</b> <small class="dim">${L.length}, best first, each 2+ players different</small></summary>${L.slice(0, 20).map((l, i) => `<p class="note"><b>#${i + 1}</b> ${l.map(x => `<span class="dim">${esc(x.slot)}</span> ${esc(x.name)}`).join(' · ')} <small class="dim">${l.reduce((t, x) => t + (x.proj || 0) * (x.slot === 'CPT' ? 1.5 : 1), 0).toFixed(1)} pts</small></p>`).join('')}</details>`
+      : '<p class="note">FORGE built lineups for this slate (owner only).</p>';
+    const dk = `<div class="toolbar" style="margin-top:10px"><label class="btn primary filebtn"><input type="file" id="msDkFile">Fill my DKEntries file with FORGE's lineups</label><span class="status" id="msDkStatus"></span></div><div id="msDkOut"></div><p class="note">Biggest contest gets lineups #1-n, every smaller contest FORGE's top lineups again, single entry and Double Ups / 50-50s #1. Checked against DraftKings' own player IDs in your file.</p>`;
+    $('#msBody').innerHTML = tbl + lus + (L.length ? dk : '');
+    const f = $('#msDkFile'); if (f) f.onchange = async () => { const t = await f.files[0].text(); msFill(t, L); f.value = ''; };
+  }
+  function msFill(text, L) {
+    const rows = csvParse(text), out = $('#msDkOut'), say = (m, bad) => out.innerHTML = `<div class="${bad ? 'err' : 'ok'}">${m}</div>`;
+    const hdr = rows[0] || [], ids = new Set(); rows.forEach(r => r.forEach(c => { const m = /\((\d{6,})\)\s*$/.exec(c || ''); if (m) ids.add(m[1]); }));
+    rows.forEach(r => { const k = r.indexOf('ID'); }); const pr = rows.findIndex(r => r.includes('Name + ID')); if (pr >= 0) { const c = rows[pr].indexOf('ID'); rows.slice(pr + 1).forEach(r => { if (r[c]) ids.add(String(r[c]).trim()); }); }
+    const ent = rows.slice(1).filter(r => /^\d+$/.test((r[0] || '').trim()));
+    if (!ent.length) return say('No entries found in that file.', true);
+    const nSlots = L[0].length, per = {}; ent.forEach(r => per[r[1]] = (per[r[1]] || 0) + 1); const k = {}, res = [hdr.slice(0, 4 + nSlots).map(csvCell).join(',')], miss = [];
+    for (const r of ent) { const c = r[1]; k[c] = k[c] || 0; const cash = /double up|50\/50|50-50|head ?to ?head|h2h/i.test(c); const lu = (per[c] === 1 || cash) ? L[0] : L[k[c]++ % L.length];
+      const bad = lu.filter(x => !ids.has(String(x.id))); if (bad.length) { miss.push(...bad.map(x => x.name)); continue; }
+      res.push([...r.slice(0, 4), ...lu.map(x => `${x.name} (${x.id})`)].map(csvCell).join(',')); }
+    if (miss.length) return say('Not filled: these FORGE players are not in your file (different slate?): ' + esc([...new Set(miss)].slice(0, 6).join(', ')), true);
+    const url = URL.createObjectURL(new Blob([res.join('\n') + '\n'], { type: 'text/csv' }));
+    out.innerHTML = `<div class="ok">✓ ${res.length - 1} entries filled and checked against DraftKings' player IDs in your file.</div><div class="toolbar"><a class="btn primary" href="${url}" download="DKEntries_FORGE_${esc(MSD.slate.id)}.csv">Download filled file</a></div>`;
   }
   // overlay alert: guaranteed contests running under their prize pool (tools/overlay_scan.py, every 10 min before NFL locks). FORGE never enters contests.
   async function loadOverlays() {
