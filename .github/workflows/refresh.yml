@@ -1,0 +1,63 @@
+name: refresh
+# (2026-11-13) Builds the night's slates and publishes the site's encrypted data. Runs here because this repo is public (free minutes); the
+# private repo's own jobs are blocked by GitHub billing. The private code is checked out at run time with FORGE_DISPATCH_TOKEN (read access);
+# every step's output goes to /dev/null and the log shows counts only. Start one now: commit .github/refresh_now.
+on:
+  schedule:
+    - cron: "17 13-23 * * *"
+    - cron: "17 0-4 * * *"
+    - cron: "47 21-23 * * *"
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths: [".github/refresh_now"]
+concurrency: { group: refresh, cancel-in-progress: false }
+permissions: { contents: write }
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: { path: lab }
+      - name: private code + public captures
+        env: { TOKEN: "${{ secrets.FORGE_DISPATCH_TOKEN }}" }
+        run: |
+          D=$(TZ=America/New_York date +%F)
+          git clone -q --depth 1 --filter=blob:none --no-checkout "https://x-access-token:${TOKEN}@github.com/ForgeDFS/forge-os.git" fos > /dev/null 2>&1 || { echo "private checkout failed"; exit 1; }
+          cd fos && git sparse-checkout init --no-cone > /dev/null 2>&1
+          printf '%s\n' '/tools/' '/forge_v4/*.py' '/forge_v4/research/*.py' '/forge_v4/data/registry/' '/site/' '/knowledge/' '/nba/' '/nflv/auto/' '/FORGE_history/' \
+            '/dk/nba/draftgroups.csv' '/dk/nba/contests.csv' '/dk/contests.csv' '/dk/draftgroups.csv' '/requests/' "/odds_free/nba/$D/" > .git/info/sparse-checkout
+          git checkout -q main > /dev/null 2>&1; cd ..
+          git clone -q --depth 1 --filter=blob:none --sparse https://github.com/ForgeDFS/forge-hist fh > /dev/null 2>&1 && git -C fh sparse-checkout set data/live > /dev/null 2>&1
+          H=fh/data/live; mkdir -p fos/dk/nba/salaries/2026 fos/dk/nba/payouts "fos/odds_free/nba/$D"
+          cp -r $H/dk/nba/salaries/2026/. fos/dk/nba/salaries/2026/; cp $H/dk/nba/draftgroups.csv $H/dk/nba/contests.csv fos/dk/nba/
+          cp -r $H/dk/nba/payouts/. fos/dk/nba/payouts/ 2>/dev/null || true; cp $H/odds_free/nba/$D/* "fos/odds_free/nba/$D/" 2>/dev/null || true
+          echo "snapshots today: $(ls fos/odds_free/nba/$D | wc -l)"
+      - run: pip install -q pandas pyarrow requests numpy scipy statsmodels cryptography ijson tabulate scikit-learn > /dev/null 2>&1
+      - name: fresh capture (DK lobby + salaries, props, injuries)
+        continue-on-error: true
+        working-directory: fos
+        run: |
+          timeout 240 python tools/nba_logs.py "$(date -u -d '1 day ago' +%Y%m%d)" > /dev/null 2>&1 || true
+          SPORT=NBA timeout 300 python tools/dk_capture.py > /dev/null 2>&1 || true
+          timeout 300 python tools/nba_props.py > /dev/null 2>&1 || true
+          echo "snapshots now: $(ls odds_free/nba/$(TZ=America/New_York date +%F) | wc -l)"
+      - name: build slates
+        continue-on-error: true
+        working-directory: fos
+        run: |
+          timeout 600 python tools/nba_slates.py > /tmp/ns.log 2>&1 || true; echo "NBA slates exported: $(grep -c '^exported' /tmp/ns.log)"
+          timeout 120 python tools/nba_status.py > /dev/null 2>&1 || true
+          timeout 300 python tools/tiers_export.py > /dev/null 2>&1 || true
+          timeout 300 python tools/multisport.py ../fh > /dev/null 2>&1 || true; echo "multisport done"
+      - name: publish
+        working-directory: fos
+        run: |
+          timeout 300 python tools/site_publish.py ../lab > /dev/null 2>&1 || { echo "publish failed"; exit 1; }
+          cd ../lab && git config user.name "Claude" && git config user.email "noreply@anthropic.com"
+          git add -A data index.html version.json sw.js 2>/dev/null || git add -A
+          git diff --cached --quiet && { echo "no change"; exit 0; }
+          git commit -qm "refresh $(date -u +%Y-%m-%dT%H:%MZ)"
+          for i in 1 2 3; do git pull -q --rebase --autostash -X theirs origin main > /dev/null 2>&1 && git push -q origin HEAD:main > /dev/null 2>&1 && { echo "published"; exit 0; }; sleep 7; done
+          echo "push failed"; exit 1
