@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="8cbee8f41d1b"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="a95267131c64"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -3088,8 +3088,11 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const T = D.slate.tiers || [...new Set(D.players.map(p => p.pos))].sort((a, b) => +a.slice(1) - +b.slice(1));
     const by = T.map(t => { const L = D.players.map((p, i) => ({ ...p, i, q: QJ(p) })).filter(p => p.pos === t && p.proj != null && !NB.out.has(p.name) && !NBOUT(p)).sort((a, b) => b.q - a.q), lk = L.filter(p => NB.lock.has(p.name)); return lk.length ? lk : L; });
     const empty = T.filter((t, j) => !by[j].length); if (empty.length) { st.className = 'status err'; st.textContent = `No playable player in ${empty.join(', ')} (all OUT or without a projection).`; return; }
-    let combos = [[]]; for (const L of by) { const nx = []; for (const c of combos) for (const p of L) nx.push([...c, p]); combos = nx; if (combos.length > 2e6) break; }
-    combos = combos.map(c => ({ lu: c, s: c.reduce((t, p) => t + p.q, 0) })).sort((a, b) => b.s - a.s);
+    // (2026-11-15, D-2026-11-15-tiers-stack4) NBA Tiers: + 4 points per same-game pair, top 8 per tier (TIERS-STACK-1); NFL Tiers unchanged
+    const SB = String(D.slate.id || '').startsWith('NBA') ? 4 : 0; const byB = SB ? by.map(L => L.slice(0, 8)) : by;
+    const pairs = c => { const g = {}; c.forEach(p => { if (p.game) g[p.game] = (g[p.game] || 0) + 1; }); return Object.values(g).reduce((t, k) => t + k * (k - 1) / 2, 0); };
+    let combos = [[]]; for (const L of byB) { const nx = []; for (const c of combos) for (const p of L) nx.push([...c, p]); combos = nx; if (combos.length > 2e6) break; }
+    combos = combos.map(c => ({ lu: c, s: c.reduce((t, p) => t + p.q, 0) + SB * pairs(c) })).sort((a, b) => b.s - a.s);
     const chosen = [], cnt = {}, nT = T.length;
     for (const c of combos) {
       if (chosen.length >= N) break;
