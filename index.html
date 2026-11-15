@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="0fdeab59abdd"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="8cbee8f41d1b"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -603,6 +603,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     <button class="tab" role="tab" id="tab-props" aria-selected="false" data-p="props">Props</button>
     <button class="tab" role="tab" id="tab-builder" aria-selected="false" data-p="builder">Build</button>
     <button class="tab" role="tab" id="tab-sims" aria-selected="false" data-p="sims">Sims</button>
+    <button class="tab" role="tab" id="tab-hub" aria-selected="false" data-p="hub">Hub</button>
     <button class="tab" role="tab" id="tab-dk" aria-selected="false" data-p="dk">Entries</button>
     <button class="tab" role="tab" id="tab-recap" aria-selected="false" data-p="recap">Last night</button>
     <button class="tab" role="tab" id="tab-real" aria-selected="false" data-p="real">Real results</button>
@@ -896,6 +897,14 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
 
 
   <dialog id="pDlg" class="pdlg" aria-label="Player"><div id="pDlgBody"></div><div class="toolbar"><button type="button" class="btn small" id="pDlgClose">Close</button></div></dialog>
+  <section class="panel" id="p-hub" hidden>
+    <details class="about"><summary>About the Hub</summary><p class="lede" id="hubNote"></p><p class="note" id="hubTested"></p></details>
+    <div class="toolbar"><input type="search" id="hubSearch" placeholder="Search players" aria-label="Search players"><select id="hubPos" aria-label="Position"></select><span class="note" id="hubBuilt"></span></div>
+    <div class="tbl-wrap"><table id="hubTable"><thead><tr><th data-k="name">Player</th><th data-k="pos">Pos</th><th data-k="team">Team</th><th class="n" data-k="sal">Salary</th><th class="n" data-k="proj">Proj</th><th class="n" data-k="p25" title="1 in 4 simulated games below this">Floor</th><th class="n" data-k="p75">p75</th><th class="n" data-k="p90" title="1 in 10 simulated games above this">Ceiling</th><th class="n" data-k="boom_pct">Boom %</th><th class="n" data-k="bust_pct">Bust %</th><th class="n" data-k="optimal_pct" title="Share of simulated games where he is in the best possible lineup">Optimal %</th><th class="n" data-k="own_fc">Own %</th><th class="n" data-k="leverage" title="Optimal % minus forecast ownership. Information only: it did not predict real results">Leverage</th></tr></thead><tbody></tbody></table></div>
+    <h3>Top stacks in the simulated best lineups</h3>
+    <div class="tbl-wrap"><table id="hubStacks"><thead><tr><th>Stack</th><th class="n">Optimal %</th><th class="n hubnfl">With bring-back %</th><th class="n hubnfl">Field own (product)</th></tr></thead><tbody></tbody></table></div>
+    <p class="note" id="hubEmpty" hidden>No Hub data for this slate yet: it is added after FORGE's simulation runs for the slate.</p>
+  </section>
   <section class="panel" id="p-sims" hidden>
     <div class="nba-only" id="nbaSimsBox">
       <p class="lede">Play your NBA lineups in FORGE's NBA simulation: 1,000 simulated nights from FORGE's NBA simulator (it passed its calibration test on the archived nights), the same players and projections as the Build tab.</p>
@@ -1009,7 +1018,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     document.body.dataset.tab = p;   // the slate picker shows on the Slate tab only; elsewhere the header carries a Change slate button   // 2026-10-28 redesign: overlay alerts live on the Slate brief
     $$('.tab[data-p]').forEach(t => t.setAttribute('aria-selected', String(t.dataset.p === p || (t.dataset.grp || '').split(' ').includes(p))));
     $$('.panel').forEach(x => x.hidden = x.id !== 'p-' + p); $$('.subnav button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.go === p)));
-    LS.set('forge_tab', p); if (p === 'past' && typeof renderPast === 'function') renderPast(); if (p === 'recap' && typeof renderMorning === 'function') renderMorning(); if (p === 'real' && typeof renderReal === 'function') renderReal(); if (p === 'sims' && typeof simsReady === 'function') simsReady();
+    LS.set('forge_tab', p); if (p === 'past' && typeof renderPast === 'function') renderPast(); if (p === 'recap' && typeof renderMorning === 'function') renderMorning(); if (p === 'real' && typeof renderReal === 'function') renderReal(); if (p === 'sims' && typeof simsReady === 'function') simsReady(); if (p === 'hub') renderHub();
     if (p === 'record' && typeof renderRecord === 'function') { try { Promise.resolve(renderRecord()).catch(e => console.error(e)); } catch (e) { console.error(e); } }   // (2026-11-04) Results filled on open for NBA too (it was only rendered when an NFL slate loaded -> 'Loading…' forever on NBA)
   }
   const toTop = () => { if (window.scrollY > 200) window.scrollTo({ top: 0, behavior: 'smooth' }); };
@@ -1050,6 +1059,24 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
         : `Final update for the ${t(next)} tip: not yet — usually done ${t(next - (win[0] - 8) * 6e4)}–${t(next - (win[1]) * 6e4)} (later only if GitHub starts it late). Build again after it shows ✓.`;
     } catch (e) { }
   }
+
+  // (2026-11-15) Hub tab: FORGE's Data Hub (projection, floor/ceiling, boom/bust, optimal %, ownership, leverage, top stacks) for NFL + NBA Classic
+  let HUBD = null, hubKey = 'optimal_pct', hubDir = -1;
+  function renderHub() {
+    const h = HUBD && HUBD.hub, tb = document.querySelector('#hubTable tbody'), sb = document.querySelector('#hubStacks tbody');
+    document.getElementById('hubEmpty').hidden = !!h; if (!h) { tb.innerHTML = ''; sb.innerHTML = ''; return; }
+    document.getElementById('hubNote').textContent = h.note || ''; document.getElementById('hubTested').textContent = h.tested || ''; document.getElementById('hubBuilt').textContent = 'Built ' + (h.built || '');
+    const ps = document.getElementById('hubPos'); if (!ps.dataset.ok) { ps.dataset.ok = 1; ps.onchange = renderHub; document.getElementById('hubSearch').oninput = renderHub;
+      document.querySelectorAll('#hubTable th[data-k]').forEach(th => th.onclick = () => { const k = th.dataset.k; hubDir = (hubKey === k) ? -hubDir : -1; hubKey = k; renderHub(); }); }
+    const pos = [...new Set(h.players.map(p => String(p.pos || '').split('/')[0]))].filter(Boolean).sort(); const cur = ps.value;
+    ps.innerHTML = '<option value="">All positions</option>' + pos.map(p => `<option${p === cur ? ' selected' : ''}>${p}</option>`).join('');
+    const q = document.getElementById('hubSearch').value.toLowerCase(), f = v => v == null ? '' : (typeof v === 'number' ? (Math.abs(v) >= 1000 ? '$' + v.toLocaleString() : v.toFixed(1)) : esc(v));
+    const L = h.players.filter(p => (!ps.value || String(p.pos || '').split('/').includes(ps.value)) && (!q || String(p.name).toLowerCase().includes(q)))
+      .sort((a, b) => { const x = a[hubKey], y = b[hubKey]; return (typeof x === 'number' && typeof y === 'number') ? hubDir * (x - y) : hubDir * String(x).localeCompare(String(y)); });
+    tb.innerHTML = L.slice(0, 300).map(p => `<tr><td>${esc(p.name)}</td><td>${esc(p.pos || '')}</td><td>${esc(p.team || '')}</td>` + ['sal', 'proj', 'p25', 'p75', 'p90', 'boom_pct', 'bust_pct', 'optimal_pct', 'own_fc', 'leverage'].map(k => `<td class="n">${f(p[k])}</td>`).join('') + '</tr>').join('');
+    const nfl = String(CUR || '').startsWith('NFL'); document.querySelectorAll('.hubnfl').forEach(x => x.hidden = !nfl);
+    sb.innerHTML = (h.stacks || []).map(s => `<tr><td>${esc(s.label)}</td><td class="n">${s.optimal_pct.toFixed(2)}</td>` + (nfl ? `<td class="n">${(s.bringback_pct ?? 0).toFixed(1)}</td><td class="n">${(s.own ?? 0).toFixed(2)}</td>` : '') + '</tr>').join('');
+  }
   async function getJSON(name) {
     const r = await fetch('data/' + name + (ENC ? '.enc.json' : '.json'), { cache: 'no-cache' }); if (!r.ok) throw new Error(r.status);
     return ENC ? dec(await r.json()) : r.json();
@@ -1077,7 +1104,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     return (soon[0] || up[up.length - 1] || S[S.length - 1] || IDX[IDX.length - 1]); }
   async function loadSlate(id) {
     CUR = id; renderPicker(); $('#statusText').textContent = 'Loading';
-    try { const d = await getJSON(id); const ob = await ownerBuilds(id); if (ob) { d.builds = ob; d.owner = true; } else d.builds = d.builds || {};
+    try { const d = await getJSON(id); HUBD = d; const ob = await ownerBuilds(id); if (ob) { d.builds = ob; d.owner = true; } else d.builds = d.builds || {};
       document.body.classList.toggle('owner', !!ob); init(d, IDX.find(x => x.id === id)); LS.set('forge_slate', id); renderOwnerLink(); document.body.dataset.slate = id;
       try { renderBrief(); renderPropCards(); simsReady(); renderMorning(); } catch (e) { console.error(e); } } catch (e) { fail(e); }
   }
