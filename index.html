@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="d35ac00346fd"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="31ccb5535aac"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -903,6 +903,15 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     <div class="tbl-wrap"><table id="hubTable"><thead><tr><th data-k="name">Player</th><th data-k="pos">Pos</th><th data-k="team">Team</th><th class="n" data-k="sal">Salary</th><th class="n" data-k="proj">Proj</th><th class="n" data-k="p25" title="1 in 4 simulated games below this">Floor</th><th class="n" data-k="p75">p75</th><th class="n" data-k="p90" title="1 in 10 simulated games above this">Ceiling</th><th class="n" data-k="boom_pct">Boom %</th><th class="n" data-k="bust_pct">Bust %</th><th class="n" data-k="optimal_pct" title="Share of simulated games where he is in the best possible lineup">Optimal %</th><th class="n" data-k="own_fc">Own %</th><th class="n" data-k="leverage" title="Optimal % minus forecast ownership. Information only: it did not predict real results">Leverage</th></tr></thead><tbody></tbody></table></div>
     <h3>Top stacks in the simulated best lineups</h3>
     <div class="tbl-wrap"><table id="hubStacks"><thead><tr><th>Stack</th><th class="n">Optimal %</th><th class="n hubnfl">With bring-back %</th><th class="n hubnfl">Field own (product)</th></tr></thead><tbody></tbody></table></div>
+    <h3 class="subh">Ask FORGE</h3>
+    <p class="note">How often does it happen in FORGE's simulations? Pick up to two players and a points line; add an "if" to see the game script.</p>
+    <div class="askrow" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+      <select id="askP1"></select><select id="askO1"><option>&gt;=</option><option>&lt;=</option></select><input id="askV1" type="number" value="30" style="width:70px">
+      <span>and</span><select id="askP2"><option value="">(nobody)</option></select><select id="askO2"><option>&gt;=</option><option>&lt;=</option></select><input id="askV2" type="number" value="20" style="width:70px">
+      <span>if</span><select id="askP3"><option value="">(no condition)</option></select><select id="askO3"><option>&gt;=</option><option>&lt;=</option></select><input id="askV3" type="number" value="30" style="width:70px">
+      <button type="button" id="askGo">Ask</button>
+    </div>
+    <p id="askOut" class="lede"></p>
     <p class="note" id="hubEmpty" hidden>No Hub data for this slate yet: it is added after FORGE's simulation runs for the slate.</p>
   </section>
   <section class="panel" id="p-sims" hidden>
@@ -1075,6 +1084,16 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       .sort((a, b) => { const x = a[hubKey], y = b[hubKey]; return (typeof x === 'number' && typeof y === 'number') ? hubDir * (x - y) : hubDir * String(x).localeCompare(String(y)); });
     tb.innerHTML = L.slice(0, 300).map(p => `<tr><td>${esc(p.name)}</td><td>${esc(p.pos || '')}</td><td>${esc(p.team || '')}</td>` + ['sal', 'proj', 'p25', 'p75', 'p90', 'boom_pct', 'bust_pct', 'optimal_pct', 'own_fc', 'leverage'].map(k => `<td class="n">${f(p[k])}</td>`).join('') + '</tr>').join('');
     const nfl = String(CUR || '').startsWith('NFL'); document.querySelectorAll('.hubnfl').forEach(x => x.hidden = !nfl);
+    // (2026-11-15) Ask FORGE: probability over the slate's simulated worlds (500 shown on the site)
+    const W = h.worlds, a1 = document.getElementById('askP1');
+    if (W && a1.dataset.sid !== String(CUR)) { a1.dataset.sid = String(CUR); const o = W.names.map((n, i) => `<option value="${i}">${esc(n)}</option>`).join('');
+      a1.innerHTML = o; document.getElementById('askP2').innerHTML = '<option value="">(nobody)</option>' + o; document.getElementById('askP3').innerHTML = '<option value="">(no condition)</option>' + o;
+      document.getElementById('askGo').onclick = () => { const g = id => document.getElementById(id).value, cond = (p, op, v) => p === '' ? null : r => (op === '>=' ? r[+p] >= 10 * +v : r[+p] <= 10 * +v);
+        const c1 = cond(g('askP1'), g('askO1'), g('askV1')), c2 = cond(g('askP2'), g('askO2'), g('askV2')), c3 = cond(g('askP3'), g('askO3'), g('askV3'));
+        const R = c3 ? W.X.filter(c3) : W.X, hit = R.filter(r => c1(r) && (!c2 || c2(r))).length, p = R.length ? hit / R.length : NaN;
+        const odds = q => !(q > 0 && q < 1) ? 'n/a' : (q < .5 ? '+' + Math.round(100 * (1 - q) / q) : '-' + Math.round(100 * q / (1 - q)));
+        document.getElementById('askOut').textContent = R.length ? `${(100 * p).toFixed(1)}% of ${R.length} simulated worlds` + (c3 ? ` where the "if" happens (${(100 * R.length / W.X.length).toFixed(0)}% of all)` : '') + ` · fair odds ${odds(p)}` : 'The "if" never happens in these worlds.'; }; }
+    if (!W) document.getElementById('askOut').textContent = 'Ask FORGE needs this slate\'s simulated worlds (built with the Hub).';
     sb.innerHTML = (h.stacks || []).map(s => `<tr><td>${esc(s.label)}</td><td class="n">${s.optimal_pct.toFixed(2)}</td>` + (nfl ? `<td class="n">${(s.bringback_pct ?? 0).toFixed(1)}</td><td class="n">${(s.own ?? 0).toFixed(2)}</td>` : '') + '</tr>').join('');
   }
   async function getJSON(name) {
