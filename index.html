@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="b42e36baca02"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="d35ac00346fd"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -3093,7 +3093,11 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const pairs = c => { const g = {}; c.forEach(p => { if (p.team) g[p.team] = (g[p.team] || 0) + 1; });   // teammates only (D-2026-11-15-tiers-team4)
       return Object.values(g).reduce((t, k) => t + k * (k - 1) / 2, 0); };
     let combos = [[]]; for (const L of byB) { const nx = []; for (const c of combos) for (const p of L) nx.push([...c, p]); combos = nx; if (combos.length > 2e6) break; }
-    combos = combos.map(c => ({ lu: c, s: c.reduce((t, p) => t + p.q, 0) + SB * pairs(c) })).sort((a, b) => b.s - a.s);
+    // (2026-11-15, TIERS-DUPE-2) NBA: minus 2 pts per log expected duplicate (field softmax own per tier, beta .163; DUPE-1 model)
+    const DL = String(D.slate.id || '').startsWith('NBA') ? 2 : 0, OWN = {};
+    if (DL) byB.forEach(L => { const mx = Math.max(...L.map(p => p.q)), z = L.map(p => Math.exp(0.163 * (p.q - mx))), S = z.reduce((a, b) => a + b, 0); L.forEach((p, i) => OWN[p.i] = z[i] / S); });
+    const dup = c => DL ? Math.max(0.8066 + 0.07539 * c.reduce((t, p) => t + Math.log(Math.max(OWN[p.i] || 1e-3, 1e-3)), 0) + 0.01382 * Math.log(1426), 0) : 0;
+    combos = combos.map(c => ({ lu: c, s: c.reduce((t, p) => t + p.q, 0) + SB * pairs(c) - DL * dup(c) })).sort((a, b) => b.s - a.s);
     const chosen = [], cnt = {}, nT = T.length;
     for (const c of combos) {
       if (chosen.length >= N) break;
