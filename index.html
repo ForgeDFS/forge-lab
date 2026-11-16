@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="31ccb5535aac"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="55a391f40fb7"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -903,6 +903,10 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     <div class="tbl-wrap"><table id="hubTable"><thead><tr><th data-k="name">Player</th><th data-k="pos">Pos</th><th data-k="team">Team</th><th class="n" data-k="sal">Salary</th><th class="n" data-k="proj">Proj</th><th class="n" data-k="p25" title="1 in 4 simulated games below this">Floor</th><th class="n" data-k="p75">p75</th><th class="n" data-k="p90" title="1 in 10 simulated games above this">Ceiling</th><th class="n" data-k="boom_pct">Boom %</th><th class="n" data-k="bust_pct">Bust %</th><th class="n" data-k="optimal_pct" title="Share of simulated games where he is in the best possible lineup">Optimal %</th><th class="n" data-k="own_fc">Own %</th><th class="n" data-k="leverage" title="Optimal % minus forecast ownership. Information only: it did not predict real results">Leverage</th></tr></thead><tbody></tbody></table></div>
     <h3>Top stacks in the simulated best lineups</h3>
     <div class="tbl-wrap"><table id="hubStacks"><thead><tr><th>Stack</th><th class="n">Optimal %</th><th class="n hubnfl">With bring-back %</th><th class="n hubnfl">Field own (product)</th></tr></thead><tbody></tbody></table></div>
+    <div class="hubnfl"><h3 class="subh">Team usage (NFL)</h3>
+    <p class="note">Offense snap share by week, targets and carries this season (nflverse). Use it to judge cheap players' roles.</p>
+    <div style="display:flex;gap:6px;align-items:center"><select id="useTeam"></select><span id="useWk" class="note"></span></div>
+    <div class="tbl-wrap"><table id="useTable"><thead></thead><tbody></tbody></table></div></div>
     <h3 class="subh">Ask FORGE</h3>
     <p class="note">How often does it happen in FORGE's simulations? Pick up to two players and a points line; add an "if" to see the game script.</p>
     <div class="askrow" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
@@ -1071,6 +1075,13 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
 
   // (2026-11-15) Hub tab: FORGE's Data Hub (projection, floor/ceiling, boom/bust, optimal %, ownership, leverage, top stacks) for NFL + NBA Classic
   let HUBD = null, hubKey = 'optimal_pct', hubDir = -1;
+  let USAGE;
+  function renderUse() {
+    const t = document.getElementById('useTeam').value, L = (USAGE && USAGE.teams[t]) || []; const wk = [...new Set(L.flatMap(r => Object.keys(r.snaps)))].sort((a, b) => a - b);
+    document.querySelector('#useTable thead').innerHTML = '<tr><th>Player</th><th>Pos</th>' + wk.map(w => `<th class="n">W${w}</th>`).join('') + '<th class="n">Last 3</th><th class="n">Targets</th><th class="n">Carries</th></tr>';
+    const pc = v => v == null ? '' : Math.round(100 * v) + '%';
+    document.querySelector('#useTable tbody').innerHTML = L.map(r => `<tr><td>${esc(r.player)}</td><td>${esc(r.pos)}</td>` + wk.map(w => `<td class="n">${pc(r.snaps[w])}</td>`).join('') + `<td class="n"><b>${pc(r.snap_last3)}</b></td><td class="n">${r.targets ?? ''}</td><td class="n">${r.carries ?? ''}</td></tr>`).join('');
+  }
   function renderHub() {
     const h = HUBD && HUBD.hub, tb = document.querySelector('#hubTable tbody'), sb = document.querySelector('#hubStacks tbody');
     document.getElementById('hubEmpty').hidden = !!h; if (!h) { tb.innerHTML = ''; sb.innerHTML = ''; return; }
@@ -1093,6 +1104,11 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
         const R = c3 ? W.X.filter(c3) : W.X, hit = R.filter(r => c1(r) && (!c2 || c2(r))).length, p = R.length ? hit / R.length : NaN;
         const odds = q => !(q > 0 && q < 1) ? 'n/a' : (q < .5 ? '+' + Math.round(100 * (1 - q) / q) : '-' + Math.round(100 * q / (1 - q)));
         document.getElementById('askOut').textContent = R.length ? `${(100 * p).toFixed(1)}% of ${R.length} simulated worlds` + (c3 ? ` where the "if" happens (${(100 * R.length / W.X.length).toFixed(0)}% of all)` : '') + ` · fair odds ${odds(p)}` : 'The "if" never happens in these worlds.'; }; }
+    if (nfl) { (async () => { if (USAGE === undefined) { try { USAGE = await getJSON('usage_nfl'); } catch (e) { USAGE = null; } }
+      const se = document.getElementById('useTeam'); if (!USAGE) { se.innerHTML = '<option>usage not published yet</option>'; return; }
+      const teams = [...new Set(h.players.map(p => p.team).filter(Boolean))].filter(t => USAGE.teams[t]).sort();
+      if (se.dataset.sid !== String(CUR)) { se.dataset.sid = String(CUR); se.innerHTML = teams.map(t => `<option>${t}</option>`).join(''); se.onchange = renderUse; }
+      document.getElementById('useWk').textContent = 'through week ' + USAGE.through_week; renderUse(); })(); }
     if (!W) document.getElementById('askOut').textContent = 'Ask FORGE needs this slate\'s simulated worlds (built with the Hub).';
     sb.innerHTML = (h.stacks || []).map(s => `<tr><td>${esc(s.label)}</td><td class="n">${s.optimal_pct.toFixed(2)}</td>` + (nfl ? `<td class="n">${(s.bringback_pct ?? 0).toFixed(1)}</td><td class="n">${(s.own ?? 0).toFixed(2)}</td>` : '') + '</tr>').join('');
   }
