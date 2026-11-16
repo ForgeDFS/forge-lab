@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="55a391f40fb7"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="28cd4ceb1bd3"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -1419,7 +1419,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const ST = D.simpack && D.simpack.stats, ix = ST ? Object.fromEntries(D.simpack.names.map((n, k) => [n, k])) : {};   // sim stats (tools/sim_pack.sim_stats)
     D.players.forEach(p => { const k = ix[p.name]; if (!ST || k == null) { p.floor = p.ceil = p.opt_cpt = p.opt_flex = p.lev = null; return; }
       p.floor = ST.p15[k]; p.ceil = ST.p85[k]; p.sd = ST.sd[k]; p.opt_cpt = 100 * ST.opt_cpt[k]; p.opt_flex = 100 * ST.opt_flex[k];
-      p.lev = (p.own_flex == null || p.own_cpt == null) ? null : (p.opt_cpt + p.opt_flex) - (p.own_flex + p.own_cpt); });
+      p.lev = (p.own_flex == null || p.own_cpt == null) ? null : (p.opt_cpt + p.opt_flex) - (p.own_flex + p.own_cpt); p.cpt_lev = p.own_cpt == null ? null : p.opt_cpt - p.own_cpt; });   // (2026-11-15) captain leverage shown separately (Stokastic CPT leverage)
     $$('#ptable .simcol').forEach(x => x.hidden = !ST); $('#simLegend').hidden = !ST; try { rangeChart(); renderMatchups(); } catch (e) { console.error(e); }
     const loc = u => { if (!u) return null; const d = new Date(String(u).replace(' UTC', 'Z').replace(' ', 'T')); return isNaN(d) ? null : d.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); };
     const fr = loc(s.odds_as_of); $('#fresh').textContent = fr ? 'Odds as of ' + fr + (s.refreshed_utc ? ' · projections refreshed ' + loc(s.refreshed_utc) : '') : '';
@@ -1445,7 +1445,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       <td class="gc g-proj"><span class="pos">${p.pos}</span></td><td class="n gc g-proj">${money(p.sal)}</td><td class="n">${fmt(p.proj)}</td><td class="n gc g-proj">${fmt(p.value, 2)}</td>
       <td class="n gc g-own">${p.own_flex == null ? '—' : fmt(p.own_flex, 0) + '%'}</td><td class="n gc g-own">${p.own_cpt == null ? '—' : fmt(p.own_cpt, 0) + '%'}</td>
       <td class="n heat gc g-own"><i style="width:${maxP ? (100 * (p.p_mvp || 0) / maxP).toFixed(0) : 0}%"></i><span>${p.p_mvp == null ? '—' : fmt(100 * p.p_mvp, 1) + '%'}</span></td>
-      ${p.floor === undefined || !(D.simpack && D.simpack.stats) ? '' : `<td class="n gc g-sim">${fmt(p.floor)}</td><td class="n gc g-sim">${fmt(p.ceil)}</td><td class="n gc g-sim">${p.opt_cpt == null ? '—' : fmt(p.opt_cpt, 1) + '%'}</td><td class="n gc g-sim">${p.opt_flex == null ? '—' : fmt(p.opt_flex, 1) + '%'}</td><td class="n lev gc g-own">${p.lev == null ? '—' : (p.lev > 0 ? '+' : '') + fmt(p.lev, 1)}</td>`}</tr>`).join('');
+      ${p.floor === undefined || !(D.simpack && D.simpack.stats) ? '' : `<td class="n gc g-sim">${fmt(p.floor)}</td><td class="n gc g-sim">${fmt(p.ceil)}</td><td class="n gc g-sim">${p.opt_cpt == null ? '—' : fmt(p.opt_cpt, 1) + '%'}</td><td class="n gc g-sim">${p.opt_flex == null ? '—' : fmt(p.opt_flex, 1) + '%'}</td><td class="n lev gc g-own">${p.lev == null ? '—' : (p.lev > 0 ? '+' : '') + fmt(p.lev, 1)}${p.cpt_lev == null ? '' : `<br><small title="Captain optimal % minus captain ownership">CPT ${(p.cpt_lev > 0 ? '+' : '') + fmt(p.cpt_lev, 1)}</small>`}</td>`}</tr>`).join('');
   }
 
   const LN = { pass: 'pass yds', passyds: 'pass yds', rush: 'rush yds', rushyds: 'rush yds', rec: 'rec', recyds: 'rec yds', td: 'TD', anytd: 'TD', passtd: 'pass TD', att: 'att', comp: 'comp', int: 'INT', kpts: 'kicking pts' };
