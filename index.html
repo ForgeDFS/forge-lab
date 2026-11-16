@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="6b2da1e2862d"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="33a10cd74774"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -1349,7 +1349,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     try { ev = await simEV(P, proj, pos, tm, use.map(enc), [], use.map((_, i) => i), st); } catch (e) { st.className = 'status err'; st.textContent = 'Simulation failed: ' + e.message; return; } finally { $('#simRun').disabled = false; }
     const S_ = ev.stats, U = Array.from(S_.evU), C = Array.from(ev), m = use.length, avg = a => a.reduce((t, v) => t + v, 0) / m, pcx = x => (100 * x < 1 && x > 0 ? (100 * x).toFixed(2) : (100 * x).toFixed(1)) + '%';
     const pj = a => 1.5 * proj[a[0]] + a.slice(1).reduce((t, i) => t + proj[i], 0), best = U.indexOf(Math.max(...U));
-    st.textContent = `${src}: ${m} lineup${m > 1 ? 's' : ''} in 2,000 simulated games · simulated cash line ~${S_.cashLine.toFixed(1)} pts · simulated 1st place ~${S_.first.toFixed(1)} pts`;
+    st.textContent = `${src}: ${m} lineup${m > 1 ? 's' : ''} in 2,000 simulated games · simulated cash line ~${S_.cashLine.toFixed(1)} pts · simulated 1st place ~${S_.first.toFixed(1)} pts · real-money check (NFL-CSIM-1): a simulator's cash % for its own top lineups runs about 2x too high, so expect about half the Cash column`;
     const ord = use.map((_, i) => i).sort((a, b) => U[b] - U[a]);
     out.innerHTML = `<div class="pnl-b"><div class="tstats" style="margin-top:0"><div><b>${avg(U).toFixed(2)}x</b><small>average payout per $1, every prize counted</small></div><div><b>${avg(C).toFixed(2)}x</b><small>same, each lineup capped at 10x</small></div><div><b>${pcx(avg(Array.from(S_.cash)))}</b><small>average chance to cash</small></div><div><b>${pcx(avg(Array.from(S_.top1)))}</b><small>average chance of the top 1%</small></div><div><b>${pcx(avg(Array.from(S_.win)))}</b><small>average chance to finish 1st</small></div></div></div>
       <div class="tbl-wrap"><table class="simtbl"><thead><tr><th>Lineup</th><th class="n">Proj</th><th class="n">Payout</th><th class="n">Capped</th><th class="n">Cash</th><th class="n">Top 1%</th><th class="n">1st</th></tr></thead><tbody>${ord.map(i => { const l = LL[i]; return `<tr><td class="who"><b>CPT ${esc(l.cpt)}</b><small>${esc(l.flex.join(' · '))}</small></td><td class="n">${fmt(pj(use[i]))}</td><td class="n${i === best ? ' best' : ''}">${U[i].toFixed(2)}x</td><td class="n">${C[i].toFixed(2)}x</td><td class="n">${pcx(S_.cash[i])}</td><td class="n">${pcx(S_.top1[i])}</td><td class="n">${pcx(S_.win[i])}</td></tr>`; }).join('')}</tbody></table></div>
