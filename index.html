@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="28cd4ceb1bd3"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="6b2da1e2862d"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -1629,10 +1629,14 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     $('#contestSel').innerHTML = '<option value="__all">All contests</option>' + cs.map(c => `<option>${c}</option>`).join(''); renderForge();
   }
   function currentForge() { const L = D.builds[$('#buildSel').value], c = $('#contestSel').value; return c === '__all' ? L : L.filter(l => l.contest === c); }
+  // (2026-11-15, DUPE-SD model fitted on the archive) expected copies of this exact lineup in a 10,000-entry field
+  function expDup(l) { const sp = slateSport(D.slate) === 'NBA', co = sp ? [0.291, 0.141, 0.187] : [1.077, 0.279, 0.234], pp = n => D.players.find(p => p.name === n) || {};
+    const oc = pp(l.cpt).own_cpt, fl = l.flex.map(n => pp(n).own_flex); if (oc == null || fl.some(v => v == null)) return null;
+    const lo = Math.log(Math.max(oc / 100, 1e-3)) + fl.reduce((t, v) => t + Math.log(Math.max(v / 100, 1e-3)), 0); return Math.exp(co[0] + co[1] * lo + co[2] * Math.log(10000)); }
   function luCard(l, i) {
-    const pp = n => D.players.find(p => p.name === n) || {};
+    const pp = n => D.players.find(p => p.name === n) || {}; const xd = expDup(l);
     const forged = l.forged ? ' forged' : '';
-    return `<article class="lu${forged}"><header><span>#${i + 1}${l.contest ? ' · ' + shortContest(l.contest) : ''}</span><span><b>${fmt(l.proj)}</b> pts · <b>${money(l.sal)}</b></span></header><ol>
+    return `<article class="lu${forged}"><header><span>#${i + 1}${l.contest ? ' · ' + shortContest(l.contest) : ''}</span><span><b>${fmt(l.proj)}</b> pts · <b>${money(l.sal)}</b>${xd == null ? '' : ` · <span title="Expected copies of this exact lineup in a 10,000-entry contest (FORGE duplicate model)">~${xd < 1.5 ? '1' : Math.round(xd)} dup</span>`}</span></header><ol>
       <li class="cpt"><span><span class="slot">CPT</span> ${l.cpt}</span><span class="p">${pp(l.cpt).pos || ''} ${pp(l.cpt).team || ''}</span></li>
       ${l.flex.map(n => `<li><span>${n}</span><span class="p">${pp(n).pos || ''} ${pp(n).team || ''}</span></li>`).join('')}</ol>${badges(l)}${gradeLine(l)}${D && D.simpack ? `<button type="button" class="btn small testlu" data-cpt="${l.cpt}" data-flex="${l.flex.join('|')}">Test</button>` : ''}</article>`;
   }
