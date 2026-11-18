@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="47ec04989dc4"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="97dd12ac66da"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -3071,7 +3071,9 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       NB.vz = {}; D.players.forEach(p => NB.vz[p.name] = Math.max(0.2, 1 + VARY_S * gauss())); }   // fresh draw every press
     if (D.slate.kind === 'nba_showdown') return nbaShowdown(g, st, t0, N, uniq, capP);
     if (String(D.slate.kind).includes('tiers')) return buildTiers(st, t0, N, uniq, capP);
-    const P = D.players.map((p, i) => ({ ...p, i, q: QJ(p), q0: PJ(p) })).filter(p => p.proj != null && !NB.out.has(p.name) && !NBOUT(p)), GL = D.game_lines || {};
+    // (2026-11-18) L05 ownership penalty in the SITE builder too (it existed only in tools/nba_fill_entries.py since D-2026-11-12-l05): score = projection - 0.05 x ownership forecast
+    const OP = p => (D.slate.kind === 'nba_classic' && p.own_fc != null) ? 0.05 * p.own_fc : 0;
+    const P = D.players.map((p, i) => ({ ...p, i, q: QJ(p) == null ? null : QJ(p) - OP(p), q0: PJ(p) == null ? null : PJ(p) - OP(p) })).filter(p => p.proj != null && !NB.out.has(p.name) && !NBOUT(p)), GL = D.game_lines || {};
     const stackG = $('#nbaStack').checked ? Object.entries(GL).filter(([k, v]) => v.home_spread != null && Math.abs(v.home_spread) <= 7).sort((a, b) => (b[1].total || 0) - (a[1].total || 0)).slice(0, 3).map(x => x[0]) : [];
     const blowG = $('#nbaBlow').checked ? Object.entries(GL).filter(([k, v]) => v.home_spread != null && Math.abs(v.home_spread) >= 9).map(x => x[0]) : [];
     const games = [...new Set(P.map(p => p.game))], xv = (p, s) => `x${p.i}_${s}`, el = (p, s) => NEL[s].some(z => p.pos.split('/').includes(z));
