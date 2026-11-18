@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="97dd12ac66da"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="3932fd35a530"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -3063,6 +3063,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       : st.slice().sort((a, b) => b.p6x / Math.max(b.own_fc, 0.1) - a.p6x / Math.max(a.own_fc, 0.1));
     return { k: cfg.k, studs: R };
   }
+  let NBSHAPE;
   async function nbaBuild() {
     const st = $('#nbaStatus'), t0 = performance.now(); st.className = 'status'; st.textContent = 'Building…';
     let g; try { g = await glpk(); } catch (e) { st.className = 'status err'; st.textContent = 'The optimizer could not load: ' + e.message; return; }
@@ -3072,7 +3073,8 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     if (D.slate.kind === 'nba_showdown') return nbaShowdown(g, st, t0, N, uniq, capP);
     if (String(D.slate.kind).includes('tiers')) return buildTiers(st, t0, N, uniq, capP);
     // (2026-11-18) L05 ownership penalty in the SITE builder too (it existed only in tools/nba_fill_entries.py since D-2026-11-12-l05): score = projection - 0.05 x ownership forecast
-    const OP = p => (D.slate.kind === 'nba_classic' && p.own_fc != null) ? 0.05 * p.own_fc : 0;
+    if (NBSHAPE === undefined) { try { NBSHAPE = await getJSON('nba_shape'); } catch (e) { NBSHAPE = null; } }
+    const LAM = NBSHAPE && NBSHAPE.lam != null ? +NBSHAPE.lam : 0.05, OP = p => (D.slate.kind === 'nba_classic' && p.own_fc != null) ? LAM * p.own_fc : 0;
     const P = D.players.map((p, i) => ({ ...p, i, q: QJ(p) == null ? null : QJ(p) - OP(p), q0: PJ(p) == null ? null : PJ(p) - OP(p) })).filter(p => p.proj != null && !NB.out.has(p.name) && !NBOUT(p)), GL = D.game_lines || {};
     const stackG = $('#nbaStack').checked ? Object.entries(GL).filter(([k, v]) => v.home_spread != null && Math.abs(v.home_spread) <= 7).sort((a, b) => (b[1].total || 0) - (a[1].total || 0)).slice(0, 3).map(x => x[0]) : [];
     const blowG = $('#nbaBlow').checked ? Object.entries(GL).filter(([k, v]) => v.home_spread != null && Math.abs(v.home_spread) >= 9).map(x => x[0]) : [];
@@ -3080,7 +3082,9 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const B = (lo, hi) => lo === hi ? { type: g.GLP_FX, lb: lo, ub: hi } : hi == null ? { type: g.GLP_LO, lb: lo, ub: 0 } : lo == null ? { type: g.GLP_UP, lb: 0, ub: hi } : { type: g.GLP_DB, lb: lo, ub: hi };
     const chosen = [], cnt = {};
     // (2026-11-18 NBA-SHAPE) winning shape: 3+ cheap and 2+ studs; if no legal lineup fits, 2+1, then none (shown in the status line)
-    const SHAPES = (D.slate.kind === 'nba_classic' && $('#nbaShape') && $('#nbaShape').checked) ? [[3, 2], [2, 1], null] : [null]; let SHP = SHAPES[0], shapeUsed = SHP;
+    if (NBSHAPE === undefined) { try { NBSHAPE = await getJSON('nba_shape'); } catch (e) { NBSHAPE = null; } }   // nightly self-check (tools/nba_shape_pick.py)
+    const SC0 = NBSHAPE && NBSHAPE.cheap != null ? [NBSHAPE.cheap, NBSHAPE.studs] : [3, 2];
+    const SHAPES = (D.slate.kind === 'nba_classic' && $('#nbaShape') && $('#nbaShape').checked) ? (SC0[0] + SC0[1] ? [SC0, [2, 1], null] : [null]) : [null]; let SHP = SHAPES[0], shapeUsed = SHP;
     const solve0 = async (force) => {
       const V = [], sub = [], row = (name, vars, lo, hi) => { if (vars.length) sub.push({ name, vars, bnds: B(lo, hi) }); };
       P.forEach(p => NSLOT.forEach(s => { if (el(p, s)) V.push({ p, s, name: xv(p, s) }); }));
