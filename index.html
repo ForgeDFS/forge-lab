@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="f1cba6a302bb"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="47ec04989dc4"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -826,6 +826,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
       <label class="check sdonly"><input type="checkbox" id="nbaTop3" checked> FORGE Pick captains: FORGE's 3 most likely top DraftKings scorers, more lineups for the likeliest (FORGE's Showdown default)</label>
       <label class="check clonly"><input type="checkbox" id="nbaStack"> Game stack: 3+ players from one of the 3 highest-total close games (spread 7 or less)</label>
       <label class="check clonly"><input type="checkbox" id="nbaBlow"> At most 1 player from likely blowouts (spread 9+)</label>
+      <label class="check clonly"><input type="checkbox" id="nbaShape" checked> Winning shape: 3+ cheap (&le; $4.5K) and 2+ studs (&ge; $9K) per lineup <small class="note">(NBA-SHAPE 11/18: walk-forward on your contest mix +127% vs +103%, profitable 57% of nights vs 33%; relaxes to 2+1 when a slate cannot fit it)</small></label>
       <p class="note">Both rules start off (FORGE's NBA default since 10/22: highest projection, no forced stack). On the only graded night so far (10/21 main slate) projection-only lineups returned +335% vs +45% with the forced stack. One night is thin: all four rules are graded every night.</p>
       <label class="check clonly" id="nbaVaryBox" hidden><input type="checkbox" id="nbaVary" checked> <span id="nbaVaryLab">Fresh set every press: projections jittered 5% each time, so you and a friend (or two contests) get different lineups. Tested on 7 past nights: 5 of 5 draws profitable, average +68% vs +47% for the exact set; two presses share about 1 of 20 lineups.</span></label>
       </details>
@@ -3076,7 +3077,9 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const games = [...new Set(P.map(p => p.game))], xv = (p, s) => `x${p.i}_${s}`, el = (p, s) => NEL[s].some(z => p.pos.split('/').includes(z));
     const B = (lo, hi) => lo === hi ? { type: g.GLP_FX, lb: lo, ub: hi } : hi == null ? { type: g.GLP_LO, lb: lo, ub: 0 } : lo == null ? { type: g.GLP_UP, lb: 0, ub: hi } : { type: g.GLP_DB, lb: lo, ub: hi };
     const chosen = [], cnt = {};
-    const solve = async (force) => {
+    // (2026-11-18 NBA-SHAPE) winning shape: 3+ cheap and 2+ studs; if no legal lineup fits, 2+1, then none (shown in the status line)
+    const SHAPES = (D.slate.kind === 'nba_classic' && $('#nbaShape') && $('#nbaShape').checked) ? [[3, 2], [2, 1], null] : [null]; let SHP = SHAPES[0], shapeUsed = SHP;
+    const solve0 = async (force) => {
       const V = [], sub = [], row = (name, vars, lo, hi) => { if (vars.length) sub.push({ name, vars, bnds: B(lo, hi) }); };
       P.forEach(p => NSLOT.forEach(s => { if (el(p, s)) V.push({ p, s, name: xv(p, s) }); }));
       NSLOT.forEach(s => row('s' + s, V.filter(v => v.s === s).map(v => ({ name: v.name, coef: 1 })), 1, 1));
@@ -3087,11 +3090,14 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       stackG.forEach((gm, j) => row('st' + j, [...V.filter(v => v.p.game === gm).map(v => ({ name: v.name, coef: 1 })), { name: 'y' + j, coef: -3 }], 0, null));
       if (yv.length) row('sty', yv.map(y => ({ name: y, coef: 1 })), 1, null);
       chosen.forEach((c, j) => row('u' + j, V.filter(v => c.ids.has(v.p.i)).map(v => ({ name: v.name, coef: 1 })), null, 8 - uniq));
+      if (SHP) { row('cheap', V.filter(v => v.p.sal <= 4500).map(v => ({ name: v.name, coef: 1 })), SHP[0], null); row('studs', V.filter(v => v.p.sal >= 9000).map(v => ({ name: v.name, coef: 1 })), SHP[1], null); }
       const lp = { name: 'nba', objective: { direction: g.GLP_MAX, name: 'obj', vars: V.map(v => ({ name: v.name, coef: chosen.length ? v.p.q : v.p.q0 })) }, subjectTo: sub, binaries: [...V.map(v => v.name), ...yv] };
       const r = await Promise.resolve(g.solve(lp, { msglev: g.GLP_MSG_OFF, presol: true }));
       if (!r || !r.result || (r.result.status !== g.GLP_OPT && r.result.status !== g.GLP_FEAS)) return null;
       const pick = V.filter(v => r.result.vars[v.name] > 0.5); if (pick.length !== 8) return null;
       return nbaFlex(NSLOT.map(s => pick.find(v => v.s === s).p)); };
+    const solve = async (force) => { let r = await solve0(force); if (r || force != null) return r;
+      for (let k = SHAPES.indexOf(SHP) + 1; !r && k < SHAPES.length; k++) { SHP = SHAPES[k]; shapeUsed = SHP; r = await solve0(force); } return r; };
     // (2026-10-29 NBA-LEV1) leverage studs: the last k of the set are built around high-ceiling, low-forecast-ownership studs (NBA_LEV below)
     const LV = nbaLevStuds(P), levK = LV ? Math.min(LV.k, N) : 0; let si = 0; NB.levInfo = [];
     for (let k = 0; k < N; k++) {
@@ -3113,7 +3119,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
         const c = { lu, ids: new Set(lu.map(p => p.i)), s: lu.reduce((t, p) => t + PJ(p), 0) }; chosen.push(c); cover.push(c); lu.forEach(p => cnt[p.i] = (cnt[p.i] || 0) + 1); }
       while (cover.length < NB.coverReq.n) { const lu = await solve(null); if (!lu) break; const c = { lu, ids: new Set(lu.map(p => p.i)), s: lu.reduce((t, p) => t + PJ(p), 0) }; chosen.push(c); cover.push(c); }
       NB.cover = cover; NB.coverUnused = unc.map(p => p.name); NB.coverKey = JSON.stringify(NB.coverReq); chosen.length = main; }
-    NB.result = chosen; st.textContent = `Forged ${chosen.length} of ${N} lineups in ${((performance.now() - t0) / 1000).toFixed(1)} s` + (stackG.length ? ' · stack games: ' + stackG.join(', ') : '') + (chosen.length < N ? ` · stopped at ${chosen.length}: only ${P.length} players are in the pool (OUT players and players without betting lines are left out).` : '') + ((NB.levInfo || []).length ? ` · leverage lineups (tested 10/29, NBA-LEV1): ${NB.levInfo.map(x => `#${x.n} built around ${x.name} (forecast ${x.own.toFixed(1)}% owned)`).join('; ')}` : '');
+    NB.result = chosen; st.textContent = `Forged ${chosen.length} of ${N} lineups in ${((performance.now() - t0) / 1000).toFixed(1)} s` + (SHAPES[0] ? (shapeUsed ? ` · shape ${shapeUsed[0]}+ cheap, ${shapeUsed[1]}+ studs` : ' · shape relaxed (slate too small)') : '') + (stackG.length ? ' · stack games: ' + stackG.join(', ') : '') + (chosen.length < N ? ` · stopped at ${chosen.length}: only ${P.length} players are in the pool (OUT players and players without betting lines are left out).` : '') + ((NB.levInfo || []).length ? ` · leverage lineups (tested 10/29, NBA-LEV1): ${NB.levInfo.map(x => `#${x.n} built around ${x.name} (forecast ${x.own.toFixed(1)}% owned)`).join('; ')}` : '');
     const ex = {}; chosen.forEach(c => c.lu.forEach(p => ex[p.name] = (ex[p.name] || 0) + 1));
     $('#nbaExpo').innerHTML = Object.entries(ex).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span class="chip">${k} <b>${Math.round(100 * v / chosen.length)}%</b></span>`).join('');
     $('#nbaGrid').innerHTML = chosen.map((c, i) => `<article class="lu"><header><span>#${i + 1}</span><span><b>${fmt(c.s)}</b> pts · <b>${money(c.lu.reduce((t, p) => t + p.sal, 0))}</b></span></header><ol>${c.lu.map((p, j) => `<li><span>${NSLOT[j]} ${p.name}</span><span class="p">${p.team} · ${p.game}</span></li>`).join('')}</ol></article>`).join('');
