@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="3932fd35a530"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="523cbc6504bf"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -826,7 +826,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
       <label class="check sdonly"><input type="checkbox" id="nbaTop3" checked> FORGE Pick captains: FORGE's 3 most likely top DraftKings scorers, more lineups for the likeliest (FORGE's Showdown default)</label>
       <label class="check clonly"><input type="checkbox" id="nbaStack"> Game stack: 3+ players from one of the 3 highest-total close games (spread 7 or less)</label>
       <label class="check clonly"><input type="checkbox" id="nbaBlow"> At most 1 player from likely blowouts (spread 9+)</label>
-      <label class="check clonly"><input type="checkbox" id="nbaShape" checked> Winning shape: 3+ cheap (&le; $4.5K) and 2+ studs (&ge; $9K) per lineup <small class="note">(NBA-SHAPE 11/18: walk-forward on your contest mix +127% vs +103%, profitable 57% of nights vs 33%; relaxes to 2+1 when a slate cannot fit it)</small></label>
+      <label class="check clonly"><input type="checkbox" id="nbaShape" checked> Winning shape on 4+ game slates: 3+ cheap (&le; $4.5K) and 2+ studs (&ge; $9K) per lineup; 2-3 game slates build balanced <small class="note">(NBA-SHAPE 11/18: walk-forward on your contest mix +127% vs +103%, profitable 57% of nights vs 33%; relaxes to 2+1 when a slate cannot fit it)</small></label>
       <p class="note">Both rules start off (FORGE's NBA default since 10/22: highest projection, no forced stack). On the only graded night so far (10/21 main slate) projection-only lineups returned +335% vs +45% with the forced stack. One night is thin: all four rules are graded every night.</p>
       <label class="check clonly" id="nbaVaryBox" hidden><input type="checkbox" id="nbaVary" checked> <span id="nbaVaryLab">Fresh set every press: projections jittered 5% each time, so you and a friend (or two contests) get different lineups. Tested on 7 past nights: 5 of 5 draws profitable, average +68% vs +47% for the exact set; two presses share about 1 of 20 lineups.</span></label>
       </details>
@@ -3074,7 +3074,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     if (String(D.slate.kind).includes('tiers')) return buildTiers(st, t0, N, uniq, capP);
     // (2026-11-18) L05 ownership penalty in the SITE builder too (it existed only in tools/nba_fill_entries.py since D-2026-11-12-l05): score = projection - 0.05 x ownership forecast
     if (NBSHAPE === undefined) { try { NBSHAPE = await getJSON('nba_shape'); } catch (e) { NBSHAPE = null; } }
-    const LAM = NBSHAPE && NBSHAPE.lam != null ? +NBSHAPE.lam : 0.05, OP = p => (D.slate.kind === 'nba_classic' && p.own_fc != null) ? LAM * p.own_fc : 0;
+    const LAM = new Set(D.players.map(p => p.game)).size <= 3 ? 0.05 : (NBSHAPE && NBSHAPE.lam != null ? +NBSHAPE.lam : 0.05), OP = p => (D.slate.kind === 'nba_classic' && p.own_fc != null) ? LAM * p.own_fc : 0;
     const P = D.players.map((p, i) => ({ ...p, i, q: QJ(p) == null ? null : QJ(p) - OP(p), q0: PJ(p) == null ? null : PJ(p) - OP(p) })).filter(p => p.proj != null && !NB.out.has(p.name) && !NBOUT(p)), GL = D.game_lines || {};
     const stackG = $('#nbaStack').checked ? Object.entries(GL).filter(([k, v]) => v.home_spread != null && Math.abs(v.home_spread) <= 7).sort((a, b) => (b[1].total || 0) - (a[1].total || 0)).slice(0, 3).map(x => x[0]) : [];
     const blowG = $('#nbaBlow').checked ? Object.entries(GL).filter(([k, v]) => v.home_spread != null && Math.abs(v.home_spread) >= 9).map(x => x[0]) : [];
@@ -3084,7 +3084,9 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     // (2026-11-18 NBA-SHAPE) winning shape: 3+ cheap and 2+ studs; if no legal lineup fits, 2+1, then none (shown in the status line)
     if (NBSHAPE === undefined) { try { NBSHAPE = await getJSON('nba_shape'); } catch (e) { NBSHAPE = null; } }   // nightly self-check (tools/nba_shape_pick.py)
     const SC0 = NBSHAPE && NBSHAPE.cheap != null ? [NBSHAPE.cheap, NBSHAPE.studs] : [3, 2];
-    const SHAPES = (D.slate.kind === 'nba_classic' && $('#nbaShape') && $('#nbaShape').checked) ? (SC0[0] + SC0[1] ? [SC0, [2, 1], null] : [null]) : [null]; let SHP = SHAPES[0], shapeUsed = SHP;
+    // (2026-11-18 NBA-WINNERS-ALL) the shape applies on 4+ game slates only: on 2-3 game slates winners are balanced (fewer cheap/studs, more mid) and the plain L05 build made +55% vs +0.6%
+    const SMALL = new Set(D.players.map(p => p.game)).size <= 3;
+    const SHAPES = (D.slate.kind === 'nba_classic' && !SMALL && $('#nbaShape') && $('#nbaShape').checked) ? (SC0[0] + SC0[1] ? [SC0, [2, 1], null] : [null]) : [null]; let SHP = SHAPES[0], shapeUsed = SHP;
     const solve0 = async (force) => {
       const V = [], sub = [], row = (name, vars, lo, hi) => { if (vars.length) sub.push({ name, vars, bnds: B(lo, hi) }); };
       P.forEach(p => NSLOT.forEach(s => { if (el(p, s)) V.push({ p, s, name: xv(p, s) }); }));
@@ -3125,7 +3127,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
         const c = { lu, ids: new Set(lu.map(p => p.i)), s: lu.reduce((t, p) => t + PJ(p), 0) }; chosen.push(c); cover.push(c); lu.forEach(p => cnt[p.i] = (cnt[p.i] || 0) + 1); }
       while (cover.length < NB.coverReq.n) { const lu = await solve(null); if (!lu) break; const c = { lu, ids: new Set(lu.map(p => p.i)), s: lu.reduce((t, p) => t + PJ(p), 0) }; chosen.push(c); cover.push(c); }
       NB.cover = cover; NB.coverUnused = unc.map(p => p.name); NB.coverKey = JSON.stringify(NB.coverReq); chosen.length = main; }
-    NB.result = chosen; st.textContent = `Forged ${chosen.length} of ${N} lineups in ${((performance.now() - t0) / 1000).toFixed(1)} s` + (SHAPES[0] ? (shapeUsed ? ` · shape ${shapeUsed[0]}+ cheap, ${shapeUsed[1]}+ studs` : ' · shape relaxed (slate too small)') : '') + (stackG.length ? ' · stack games: ' + stackG.join(', ') : '') + (chosen.length < N ? ` · stopped at ${chosen.length}: only ${P.length} players are in the pool (OUT players and players without betting lines are left out).` : '') + ((NB.levInfo || []).length ? ` · leverage lineups (tested 10/29, NBA-LEV1): ${NB.levInfo.map(x => `#${x.n} built around ${x.name} (forecast ${x.own.toFixed(1)}% owned)`).join('; ')}` : '');
+    NB.result = chosen; st.textContent = `Forged ${chosen.length} of ${N} lineups in ${((performance.now() - t0) / 1000).toFixed(1)} s` + (SHAPES[0] ? (shapeUsed ? ` · shape ${shapeUsed[0]}+ cheap, ${shapeUsed[1]}+ studs` : ' · shape relaxed') : (SMALL && D.slate.kind === 'nba_classic' ? ' · 2-3 game slate: balanced build (no shape)' : '')) + (stackG.length ? ' · stack games: ' + stackG.join(', ') : '') + (chosen.length < N ? ` · stopped at ${chosen.length}: only ${P.length} players are in the pool (OUT players and players without betting lines are left out).` : '') + ((NB.levInfo || []).length ? ` · leverage lineups (tested 10/29, NBA-LEV1): ${NB.levInfo.map(x => `#${x.n} built around ${x.name} (forecast ${x.own.toFixed(1)}% owned)`).join('; ')}` : '');
     const ex = {}; chosen.forEach(c => c.lu.forEach(p => ex[p.name] = (ex[p.name] || 0) + 1));
     $('#nbaExpo').innerHTML = Object.entries(ex).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span class="chip">${k} <b>${Math.round(100 * v / chosen.length)}%</b></span>`).join('');
     $('#nbaGrid').innerHTML = chosen.map((c, i) => `<article class="lu"><header><span>#${i + 1}</span><span><b>${fmt(c.s)}</b> pts · <b>${money(c.lu.reduce((t, p) => t + p.sal, 0))}</b></span></header><ol>${c.lu.map((p, j) => `<li><span>${NSLOT[j]} ${p.name}</span><span class="p">${p.team} · ${p.game}</span></li>`).join('')}</ol></article>`).join('');
