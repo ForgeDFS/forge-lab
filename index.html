@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="3b98c005ab7d"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="295d4c8413bb"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <meta charset="utf-8">
 <title>FORGE</title>
@@ -521,7 +521,7 @@ footer { margin-top: 36px; color: var(--ink-3); font-size: 12px; line-height: 18
 footer .ico { color: var(--ink-3); }
 
 /* show / hide by sport, game type and owner (behaviour; keep) */
-body.ms .tabs, body.ms #slatePicker, body.ms .plate:not(.msplate), body.ms .panel { display: none !important; } body:not(.ms) #msBox { display: none !important; }
+body.ms #slatePicker, body.ms .plate:not(.msplate), body.ms .panel, body.ms .tab[data-p="past"] { display: none !important; } body.ms[data-tab]:not([data-tab="slate"]) .mspick { display: none !important; } body.ms[data-tab="slate"] .msplate .chg { display: none !important; } body:not(.ms) #msBox { display: none !important; }
 body.nba .cl-only, body.nba .sd-only, body.nba .nfl-only, body.nba #rpBanner, body:not(.nba) .nba-only { display: none !important; }
 body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 body.nbasd .clonly, body:not(.nbasd) .sdonly, body:not(.nbasd) .sdcol { display: none; }
@@ -1031,6 +1031,10 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   // tabs
   function show(p) {
     if (p === 'alerts' || !document.getElementById('p-' + p)) p = 'slate';
+    if (document.body.classList.contains('ms')) {   // (2026-11-18) NHL/CFB/CBB/PGA/MMA: same tab bar, same tab kept when switching sports
+      document.body.dataset.tab = p; LS.set('forge_tab', p); $$('.tab[data-p]').forEach(t => t.setAttribute('aria-selected', String(t.dataset.p === p)));
+      MSS.tab = p === 'builder' ? 'build' : p; if (MSD) msRender(); return;
+    }
     document.body.dataset.tab = p;   // the slate picker shows on the Slate tab only; elsewhere the header carries a Change slate button   // 2026-10-28 redesign: overlay alerts live on the Slate brief
     $$('.tab[data-p]').forEach(t => t.setAttribute('aria-selected', String(t.dataset.p === p || (t.dataset.grp || '').split(' ').includes(p))));
     $$('.panel').forEach(x => x.hidden = x.id !== 'p-' + p); $$('.subnav button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.go === p)));
@@ -1135,7 +1139,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   let SPORT = LS.get('forge_sport') || 'NFL';   // 2026-10-21 (FORGE): NFL / NBA tabs up top
   const sportOf = x => (x && x.kind && String(x.kind).startsWith('nba')) ? 'NBA' : 'NFL';
   function renderSports() { $$('#sportPicker button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sport === SPORT))); }
-  $$('#sportPicker button').forEach(b => b.onclick = () => { if (MS_SPORTS.includes(b.dataset.sport)) { SPORT = b.dataset.sport; LS.set('forge_sport', SPORT); renderSports(); msShow(SPORT); return; } document.body.classList.remove('ms'); if (SPORT === b.dataset.sport) return; SPORT = b.dataset.sport; LS.set('forge_sport', SPORT); renderSports();
+  $$('#sportPicker button').forEach(b => b.onclick = () => { if (MS_SPORTS.includes(b.dataset.sport)) { SPORT = b.dataset.sport; LS.set('forge_sport', SPORT); renderSports(); msShow(SPORT); return; } const wasMs = document.body.classList.contains('ms'); document.body.classList.remove('ms'); if (wasMs) show(document.body.dataset.tab || 'slate'); if (SPORT === b.dataset.sport) return; SPORT = b.dataset.sport; LS.set('forge_sport', SPORT); renderSports();
     const d = defaultSlate(); if (d && sportOf(d) === SPORT) loadSlate(d.id); else { renderPicker(); document.body.classList.toggle('nba', SPORT === 'NBA'); if (SPORT === 'NBA') { $('#propCards').innerHTML = ''; $('#nbaLeaders').innerHTML = '<p class="note">No NBA slate published yet.</p>'; $('#nbaCount').textContent = 'No NBA slate published yet.'; } } });
   function active(x) { if (x.status === 'complete') return false; return Date.now() < new Date(x.kickoff_utc).getTime() + (x.kind === 'classic' || String(x.kind).includes('tiers') || x.kind === 'nba_classic' ? 12 : 4.5) * 3600e3; }   // live window: Showdown 4.5 h after kickoff, Classic main slate 12 h
   function defaultSlate() { const k = x => new Date(x.kickoff_utc).getTime(), S = IDX.filter(x => sportOf(x) === SPORT).sort((a, b) => k(a) - k(b)), soon = S.filter(x => active(x) && k(x) > Date.now()), up = S.filter(active);   // next slate that has not locked yet, then a live one
@@ -1182,20 +1186,22 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   async function msLoad(id) {
     msPicker(id);
     try { MSD = await getJSON(id); const ob = await ownerBuilds(id); MSD.builds = ob || MSD.builds || {}; MSD.owner = !!ob; } catch (e) { $('#msBody').innerHTML = '<p class="note">Could not load this slate.</p>'; return; }
-    LS.set('forge_ms_' + MSD.slate.sport, id);
+    LS.set('forge_ms_' + MSD.slate.sport, id); { const st = $('#stamp'); if (st && MSD.slate.built_utc) st.textContent = 'Updated ' + new Date(MSD.slate.built_utc.replace(' UTC', 'Z').replace(' ', 'T')).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + ' ET'; }
+    { const sp = $('#statusText'); if (sp) sp.textContent = MSD.slate.sport + ' · UNTESTED'; }
     const S = MSD.slate, P = MSD.players || [], R = S.rules || {}, kind = msKind(S), noModel = /^No FORGE model/.test(S.model || '');
     const t0 = S.kickoff_utc ? new Date(S.kickoff_utc) : null, day = t0 ? t0.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase() : '';
     const g = msGames(S), title = kind === 'Showdown' && g.includes('@') ? g.replace('@', ' @ ') : S.sport === 'PGA' ? (P[0] ? P[0].game : g) : S.sport === 'MMA' ? `UFC · ${new Set(P.map(p => p.game)).size} bouts` : `${S.games} games`;
     const proj = P.filter(p => p.proj != null).length;
-    $('#msHead').innerHTML = `<section class="plate msplate" aria-label="Slate"><div><div class="eyebrow">${esc(day)} · DRAFTKINGS ${esc(S.sport)} ${esc((S.title || kind).toUpperCase())}</div>
-      <h1 class="matchup">${title.includes(' @ ') ? title.split(' @ ').map(t => `<span class="team">${esc(t)}</span>`).join('<span class="at">@</span>') : `<span class="team" style="font-size:clamp(26px,3.6vw,44px)">${esc(title)}</span>`}</h1>
+    $('#msHead').innerHTML = `<section class="plate msplate" aria-label="Slate"><div style="flex:1 1 560px;max-width:900px"><div class="eyebrow">${esc(day)} · DRAFTKINGS ${esc(S.sport)} ${esc((S.title || kind).toUpperCase())}</div>
+      <h1 class="matchup">${title.includes(' @ ') ? title.split(' @ ').map(t => `<span class="team">${esc(t)}</span>`).join('<span class="at">@</span>') : `<span class="team">${esc(title)}</span>`}</h1>
       <div class="sub">First lock ${esc(msTime(S.kickoff_utc))} · data updated ${esc(S.built_utc || '')}${kind !== 'Showdown' && S.sport !== 'PGA' && S.sport !== 'MMA' ? ' · ' + esc(g) : ''}</div>
-      <div class="sub fresh">${S.tested ? '' : '<b>Untested v0.</b> '}${esc(S.model || '')}</div></div>
+      <div class="sub fresh">${S.tested ? '' : '<b>Untested v0.</b> '}${esc(S.model || '')}</div>
+      <button type="button" class="btn small chg" data-go="slate">Change slate</button></div>
       <div class="meta"><div class="stat"><b>${proj}/${P.length}</b><span>${noModel ? 'DK averages' : 'Projected players'}</span></div><div class="stat"><b>${(R.slots || []).length}</b><span>Roster spots</span></div><div class="stat"><b>${R.cap ? '$' + (R.cap / 1000) + 'K' : 'Tiers'}</b><span>${R.cap ? 'Salary cap' : 'No salary'}</span></div></div></section>
-      <nav class="mstabs" role="tablist" aria-label="Sections">${MS_TABS.map(([t, lab]) => `<button class="tab" role="tab" data-mt="${t}" aria-selected="${MSS.tab === t}">${lab}</button>`).join('')}</nav>`;
-    $$('#msHead [data-mt]').forEach(b => b.onclick = () => { MSS.tab = b.dataset.mt; $$('#msHead [data-mt]').forEach(x => x.setAttribute('aria-selected', String(x === b))); msRender(); });
+`;
+
     // builder state per slate: own projections, locks, outs, captain pool. Players with no FORGE projection start Out (DK average shown, untick to use)
-    MSS = { tab: MSS.tab, id, q: {}, lock: new Set(), cpt: new Set(), out: new Set(P.filter(p => /^(O|OUT|IR|WD)$/i.test(String(p.status || '')) || (p.proj == null)).map(p => p.name)), mine: null, search: '', game: '' };
+    const gt = document.body.dataset.tab || 'slate'; MSS = { tab: gt === 'builder' ? 'build' : gt, id, q: {}, lock: new Set(), cpt: new Set(), out: new Set(P.filter(p => /^(O|OUT|IR|WD)$/i.test(String(p.status || '')) || (p.proj == null)).map(p => p.name)), mine: null, search: '', game: '' };
     msRender();
   }
   const msQ = p => MSS.q[p.name] != null ? MSS.q[p.name] : (p.proj != null ? p.proj : p.alt);
@@ -1203,6 +1209,24 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   function msRender() {
     const S = MSD.slate, P = MSD.players || [], R = S.rules || {}, tiers = !R.cap, cpt = !!R.cpt, body = $('#msBody'), seen = new Set();
     const uniq = P.filter(p => { if (cpt && p.roster === 'CPT') return false; const k = p.name + '|' + p.team; if (seen.has(k)) return false; seen.add(k); return true; });
+    if (MSS.tab === 'slate') {
+      const top = uniq.filter(p => msQ(p) != null && !MSS.out.has(p.name)).sort((a, b) => msQ(b) - msQ(a)).slice(0, 10), val = uniq.filter(p => msQ(p) != null && p.sal && !MSS.out.has(p.name)).sort((a, b) => msQ(b) / b.sal - msQ(a) / a.sal).slice(0, 10);
+      const gm = [...new Set(uniq.map(p => p.game))], hb = Object.entries(MSD.hub || {}).sort((a, b) => b[1].optimal - a[1].optimal).slice(0, 10);
+      const card = (t, L) => `<section class="pnl"><div class="pnl-h"><h2>${t}</h2></div><div class="tbl-wrap"><table><tbody>${L}</tbody></table></div></section>`;
+      body.innerHTML = `<div class="brief" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+        ${card('Top projections', top.map(p => `<tr><td><b>${esc(p.name)}</b>${msTag(p)} <span class="dim small">${esc(S.sport === 'PGA' ? '' : p.team)}</span></td><td class="n">${tiers ? esc(p.roster) : '$' + (p.sal || 0).toLocaleString('en-US')}</td><td class="n">${(+msQ(p)).toFixed(1)}</td></tr>`).join(''))}
+        ${tiers ? '' : card('Best value (points per $1K)', val.map(p => `<tr><td><b>${esc(p.name)}</b></td><td class="n">$${(p.sal || 0).toLocaleString('en-US')}</td><td class="n">${(1000 * msQ(p) / p.sal).toFixed(2)}</td></tr>`).join(''))}
+        ${hb.length ? card('Most often in the best lineup (sims)', hb.map(([n, h]) => `<tr><td><b>${esc(n)}</b></td><td class="n">${h.optimal.toFixed(0)}%</td><td class="n dim">ceiling ${h.p90.toFixed(1)}</td></tr>`).join('')) : ''}
+        ${S.sport === 'PGA' ? '' : card(S.sport === 'MMA' ? 'Bouts' : 'Games', gm.map(g => `<tr><td>${esc(g)}</td><td class="n dim">${uniq.filter(p => p.game === g && msQ(p) != null && !MSS.out.has(p.name)).length} projected</td></tr>`).join(''))}
+      </div><p class="note" style="margin-top:12px">Pick a different slate above. <button type="button" class="linkbtn" data-go="builder">Build lineups</button> · <button type="button" class="linkbtn" data-go="players">All players</button> · <button type="button" class="linkbtn" data-go="props">Props</button></p>`;
+      return;
+    }
+    if (MSS.tab === 'record') {
+      const G = MSL.filter(x => x.results);
+      body.innerHTML = `<h3 class="subh">Results · ${esc(S.sport)}</h3><p class="note">Every finished ${esc(S.sport)} slate FORGE has graded in the last 4 days (actual DraftKings points from the box scores). ${G.length ? '' : 'None graded yet.'}</p>${G.length ? '<div class="tbl-wrap"><table><thead><tr><th>Slate</th><th>Start</th><th class="n">Avg miss</th><th class="n">Corr</th><th class="n">FORGE best</th><th class="n">Best possible</th></tr></thead><tbody id="msRec"></tbody></table></div>' : ''}`;
+      if (G.length) Promise.all(G.map(x => getJSON(x.id).catch(() => null))).then(L => { $('#msRec').innerHTML = L.filter(Boolean).map(d => { const r = d.results, F = r.forge_lineups || []; return `<tr><td><b>${esc(d.slate.label)}</b></td><td>${esc(msTime(d.slate.kickoff_utc))}</td><td class="n">${r.grade.mae ?? '—'}</td><td class="n">${r.grade.corr ?? '—'}</td><td class="n">${F.length ? Math.max(...F).toFixed(1) : '—'}</td><td class="n">${r.best ? r.best.score.toFixed(1) : '—'}</td></tr>`; }).join(''); });
+      return;
+    }
     if (MSS.tab === 'players') {
       const rows = uniq.slice().sort((a, b) => (msQ(b) || -1) - (msQ(a) || -1));
       body.innerHTML = `<div class="tbl-wrap"><table><thead><tr><th>Player</th><th>Pos</th><th>${S.sport === 'PGA' ? 'Event' : S.sport === 'MMA' ? 'Bout' : 'Game'}</th><th class="n">${tiers ? 'Tier' : 'Salary'}</th><th class="n">Proj</th>${tiers ? '' : '<th class="n">Pts / $1K</th>'}<th>From</th></tr></thead><tbody>${rows.map(p => { const q = msQ(p);
@@ -1289,14 +1313,14 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       tog('l', MSS.lock, MSS.out); tog('o', MSS.out, MSS.lock); tog('c', MSS.cpt); };
     fill();
     $('#msSearch').oninput = e => { MSS.search = e.target.value; fill(); }; $('#msGame').onchange = e => { MSS.game = e.target.value; fill(); };
-    $('#msReset').onclick = () => { const keep = MSS.tab; msLoad(MSS.id).then(() => MSS.tab = keep); };
+    $('#msReset').onclick = () => { msLoad(MSS.id); };
     const show = () => { const L = MSS.mine || []; if (!L.length) { $('#msOut').innerHTML = ''; return; }
       const ex = {}; L.forEach(l => l.forEach(x => ex[x.name] = (ex[x.name] || 0) + 1)); const top = Object.entries(ex).sort((a, b) => b[1] - a[1]).slice(0, 12);
       $('#msOut').innerHTML = `<div class="toolbar" style="margin-top:16px"><h3>Your lineups</h3><button type="button" class="btn small" id="msCsv">Download for DraftKings</button><button type="button" class="btn small" data-mtgo="dk">Fill my DKEntries file</button></div>
         <p class="note">Exposure: ${top.map(([n, c]) => `${esc(n)} ${Math.round(100 * c / L.length)}%`).join(' · ')}</p>
         <div class="tbl-wrap"><table><thead><tr><th>#</th>${(R.slots || []).map(s => `<th>${esc(s)}</th>`).join('')}<th class="n">Proj</th>${tiers ? '' : '<th class="n">Salary</th>'}</tr></thead><tbody>${L.map((l, i) => `<tr><td>${i + 1}</td>${l.map(x => `<td>${esc(x.name)}</td>`).join('')}<td class="n">${l.reduce((t, x) => t + (x.proj || 0) * (x.slot === 'CPT' ? (R.cpt_mult || 1.5) : 1), 0).toFixed(1)}</td>${tiers ? '' : `<td class="n">$${l.reduce((t, x) => t + (x.sal || 0), 0).toLocaleString('en-US')}</td>`}</tr>`).join('')}</tbody></table></div>`;
       $('#msCsv').onclick = () => { const csv = [(R.slots || []).join(','), ...L.map(l => l.map(x => x.id).join(','))].join('\n') + '\n'; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = `FORGE_${S.id}.csv`; a.click(); };
-      $('#msOut [data-mtgo]').onclick = () => { MSS.tab = 'dk'; $$('#msHead [data-mt]').forEach(x => x.setAttribute('aria-selected', String(x.dataset.mt === 'dk'))); msRender(); }; };
+      $('#msOut [data-mtgo]').onclick = () => show('dk'); };
     show();
     $('#msGo').onclick = async () => { const st = $('#msSt'); st.className = 'status'; st.textContent = 'Loading the optimizer…';
       try { const g = await glpk(); MSS.mine = await msBuild(g, P, R, { n: +$('#msN').value || 20, uniq: +$('#msU').value || 2, xp: +$('#msX').value || 100, q: msQ, out: MSS.out, lock: MSS.lock, cpt: MSS.cpt }, st); show(); }
