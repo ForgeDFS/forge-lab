@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="033bae824f9c"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="3b98c005ab7d"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <meta charset="utf-8">
 <title>FORGE</title>
@@ -1160,20 +1160,21 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   const MS_SPORTS = ['NHL', 'CFB', 'CBB', 'PGA', 'MMA']; let MSI = null, MSD = null;
   // (2026-11-18, FORGE: "every sport presented the same as NBA and NFL") NHL / CFB / CBB / PGA / MMA use the same picker rows, slate plate, tabs and builder
   let MSL = [], MSS = { tab: 'build' };
+  const MS_TABS = [['players', 'Players'], ['props', 'Props'], ['build', 'Build'], ['sims', 'Sims'], ['hub', 'Hub'], ['dk', 'Entries'], ['recap', 'Last night'], ['real', 'Real results']];
   const msKind = x => /_ti$/.test(x.kind) ? 'Tiers' : /_sd$/.test(x.kind) ? 'Showdown' : 'Classic';
   const msTime = s => s ? new Date(s).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : '';
   const msGames = x => (x.label || '').replace(/^[^·]*·\s*/, '');
   async function msShow(sp) {
     document.body.classList.add('ms'); $('#msHead').innerHTML = ''; $('#msBody').innerHTML = '<p class="note">Loading…</p>';
     try { if (!MSI) MSI = await getJSON('multi'); } catch (e) { $('#msPick').innerHTML = ''; $('#msBody').innerHTML = '<p class="note">No ' + sp + ' slates published yet.</p>'; return; }
-    MSL = (MSI.slates || []).filter(x => x.sport === sp && (!x.kickoff_utc || Date.now() < new Date(x.kickoff_utc).getTime() + 5 * 3600e3)).sort((a, b) => new Date(a.kickoff_utc) - new Date(b.kickoff_utc));
+    MSL = (MSI.slates || []).filter(x => x.sport === sp && (!x.kickoff_utc || Date.now() < new Date(x.kickoff_utc).getTime() + 96 * 3600e3)).sort((a, b) => new Date(a.kickoff_utc) - new Date(b.kickoff_utc));
     if (!MSL.length) { $('#msPick').innerHTML = ''; $('#msBody').innerHTML = '<p class="note">No upcoming ' + sp + ' slates on DraftKings right now (checked every 2 hours).</p>'; return; }
-    const cur = LS.get('forge_ms_' + sp), first = MSL.find(x => x.id === cur) || MSL.find(x => x.lineups) || MSL[0];
+    const up = MSL.filter(x => Date.now() < new Date(x.kickoff_utc).getTime() + 5 * 3600e3), cur = LS.get('forge_ms_' + sp), first = MSL.find(x => x.id === cur && up.includes(x)) || up.find(x => x.lineups) || up[0] || MSL[MSL.length - 1];
     msLoad(first.id);
   }
   function msPicker(id) {
     const chip = x => { const sd = msKind(x) === 'Showdown', g = msGames(x);
-      return `<button type="button" class="slate-chip" data-ms="${x.id}" aria-pressed="${x.id === id}"><b>${esc(sd && g.includes('@') ? g.replace('@', ' @ ') : x.event || (sd ? 'Showdown' : msKind(x)))}</b><span>${esc(sd && g.includes('@') ? 'Showdown' : (x.event ? (msKind(x) === 'Classic' ? '' : msKind(x) + ' · ') + g : g))}</span><small>${msTime(x.kickoff_utc)} · ${x.projected}/${x.players} projected</small></button>`; };
+      return `<button type="button" class="slate-chip" data-ms="${x.id}" aria-pressed="${x.id === id}"><b>${esc(sd && g.includes('@') ? g.replace('@', ' @ ') : x.event || (sd ? 'Showdown' : msKind(x)))}</b><span>${esc(sd && g.includes('@') ? 'Showdown' : (x.event ? (msKind(x) === 'Classic' ? '' : msKind(x) + ' · ') + g : g))}</span><small>${msTime(x.kickoff_utc)}${Date.now() > new Date(x.kickoff_utc).getTime() ? (x.results ? ' · final' : ' · locked') : ' · ' + x.projected + '/' + x.players + ' projected'}</small></button>`; };
     const rows = ['Classic', 'Showdown', 'Tiers'].map(k => { const L = MSL.filter(x => msKind(x) === k); return L.length ? `<div class="pickrow"><span class="pklab">${k}</span><div class="pkchips">${L.map(chip).join('')}</div></div>` : ''; }).join('');
     $('#msPick').innerHTML = rows; $('#msPick').className = 'mspick';
     $$('#msPick [data-ms]').forEach(b => b.onclick = () => msLoad(b.dataset.ms));
@@ -1191,7 +1192,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       <div class="sub">First lock ${esc(msTime(S.kickoff_utc))} · data updated ${esc(S.built_utc || '')}${kind !== 'Showdown' && S.sport !== 'PGA' && S.sport !== 'MMA' ? ' · ' + esc(g) : ''}</div>
       <div class="sub fresh">${S.tested ? '' : '<b>Untested v0.</b> '}${esc(S.model || '')}</div></div>
       <div class="meta"><div class="stat"><b>${proj}/${P.length}</b><span>${noModel ? 'DK averages' : 'Projected players'}</span></div><div class="stat"><b>${(R.slots || []).length}</b><span>Roster spots</span></div><div class="stat"><b>${R.cap ? '$' + (R.cap / 1000) + 'K' : 'Tiers'}</b><span>${R.cap ? 'Salary cap' : 'No salary'}</span></div></div></section>
-      <nav class="mstabs" role="tablist" aria-label="Sections">${['players', 'build', 'dk'].map(t => `<button class="tab" role="tab" data-mt="${t}" aria-selected="${MSS.tab === t}">${{ players: 'Players', build: 'Build', dk: 'Entries' }[t]}</button>`).join('')}</nav>`;
+      <nav class="mstabs" role="tablist" aria-label="Sections">${MS_TABS.map(([t, lab]) => `<button class="tab" role="tab" data-mt="${t}" aria-selected="${MSS.tab === t}">${lab}</button>`).join('')}</nav>`;
     $$('#msHead [data-mt]').forEach(b => b.onclick = () => { MSS.tab = b.dataset.mt; $$('#msHead [data-mt]').forEach(x => x.setAttribute('aria-selected', String(x === b))); msRender(); });
     // builder state per slate: own projections, locks, outs, captain pool. Players with no FORGE projection start Out (DK average shown, untick to use)
     MSS = { tab: MSS.tab, id, q: {}, lock: new Set(), cpt: new Set(), out: new Set(P.filter(p => /^(O|OUT|IR|WD)$/i.test(String(p.status || '')) || (p.proj == null)).map(p => p.name)), mine: null, search: '', game: '' };
@@ -1206,6 +1207,54 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       const rows = uniq.slice().sort((a, b) => (msQ(b) || -1) - (msQ(a) || -1));
       body.innerHTML = `<div class="tbl-wrap"><table><thead><tr><th>Player</th><th>Pos</th><th>${S.sport === 'PGA' ? 'Event' : S.sport === 'MMA' ? 'Bout' : 'Game'}</th><th class="n">${tiers ? 'Tier' : 'Salary'}</th><th class="n">Proj</th>${tiers ? '' : '<th class="n">Pts / $1K</th>'}<th>From</th></tr></thead><tbody>${rows.map(p => { const q = msQ(p);
         return `<tr><td><b>${esc(p.name)}</b>${msTag(p)}<div class="dim small">${esc(p.team || '')}</div></td><td>${esc(p.pos)}</td><td>${esc(p.game)}</td><td class="n">${tiers ? esc(p.roster) : '$' + (p.sal || 0).toLocaleString('en-US')}</td><td class="n">${q != null ? (+q).toFixed(1) : '—'}</td>${tiers ? '' : `<td class="n">${q != null && p.sal ? (1000 * q / p.sal).toFixed(2) : '—'}</td>`}<td class="dim small">${esc([p.source, p.why].filter(Boolean).join(' · '))}</td></tr>`; }).join('')}</tbody></table></div>`;
+      return;
+    }
+    const pct = v => v == null ? '—' : (100 * v).toFixed(v < 0.1 ? 1 : 0) + '%', n1 = v => v == null ? '—' : (+v).toFixed(1), H = MSD.hub || {};
+    if (MSS.tab === 'props') {
+      const L = MSD.props || [], mk = [...new Set(L.map(x => x.market))];
+      body.innerHTML = `<h3 class="subh">Props · ${esc(S.sport)}</h3><p class="note">Every market FORGE reads for this slate, de-vigged (the book's margin removed) so the chance is the market's fair chance. Research, not picks.${L.length ? '' : ' <b>No player markets posted for this slate yet</b>' + (S.sport === 'CBB' ? ' (free sources do not post college basketball player props).' : S.sport === 'CFB' ? ' (Pinnacle posts college football player props closer to kickoff).' : '.')}</p>
+        ${L.length ? `<div class="toolbar"><select id="msPm"><option value="">All markets (${L.length})</option>${mk.map(m => `<option>${esc(m)}</option>`).join('')}</select><input type="search" id="msPs" placeholder="Search players"></div><div class="tbl-wrap"><table><thead><tr><th>Player</th><th>Market</th><th class="n">Line</th><th class="n">${L.some(x => x.line != null) ? 'Over / Yes chance' : 'Chance'}</th><th class="n">FORGE proj</th></tr></thead><tbody id="msPb"></tbody></table></div>` : ''}`;
+      const pj = {}; P.forEach(p => { if (p.proj != null) pj[p.name] = p.proj; });
+      const draw = () => { const m = ($('#msPm') || {}).value || '', q = (($('#msPs') || {}).value || '').toLowerCase(); $('#msPb').innerHTML = L.filter(x => (!m || x.market === m) && (!q || x.player.toLowerCase().includes(q))).sort((a, b) => (b.over || 0) - (a.over || 0)).slice(0, 400).map(x => `<tr><td><b>${esc(x.player)}</b> <span class="dim small">${esc(x.team || '')}</span></td><td>${esc(x.market)}</td><td class="n">${x.line == null ? '—' : x.line}</td><td class="n">${pct(x.over)}</td><td class="n">${n1(pj[x.player])}</td></tr>`).join(''); };
+      if (L.length) { draw(); $('#msPm').onchange = draw; $('#msPs').oninput = draw; }
+      return;
+    }
+    if (MSS.tab === 'hub' || MSS.tab === 'sims') {
+      if (!Object.keys(H).length) { body.innerHTML = `<p class="note">${tiers ? 'Tiers slates have no simulation table yet (no salary cap to optimise against).' : 'Not enough projected players on this slate to simulate yet.'}</p>`; return; }
+      const meth = [...new Set(Object.values(H).map(h => h.method))], mtxt = { model: 'FORGE\'s own simulation (PGA tournament sim / MMA fight sim)', poisson: 'Poisson goals, assists and shots from the market means', 'assumed spread': 'an ASSUMED spread around the projection (no FORGE simulator for this sport yet)' };
+      const rows = Object.entries(H).sort((a, b) => b[1].mean - a[1].mean); const sal = {}; uniq.forEach(p => sal[p.name] = p.sal);
+      if (MSS.tab === 'hub') {
+        body.innerHTML = `<h3 class="subh">Hub · ${esc(S.sport)} ${esc(S.title || msKind(S))}</h3><p class="note">1,000 simulated ${S.sport === 'PGA' ? 'tournaments' : S.sport === 'MMA' ? 'fight nights' : 'nights'} from ${meth.map(m => mtxt[m] || m).join('; ')}. Floor = 1 in 4 below, Ceiling = 1 in 10 above. Boom = 1.4x projection or more, Bust = 0.6x or less. Optimal % = share of 100 simulated nights the player is in the best possible lineup. Ownership forecast: not built for ${esc(S.sport)} yet (shown as —).</p>
+          <div class="tbl-wrap"><table><thead><tr><th>Player</th><th class="n">${tiers ? 'Tier' : 'Salary'}</th><th class="n">Proj</th><th class="n">Floor</th><th class="n">p75</th><th class="n">Ceiling</th><th class="n">Boom %</th><th class="n">Bust %</th><th class="n">Optimal %</th><th class="n">Own %</th><th class="n">Leverage</th></tr></thead><tbody>${rows.map(([n, h]) => `<tr><td><b>${esc(n)}</b></td><td class="n">${sal[n] ? '$' + sal[n].toLocaleString('en-US') : '—'}</td><td class="n">${n1(h.mean)}</td><td class="n">${n1(h.p25)}</td><td class="n">${n1(h.p75)}</td><td class="n">${n1(h.p90)}</td><td class="n">${n1(h.boom)}</td><td class="n">${n1(h.bust)}</td><td class="n">${n1(h.optimal)}</td><td class="n">—</td><td class="n">—</td></tr>`).join('')}</tbody></table></div>`;
+        return;
+      }
+      // Sims: player ranges + your lineups (or FORGE's) across 300 simulated nights
+      const Z = MSD.simms, U = (MSS.mine && MSS.mine.length) ? MSS.mine : ((MSD.builds || {})['FORGE v0'] || []);
+      let lus = '';
+      if (Z && U.length) { const raw = Uint8Array.from(atob(Z.b64), c => c.charCodeAt(0)), A = new Int16Array(raw.buffer), N = Z.names.length, ix = {}; Z.names.forEach((n, j) => ix[n] = j);
+        const sc = U.map(l => { const v = new Float64Array(Z.W); for (let w = 0; w < Z.W; w++) { let t = 0; for (const x of l) { const j = ix[x.name]; if (j != null) t += A[w * N + j] / Z.scale * (x.slot === 'CPT' ? (R.cpt_mult || 1.5) : 1); } v[w] = t; } return v; });
+        const best = new Array(U.length).fill(0); for (let w = 0; w < Z.W; w++) { let b = 0; for (let k = 1; k < U.length; k++) if (sc[k][w] > sc[b][w]) b = k; best[b]++; }
+        const q = (v, p) => { const s = [...v].sort((a, b) => a - b); return s[Math.floor(p * (s.length - 1))]; };
+        lus = `<h3 class="subh" style="margin-top:18px">${MSS.mine && MSS.mine.length ? 'Your lineups' : 'FORGE\'s lineups'} in 300 simulated nights</h3><div class="tbl-wrap"><table><thead><tr><th>#</th><th>Players</th><th class="n">Average</th><th class="n">1 in 10 above</th><th class="n">Best of the set</th></tr></thead><tbody>${U.map((l, k) => `<tr><td>${k + 1}</td><td class="small">${l.map(x => esc((x.slot === 'CPT' ? 'CPT ' : '') + x.name)).join(' · ')}</td><td class="n">${(sc[k].reduce((a, b) => a + b, 0) / Z.W).toFixed(1)}</td><td class="n">${q(sc[k], 0.9).toFixed(1)}</td><td class="n">${(100 * best[k] / Z.W).toFixed(0)}%</td></tr>`).join('')}</tbody></table></div>`; }
+      body.innerHTML = `<h3 class="subh">Sims · ${esc(S.sport)} ${esc(S.title || msKind(S))}</h3><p class="note">Each player's range over 1,000 simulated ${S.sport === 'PGA' ? 'tournaments' : 'nights'} (${meth.map(m => mtxt[m] || m).join('; ')}). Build lineups on the Build tab to see yours here.</p>
+        <div class="tbl-wrap"><table><thead><tr><th>Player</th><th class="n">1 in 10 below</th><th class="n">Floor</th><th class="n">Median</th><th class="n">p75</th><th class="n">Ceiling</th><th>Range</th></tr></thead><tbody>${rows.slice(0, 80).map(([n, h]) => { const mx = rows[0][1].p90 * 1.1 || 1, L = 100 * h.p10 / mx, W = 100 * (h.p90 - h.p10) / mx, M = 100 * h.p50 / mx;
+          return `<tr><td><b>${esc(n)}</b></td><td class="n">${n1(h.p10)}</td><td class="n">${n1(h.p25)}</td><td class="n">${n1(h.p50)}</td><td class="n">${n1(h.p75)}</td><td class="n">${n1(h.p90)}</td><td style="min-width:160px"><div style="position:relative;height:10px;background:var(--surface-raised);border-radius:5px"><div style="position:absolute;left:${L}%;width:${W}%;top:0;bottom:0;background:var(--brand);opacity:.35;border-radius:5px"></div><div style="position:absolute;left:${M}%;width:2px;top:-2px;bottom:-2px;background:var(--brand)"></div></div></td></tr>`; }).join('')}</tbody></table></div>${lus}`;
+      return;
+    }
+    if (MSS.tab === 'real' || MSS.tab === 'recap') {
+      const pick = MSS.tab === 'real' ? MSD : null;
+      const render = d => { const Rr = d && d.results, S2 = d && d.slate;
+        if (!Rr) { body.innerHTML = `<p class="note">${MSS.tab === 'real' ? 'Real results for this slate appear here after its games end' : 'No finished ' + esc(S.sport) + ' slate graded yet'}: ${['NHL', 'CBB', 'CFB'].includes(S.sport) ? 'actual DraftKings points come from the official box scores within a couple of hours of the final game.' : 'FORGE does not collect ' + esc(S.sport) + ' results automatically yet (no public box-score feed); upload your contest standings to grade it.'}</p>`; return; }
+        const pj = {}; d.players.forEach(p => { if (p.proj != null) pj[p.name] = p.proj; }); const L = Object.entries(Rr.pts).sort((a, b) => b[1] - a[1]); const G = Rr.grade || {}, F = Rr.forge_lineups || [];
+        body.innerHTML = `<h3 class="subh">${MSS.tab === 'real' ? 'Real results' : 'Last night'} · ${esc(S2.sport)} ${esc(S2.title || '')} · ${esc(S2.label)}</h3>
+          <div class="meta" style="margin:8px 0 14px;width:fit-content"><div class="stat"><b>${Rr.games_final}/${Rr.games}</b><span>Games final</span></div><div class="stat"><b>${G.mae ?? '—'}</b><span>Avg miss (pts)</span></div><div class="stat"><b>${G.corr ?? '—'}</b><span>Proj vs actual corr</span></div><div class="stat"><b>${F.length ? Math.max(...F).toFixed(1) : '—'}</b><span>FORGE best lineup</span></div><div class="stat"><b>${Rr.best ? Rr.best.score.toFixed(1) : '—'}</b><span>Best possible</span></div></div>
+          ${Rr.best ? `<p class="note"><b>Best possible lineup:</b> ${Rr.best.players.map(x => esc((x.slot === 'CPT' ? 'CPT ' : '') + x.name) + ' ' + x.pts).join(' · ')}</p>` : ''}
+          <p class="note">Actual DraftKings points from the official box scores, updated ${esc(Rr.updated_utc)}. ${esc(Rr.notes || '')}</p>
+          <div class="tbl-wrap"><table><thead><tr><th>Player</th><th class="n">Proj</th><th class="n">Actual</th><th class="n">Diff</th></tr></thead><tbody>${L.slice(0, MSS.tab === 'recap' ? 25 : 400).map(([n, v]) => `<tr><td><b>${esc(n)}</b></td><td class="n">${n1(pj[n])}</td><td class="n">${n1(v)}</td><td class="n">${pj[n] != null ? (v - pj[n] >= 0 ? '+' : '') + (v - pj[n]).toFixed(1) : '—'}</td></tr>`).join('')}</tbody></table></div>`; };
+      if (pick) { render(pick); return; }
+      const last = MSL.filter(x => x.results).sort((a, b) => new Date(b.kickoff_utc) - new Date(a.kickoff_utc))[0];
+      if (!last) { render(null); return; }
+      body.innerHTML = '<p class="note">Loading…</p>'; getJSON(last.id).then(render).catch(() => render(null));
       return;
     }
     if (MSS.tab === 'dk') {
