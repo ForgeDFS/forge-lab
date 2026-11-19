@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="3a0a9749b543"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="fd9079b8a719"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <meta charset="utf-8">
 <title>FORGE</title>
@@ -825,7 +825,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
       <details class="adv" id="nbaAdv"><summary>More settings <small>FORGE's defaults are already set; change them only to experiment</small></summary>
       <label>Min players different <input type="number" id="nbaUniq" min="1" max="6" value="2"></label>
       <label>Max exposure % <input type="number" id="nbaExp" min="10" max="100" value="100"></label>
-      <label class="check sdonly"><input type="checkbox" id="nbaTop3" checked> FORGE Pick captains: FORGE's 3 most likely top DraftKings scorers, more lineups for the likeliest (FORGE's Showdown default)</label>
+      <label class="check sdonly"><input type="checkbox" id="nbaTop3"> Captains from FORGE's 3 most likely top scorers only (the old default; NBA-SD-2 backtest -28% vs projection order +13%)</label>
       <label class="check clonly"><input type="checkbox" id="nbaStack"> Game stack: 3+ players from one of the 3 highest-total close games (spread 7 or less)</label>
       <label class="check clonly"><input type="checkbox" id="nbaBlow"> At most 1 player from likely blowouts (spread 9+)</label>
       <label class="check clonly"><input type="checkbox" id="nbaShape" checked> Winning shape on 4+ game slates: 3+ cheap (&le; $4.5K) and 2+ studs (&ge; $9K) per lineup; 2-3 game slates build balanced <small class="note">(NBA-SHAPE 11/18: walk-forward on your contest mix +127% vs +103%, profitable 57% of nights vs 33%; relaxes to 2+1 when a slate cannot fit it)</small></label>
@@ -3480,7 +3480,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     out.innerHTML = `<div class="toolbar"><a class="btn primary" href="${url}" download="DKEntries_FORGE_NBA_lateswap.csv">Download late-swap file</a></div>` + changed.map(c => `<p class="note"><b>Entry ${c.r[0]}</b>: ${c.swaps.join(', ')} · +${c.gain.toFixed(1)} pts</p>`).join('') + notes.map(n => `<p class="note">${n}</p>`).join('');
   }
 
-  async function nbaShowdown(g, st, t0, N, uniq, capP) {     // NBA Showdown: 1 CPT (1.5x points, CPT salary) + 5 UTIL, both teams; FORGE default captains = weighted top 3
+  async function nbaShowdown(g, st, t0, N, uniq, capP) {     // NBA Showdown: 1 CPT (1.5x points, CPT salary) + 5 UTIL, both teams; default since NBA-SD-2 (2026-11-19) = projection order, 2+ different (captain counts); weighted top-3 captains = option
     const P = D.players.map((p, i) => ({ ...p, i, q: QJ(p) })).filter(p => p.proj != null && !NB.out.has(p.name) && !NBOUT(p) && p.cpt_sal);
     const teams = [...new Set(P.map(p => p.team))]; let pool = null, wcap = {};
     const myC = P.filter(p => NB.cpt.has(p.name));
@@ -3501,7 +3501,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       P.forEach(p => row('one' + p.i, [{ name: cv(p), coef: 1 }, { name: uv(p), coef: 1 }], NB.lock.has(p.name) ? 1 : null, NB.lock.has(p.name) ? 1 : (cnt[p.i] || 0) >= capP ? 0 : 1));
       row('sal', P.flatMap(p => [{ name: cv(p), coef: p.cpt_sal }, { name: uv(p), coef: p.sal }]), null, 50000);
       teams.forEach((tm, j) => row('tm' + j, P.filter(p => p.team === tm).flatMap(p => [{ name: cv(p), coef: 1 }, { name: uv(p), coef: 1 }]), 1, 5));
-      chosen.forEach((c, j) => row('u' + j, P.filter(p => c.ids.has(p.i)).flatMap(p => [{ name: cv(p), coef: 1 }, { name: uv(p), coef: 1 }]), null, 6 - uniq));
+      chosen.forEach((c, j) => row('u' + j, [{ name: cv(c.lu[0]), coef: 1 }, ...c.lu.slice(1).map(p => ({ name: uv(p), coef: 1 }))], null, 6 - uniq));   // NBA-SD-2 (2026-11-19): a captain change counts as a difference
       const lp = { name: 'nbasd', objective: { direction: g.GLP_MAX, name: 'obj', vars: P.flatMap(p => [{ name: cv(p), coef: 1.5 * p.q }, { name: uv(p), coef: p.q }]) }, subjectTo: sub, binaries: P.flatMap(p => [cv(p), uv(p)]) };
       const r = await Promise.resolve(g.solve(lp, { msglev: g.GLP_MSG_OFF, presol: true }));
       if (!r || !r.result || (r.result.status !== g.GLP_OPT && r.result.status !== g.GLP_FEAS)) break;
