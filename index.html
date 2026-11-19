@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="169dbb0e9016"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="6b313585278e"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <meta charset="utf-8">
 <title>FORGE</title>
@@ -825,7 +825,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
       <details class="adv" id="nbaAdv"><summary>More settings <small>FORGE's defaults are already set; change them only to experiment</small></summary>
       <label>Min players different <input type="number" id="nbaUniq" min="1" max="6" value="2"></label>
       <label>Max exposure % <input type="number" id="nbaExp" min="10" max="100" value="100"></label>
-      <label class="check sdonly"><input type="checkbox" id="nbaTop3"> Captains from FORGE's 3 most likely top scorers only (old default; backtest -28.5% vs the default ceiling build +37.8%)</label>
+      <label class="check sdonly"><input type="checkbox" id="nbaTop3"> Captains from FORGE's 3 most likely top scorers only (old default). Unchecked = default: 5 likeliest top scorers, max 4 lineups each (backtest 37 slates: +4.1% vs -10.6%)</label>
       <label class="check clonly"><input type="checkbox" id="nbaStack"> Game stack: 3+ players from one of the 3 highest-total close games (spread 7 or less)</label>
       <label class="check clonly"><input type="checkbox" id="nbaBlow"> At most 1 player from likely blowouts (spread 9+)</label>
       <label class="check clonly"><input type="checkbox" id="nbaShape" checked> Winning shape on 4+ game slates: 3+ cheap (&le; $4.5K) and 2+ studs (&ge; $9K) per lineup; 2-3 game slates build balanced <small class="note">(NBA-SHAPE 11/18: walk-forward on your contest mix +127% vs +103%, profitable 57% of nights vs 33%; relaxes to 2+1 when a slate cannot fit it)</small></label>
@@ -3290,7 +3290,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   async function nbaBuild() {
     const st = $('#nbaStatus'), t0 = performance.now(); st.className = 'status'; st.textContent = 'Building…';
     let g; try { g = await glpk(); } catch (e) { st.className = 'status err'; st.textContent = 'The optimizer could not load: ' + e.message; return; }
-    const N = Math.max(1, Math.min(150, parseInt($('#nbaN').value) || 20)), uniq = (D.slate.kind === 'nba_classic' && !$('#nbaUniq').dataset.touched && new Set(D.players.map(p => p.game)).size >= 5) ? 1 : (D.slate.kind === 'nba_showdown' && !$('#nbaUniq').dataset.touched && !$('#nbaTop3').checked) ? 3 /* NBA-SD-3: CEIL-U3 */ : Math.max(1, Math.min(6, parseInt($('#nbaUniq').value) || 2)) /* (2026-10-29 NBA-SIZE-S1) 5+ game Classic slates: 1 different */, capP = Math.max(1, Math.ceil(N * Math.min(100, Math.max(10, parseFloat($('#nbaExp').value) || 100)) / 100));
+    const N = Math.max(1, Math.min(150, parseInt($('#nbaN').value) || 20)), uniq = (D.slate.kind === 'nba_classic' && !$('#nbaUniq').dataset.touched && new Set(D.players.map(p => p.game)).size >= 5) ? 1 : Math.max(1, Math.min(6, parseInt($('#nbaUniq').value) || 2)) /* (2026-10-29 NBA-SIZE-S1) 5+ game Classic slates: 1 different */, capP = Math.max(1, Math.ceil(N * Math.min(100, Math.max(10, parseFloat($('#nbaExp').value) || 100)) / 100));
     NB.vz = null; if (VARY_S && !D.owner && D.slate.kind === 'nba_classic' && $('#nbaVary').checked && +($('#nbaN').value || 0) > 1) {   /* (2026-11-04 audit A10) owner: no jitter -- the same data always gives the same set, so re-running after an update only changes what the update changes */   // (2026-10-31, FORGE) lineup #1 is always FORGE's exact #1 (built unjittered below); #2-n get the fresh 5% draw
       NB.vz = {}; D.players.forEach(p => NB.vz[p.name] = Math.max(0.2, 1 + VARY_S * gauss())); }   // fresh draw every press
     if (D.slate.kind === 'nba_showdown') return nbaShowdown(g, st, t0, N, uniq, capP);
@@ -3495,11 +3495,18 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   async function nbaShowdown(g, st, t0, N, uniq, capP) {     // NBA Showdown: 1 CPT (1.5x points, CPT salary) + 5 UTIL, both teams; default since NBA-SD-2 (2026-11-19) = projection order, 2+ different (captain counts); weighted top-3 captains = option
     // (2026-11-19, D-2026-11-19-beats-default + NBA-SD-3 CEIL) default score = projection + 0.5 x (simulated 85th pct - projection), 3+ different: on FORGE's
     // plan +37.8% vs projection order +13.2% vs old top-3 captains -28.5% (18 slates). The top-3 captain option keeps plain projections.
-    const SDCW = $('#nbaTop3').checked ? 0 : 0.5;
+    const SDCW = 0;   // (2026-11-19 15:40, NBA-SD-3B on 40 slates) default back to plain projections with CAP5 captains (below); the ceiling build fell to -13% on 37 slates
     const P = D.players.map((p, i) => ({ ...p, i, q: QJ(p) == null ? null : QJ(p) + ((SDCW && p.ceil != null && p.proj != null) ? SDCW * (p.ceil - p.proj) : 0) })).filter(p => p.proj != null && !NB.out.has(p.name) && !NBOUT(p) && p.cpt_sal);
     const teams = [...new Set(P.map(p => p.team))]; let pool = null, wcap = {};
     const myC = P.filter(p => NB.cpt.has(p.name));
     if (myC.length) { pool = new Set(myC.map(p => p.i)); const base = Math.floor(N / myC.length); let rem = N - base * myC.length; myC.forEach(p => { wcap[p.i] = base + (rem > 0 ? 1 : 0); rem--; }); }      // the user's own captains: everything else default, lineups split evenly across them (2026-10-28, FORGE)
+    else if (!$('#nbaTop3').checked) {   // (2026-11-19, NBA-SD-3B, D-2026-11-19-beats-default) default CAP5: captains = FORGE's 5 likeliest top scorers, lineups ~ P(top)^1.6, max 4 each
+      const T5 = [...P].sort((a, b) => (b.p_top || 0) - (a.p_top || 0)).slice(0, 5); pool = new Set(T5.map(p => p.i)); const cap = Math.max(4, Math.ceil(N / 5));
+      const w = T5.map(p => Math.pow(p.p_top || 0.001, 1.6)), sw = w.reduce((a, b) => a + b, 0) || 1, c = w.map(x => Math.min(cap, Math.max(1, Math.round(N * x / sw))));
+      if (N < 5) { c.fill(0); for (let j = 0; j < N; j++) c[j] = 1; }
+      while (c.reduce((a, b) => a + b, 0) > N) c[c.indexOf(Math.max(...c))]--;
+      while (c.reduce((a, b) => a + b, 0) < N) { let k = -1; for (let j = 0; j < c.length; j++) if (c[j] < cap && (k < 0 || w[j] > w[k])) k = j; if (k < 0) break; c[k]++; }
+      T5.forEach((p, j) => wcap[p.i] = c[j]); }
     else if ($('#nbaTop3').checked) { const T3 = [...P].sort((a, b) => (b.p_top || 0) - (a.p_top || 0)).slice(0, 3); pool = new Set(T3.map(p => p.i));
       const w = T3.map(p => p.p_top || 0), sw = w.reduce((a, b) => a + b, 0) || 1, wn = w.map(x => x / sw), c = wn.map(x => Math.max(1, Math.round(N * x)));
       if (N < 3) { c.fill(0); [...wn.keys()].sort((a, b) => wn[b] - wn[a]).slice(0, N).forEach(j => c[j] = 1); }
