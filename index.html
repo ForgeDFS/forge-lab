@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="61b82b5f08ea"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="d24d2cdaf73b"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -1211,6 +1211,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       if (cap) row('sal', V.map(x => ({ name: x.v, coef: x.p.sal })), null, cap);
       const atLeast = (key, list, need) => { if (!need || list.length < need) return; list.forEach((t, j) => { row(key + j, [...V.filter(x => x.p[key] === t).map(x => ({ name: x.v, coef: 1 })), { name: `y${key}${j}`, coef: -1 }], 0, null); aux.push(`y${key}${j}`); }); row(key + 'n', list.map((t, j) => ({ name: `y${key}${j}`, coef: 1 })), need, null); };
       atLeast('team', teams, R.min_teams || (R.cpt && teams.length === 2 ? 2 : 0)); atLeast('game', games, R.min_games || 0);
+      if (R.max_per_game) games.forEach((gm, j) => row('mg' + j, V.filter(x => x.p.game === gm).map(x => ({ name: x.v, coef: 1 })), null, R.max_per_game));   // MMA: one fighter per bout
       out.forEach((L, j) => row('u' + j, V.filter(x => L.some(y => y.name === x.p.name)).map(x => ({ name: x.v, coef: 1 })), null, slots.length - o.uniq));
       const lp = { name: 'ms', objective: { direction: g.GLP_MAX, name: 'o', vars: V.map(x => ({ name: x.v, coef: x.c })) }, subjectTo: sub, binaries: [...V.map(x => x.v), ...aux] };
       const r = await Promise.resolve(g.solve(lp, { msglev: g.GLP_MSG_OFF, presol: true }));
