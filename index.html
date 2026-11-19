@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="6b313585278e"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="b5d68359a03f"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <meta charset="utf-8">
 <title>FORGE</title>
@@ -2121,7 +2121,19 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const lo = l => Math.log(Math.max((O[l.cpt] && O[l.cpt][1]) || 0.1, 0.1)) + [...l.flex].reduce((t, f) => t + Math.log(Math.max((O[f] && O[f][0]) || 0.1, 0.1)), 0);
     const seq = [], seen = new Set(); for (const l of base.concat(pool)) { const k = sdKey(l); if (!seen.has(k)) { seen.add(k); seq.push(l); } }
     const S = seq.slice(0, Math.max(3 * n, 20)), v = S.map(lo), m = v.reduce((a, b) => a + b, 0) / v.length, sd = Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / v.length) + 1e-9;
-    return S.map((l, i) => ({ l, k: i - 10 * (v[i] - m) / sd, i })).sort((a, b) => a.k - b.k || a.i - b.i).slice(0, n).map(x => x.l);
+    const order = S.map((l, i) => ({ l, k: i - 10 * (v[i] - m) / sd, i })).sort((a, b) => a.k - b.k || a.i - b.i).map(x => x.l);
+    if (n <= 1) return order.slice(0, n);
+    // (2026-11-19 NFL-SD-3-CAPS-40, same as FORGE's entered build) at most 35% of lineups with a QB captain and 25% with a 5-1 team split; the wider pool fills in
+    const P = Object.fromEntries(D.players.map(p => [p.name, p])), mq = Math.floor(0.35 * n), ms = Math.floor(0.25 * n), out = [], used = new Set(); let nq = 0, ns = 0;
+    const ok = new Set(order.map(sdKey));
+    for (const l of order.concat(seq.filter(x => !ok.has(sdKey(x))))) {
+      const k = sdKey(l); if (used.has(k)) continue;
+      const ct = P[l.cpt] && P[l.cpt].team, sp = 1 + [...l.flex].filter(f => P[f] && P[f].team === ct).length, iss = sp === 1 || sp === 5, isq = !!(P[l.cpt] && P[l.cpt].pos === 'QB');
+      if ((iss && ns >= ms) || (isq && nq >= mq)) continue;
+      out.push(l); used.add(k); ns += iss; nq += isq; if (out.length === n) return out;
+    }
+    for (const l of order) { if (out.length >= n) break; if (!used.has(sdKey(l))) { out.push(l); used.add(sdKey(l)); } }   // never short
+    return out;
   }
   async function finishMix(P20, se, mini, st, msg, chalked) {
     if (!chalked) { const sz = parseSizes($('#bEntries').value), mn = Math.max(5, ...sz.filter(x => x > 1 && x < 20)), pool = P20.concat(mini);
