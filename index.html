@@ -1,7 +1,8 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="d24d2cdaf73b"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="033bae824f9c"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
+<meta charset="utf-8">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -104,7 +105,8 @@ small.warn { color: var(--warn); }
 .newver[hidden] { display: none; }
 
 /* slate picker */
-#slatePicker { display: grid; gap: 8px; margin: 0 0 18px; } #slatePicker[hidden] { display: none; }
+#slatePicker, .mspick { display: grid; gap: 8px; margin: 0 0 18px; } #slatePicker[hidden] { display: none; }
+.mstabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin: -6px 0 18px; border-bottom: 1px solid var(--line); }
 .pickrow { display: flex; gap: 12px; align-items: center; min-width: 0; }
 .pklab { font: 600 11px/14px var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); min-width: 76px; flex: none; }
 .pkchips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: thin; padding: 2px 2px 4px; min-width: 0; flex: 1; scroll-snap-type: x proximity; }
@@ -519,7 +521,7 @@ footer { margin-top: 36px; color: var(--ink-3); font-size: 12px; line-height: 18
 footer .ico { color: var(--ink-3); }
 
 /* show / hide by sport, game type and owner (behaviour; keep) */
-body.ms .tabs, body.ms #slatePicker, body.ms .plate, body.ms .panel { display: none !important; } body:not(.ms) #msBox { display: none !important; }
+body.ms .tabs, body.ms #slatePicker, body.ms .plate:not(.msplate), body.ms .panel { display: none !important; } body:not(.ms) #msBox { display: none !important; }
 body.nba .cl-only, body.nba .sd-only, body.nba .nfl-only, body.nba #rpBanner, body:not(.nba) .nba-only { display: none !important; }
 body.classic .sd-only, body:not(.classic) .cl-only { display: none !important; }
 body.nbasd .clonly, body:not(.nbasd) .sdonly, body:not(.nbasd) .sdcol { display: none; }
@@ -1156,59 +1158,118 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   // ---------------------------------------------------------------- (2026-11-06, FORGE: "add it all") NHL / college football / college basketball: FORGE v0
   // tools/multisport.py -> site/data/<SPORT>-<date>-<CL|SD|TI>-<dg>.json + site/slates_multi.json (published as data/multi.enc.json; lineups owner-only)
   const MS_SPORTS = ['NHL', 'CFB', 'CBB', 'PGA', 'MMA']; let MSI = null, MSD = null;
+  // (2026-11-18, FORGE: "every sport presented the same as NBA and NFL") NHL / CFB / CBB / PGA / MMA use the same picker rows, slate plate, tabs and builder
+  let MSL = [], MSS = { tab: 'build' };
+  const msKind = x => /_ti$/.test(x.kind) ? 'Tiers' : /_sd$/.test(x.kind) ? 'Showdown' : 'Classic';
+  const msTime = s => s ? new Date(s).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : '';
+  const msGames = x => (x.label || '').replace(/^[^·]*·\s*/, '');
   async function msShow(sp) {
     document.body.classList.add('ms'); $('#msHead').innerHTML = ''; $('#msBody').innerHTML = '<p class="note">Loading…</p>';
     try { if (!MSI) MSI = await getJSON('multi'); } catch (e) { $('#msPick').innerHTML = ''; $('#msBody').innerHTML = '<p class="note">No ' + sp + ' slates published yet.</p>'; return; }
-    const L = (MSI.slates || []).filter(x => x.sport === sp && (!x.kickoff_utc || Date.now() < new Date(x.kickoff_utc).getTime() + 5 * 3600e3));
-    if (!L.length) { $('#msPick').innerHTML = ''; $('#msBody').innerHTML = '<p class="note">No upcoming ' + sp + ' slates on DraftKings right now (checked every 2 hours).</p>'; return; }
-    const tm = s => s ? new Date(s).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : '';
-    $('#msPick').innerHTML = L.map(x => `<button type="button" class="btn small" data-ms="${x.id}">${esc(x.label)} <small class="dim">${tm(x.kickoff_utc)} · ${x.projected}/${x.players} projected</small></button>`).join(' ');
+    MSL = (MSI.slates || []).filter(x => x.sport === sp && (!x.kickoff_utc || Date.now() < new Date(x.kickoff_utc).getTime() + 5 * 3600e3)).sort((a, b) => new Date(a.kickoff_utc) - new Date(b.kickoff_utc));
+    if (!MSL.length) { $('#msPick').innerHTML = ''; $('#msBody').innerHTML = '<p class="note">No upcoming ' + sp + ' slates on DraftKings right now (checked every 2 hours).</p>'; return; }
+    const cur = LS.get('forge_ms_' + sp), first = MSL.find(x => x.id === cur) || MSL.find(x => x.lineups) || MSL[0];
+    msLoad(first.id);
+  }
+  function msPicker(id) {
+    const chip = x => { const sd = msKind(x) === 'Showdown', g = msGames(x);
+      return `<button type="button" class="slate-chip" data-ms="${x.id}" aria-pressed="${x.id === id}"><b>${esc(sd && g.includes('@') ? g.replace('@', ' @ ') : x.event || (sd ? 'Showdown' : msKind(x)))}</b><span>${esc(sd && g.includes('@') ? 'Showdown' : (x.event ? (msKind(x) === 'Classic' ? '' : msKind(x) + ' · ') + g : g))}</span><small>${msTime(x.kickoff_utc)} · ${x.projected}/${x.players} projected</small></button>`; };
+    const rows = ['Classic', 'Showdown', 'Tiers'].map(k => { const L = MSL.filter(x => msKind(x) === k); return L.length ? `<div class="pickrow"><span class="pklab">${k}</span><div class="pkchips">${L.map(chip).join('')}</div></div>` : ''; }).join('');
+    $('#msPick').innerHTML = rows; $('#msPick').className = 'mspick';
     $$('#msPick [data-ms]').forEach(b => b.onclick = () => msLoad(b.dataset.ms));
-    msLoad((L.find(x => x.lineups) || L[0]).id);
   }
   async function msLoad(id) {
-    $$('#msPick [data-ms]').forEach(b => b.classList.toggle('primary', b.dataset.ms === id));
+    msPicker(id);
     try { MSD = await getJSON(id); const ob = await ownerBuilds(id); MSD.builds = ob || MSD.builds || {}; MSD.owner = !!ob; } catch (e) { $('#msBody').innerHTML = '<p class="note">Could not load this slate.</p>'; return; }
-    const S = MSD.slate, P = MSD.players || [], pr = P.filter(p => p.proj != null).sort((a, b) => b.proj - a.proj), L = (MSD.builds || {})['FORGE v0'] || [];
-    $('#msHead').innerHTML = `<h2 class="subh">${esc(S.sport)} · ${esc(S.label)}</h2><p class="note"><b>Untested v0.</b> ${esc(S.model)} Data ${esc(S.built_utc)}.</p>`;
-    const seen = new Set(), rows = pr.filter(p => { const k = p.name + '|' + p.team; if (seen.has(k)) return false; seen.add(k); return true; });
-    const tbl = `<details open><summary><b>${/^No FORGE model/.test(S.model || '') ? 'Projections: DraftKings season averages (not a FORGE model)' : 'FORGE projections'}</b> <small class="dim">${rows.length} ${/^No FORGE model/.test(S.model || '') ? 'players' : 'players with a market line · players without one are not projected'}</small></summary><div class="tbl-wrap"><table><thead><tr><th>Player</th><th>Team</th><th>Pos</th><th class="n">Salary</th><th class="n">Proj</th><th>From</th></tr></thead><tbody>${rows.slice(0, 120).map(p => `<tr><td>${esc(p.name)}</td><td>${esc(p.team)}</td><td>${esc(p.roster)}</td><td class="n">${p.sal ? '$' + p.sal : ''}</td><td class="n">${p.proj.toFixed(1)}</td><td><small class="dim">${esc(p.source)}${p.why ? ' · ' + esc(p.why) : ''}</small></td></tr>`).join('')}</tbody></table></div></details>`;
-    const lus = !L.length ? '<p class="note">No FORGE lineups for this slate: too few players with market lines yet (lines post closer to the games).</p>'
-      : MSD.owner ? `<details open><summary><b>FORGE lineups</b> <small class="dim">${L.length}, best first, each 2+ players different</small></summary>${L.slice(0, 20).map((l, i) => `<p class="note"><b>#${i + 1}</b> ${l.map(x => `<span class="dim">${esc(x.slot)}</span> ${esc(x.name)}`).join(' · ')} <small class="dim">${l.reduce((t, x) => t + (x.proj || 0) * (x.slot === 'CPT' ? 1.5 : 1), 0).toFixed(1)} pts</small></p>`).join('')}</details>`
-      : '<p class="note">FORGE built lineups for this slate (owner only).</p>';
-    const dk = `<div class="toolbar" style="margin-top:10px"><label class="btn primary filebtn"><input type="file" id="msDkFile">Fill my DKEntries file with FORGE's lineups</label><span class="status" id="msDkStatus"></span></div><div id="msDkOut"></div><p class="note">Biggest contest gets lineups #1-n, every smaller contest FORGE's top lineups again, single entry and Double Ups / 50-50s #1. Checked against DraftKings' own player IDs in your file.</p>`;
-    // (2026-11-18, FORGE: "testers should be able to build lineups for every sport and contest") the same builder for any DraftKings format: slots, cap and
-    // captain rule come from the slate file (tools/multisport.py reads them from DK's own salary file); every lineup checked for DK legality before it is shown
-    const R = S.rules || {}, hasAlt = P.some(p => p.proj == null && p.alt != null);
-    const bld = `<details open id="msBuildBox"><summary><b>Build your lineups</b> <small class="dim">pick how many, hit build${S.tested ? '' : ' · untested for this sport'}</small></summary>
-      <div class="toolbar"><label>Lineups <input type="number" id="msN" value="20" min="1" max="150" style="width:64px"></label>
-      <label>Players different <input type="number" id="msU" value="2" min="1" max="${Math.max(1, (R.slots || []).length - 1)}" style="width:52px"></label>
-      <label>Max exposure % <input type="number" id="msX" value="100" min="10" max="100" style="width:60px"></label>
-      ${hasAlt ? '<label><input type="checkbox" id="msAlt"> also use DraftKings averages for players FORGE has no projection for</label>' : ''}
-      <button class="btn primary" id="msGo" type="button">Build lineups</button><span class="status" id="msSt"></span></div><div id="msOut"></div></details>`;
-    $('#msBody').innerHTML = tbl + bld + lus + dk;
-    let MINE = null; const useL = () => (MINE && MINE.length) ? MINE : L;
-    const f = $('#msDkFile'); if (f) f.onchange = async () => { const t = await f.files[0].text(); const U = useL(); if (!U.length) { $('#msDkOut').innerHTML = '<div class="err">Build lineups first.</div>'; } else msFill(t, U); f.value = ''; };
+    LS.set('forge_ms_' + MSD.slate.sport, id);
+    const S = MSD.slate, P = MSD.players || [], R = S.rules || {}, kind = msKind(S), noModel = /^No FORGE model/.test(S.model || '');
+    const t0 = S.kickoff_utc ? new Date(S.kickoff_utc) : null, day = t0 ? t0.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase() : '';
+    const g = msGames(S), title = kind === 'Showdown' && g.includes('@') ? g.replace('@', ' @ ') : S.sport === 'PGA' ? (P[0] ? P[0].game : g) : S.sport === 'MMA' ? `UFC · ${new Set(P.map(p => p.game)).size} bouts` : `${S.games} games`;
+    const proj = P.filter(p => p.proj != null).length;
+    $('#msHead').innerHTML = `<section class="plate msplate" aria-label="Slate"><div><div class="eyebrow">${esc(day)} · DRAFTKINGS ${esc(S.sport)} ${esc((S.title || kind).toUpperCase())}</div>
+      <h1 class="matchup">${title.includes(' @ ') ? title.split(' @ ').map(t => `<span class="team">${esc(t)}</span>`).join('<span class="at">@</span>') : `<span class="team" style="font-size:clamp(26px,3.6vw,44px)">${esc(title)}</span>`}</h1>
+      <div class="sub">First lock ${esc(msTime(S.kickoff_utc))} · data updated ${esc(S.built_utc || '')}${kind !== 'Showdown' && S.sport !== 'PGA' && S.sport !== 'MMA' ? ' · ' + esc(g) : ''}</div>
+      <div class="sub fresh">${S.tested ? '' : '<b>Untested v0.</b> '}${esc(S.model || '')}</div></div>
+      <div class="meta"><div class="stat"><b>${proj}/${P.length}</b><span>${noModel ? 'DK averages' : 'Projected players'}</span></div><div class="stat"><b>${(R.slots || []).length}</b><span>Roster spots</span></div><div class="stat"><b>${R.cap ? '$' + (R.cap / 1000) + 'K' : 'Tiers'}</b><span>${R.cap ? 'Salary cap' : 'No salary'}</span></div></div></section>
+      <nav class="mstabs" role="tablist" aria-label="Sections">${['players', 'build', 'dk'].map(t => `<button class="tab" role="tab" data-mt="${t}" aria-selected="${MSS.tab === t}">${{ players: 'Players', build: 'Build', dk: 'Entries' }[t]}</button>`).join('')}</nav>`;
+    $$('#msHead [data-mt]').forEach(b => b.onclick = () => { MSS.tab = b.dataset.mt; $$('#msHead [data-mt]').forEach(x => x.setAttribute('aria-selected', String(x === b))); msRender(); });
+    // builder state per slate: own projections, locks, outs, captain pool. Players with no FORGE projection start Out (DK average shown, untick to use)
+    MSS = { tab: MSS.tab, id, q: {}, lock: new Set(), cpt: new Set(), out: new Set(P.filter(p => /^(O|OUT|IR|WD)$/i.test(String(p.status || '')) || (p.proj == null)).map(p => p.name)), mine: null, search: '', game: '' };
+    msRender();
+  }
+  const msQ = p => MSS.q[p.name] != null ? MSS.q[p.name] : (p.proj != null ? p.proj : p.alt);
+  const msTag = p => (/^(O|OUT|IR|WD)$/i.test(String(p.status || '')) ? ' <span class="tag out">OUT</span>' : '') + ((p.proj == null && p.alt != null) || /^DK average/.test(p.source || '') ? ' <span class="tag steel">DK avg</span>' : '');
+  function msRender() {
+    const S = MSD.slate, P = MSD.players || [], R = S.rules || {}, tiers = !R.cap, cpt = !!R.cpt, body = $('#msBody'), seen = new Set();
+    const uniq = P.filter(p => { if (cpt && p.roster === 'CPT') return false; const k = p.name + '|' + p.team; if (seen.has(k)) return false; seen.add(k); return true; });
+    if (MSS.tab === 'players') {
+      const rows = uniq.slice().sort((a, b) => (msQ(b) || -1) - (msQ(a) || -1));
+      body.innerHTML = `<div class="tbl-wrap"><table><thead><tr><th>Player</th><th>Pos</th><th>${S.sport === 'PGA' ? 'Event' : S.sport === 'MMA' ? 'Bout' : 'Game'}</th><th class="n">${tiers ? 'Tier' : 'Salary'}</th><th class="n">Proj</th>${tiers ? '' : '<th class="n">Pts / $1K</th>'}<th>From</th></tr></thead><tbody>${rows.map(p => { const q = msQ(p);
+        return `<tr><td><b>${esc(p.name)}</b>${msTag(p)}<div class="dim small">${esc(p.team || '')}</div></td><td>${esc(p.pos)}</td><td>${esc(p.game)}</td><td class="n">${tiers ? esc(p.roster) : '$' + (p.sal || 0).toLocaleString('en-US')}</td><td class="n">${q != null ? (+q).toFixed(1) : '—'}</td>${tiers ? '' : `<td class="n">${q != null && p.sal ? (1000 * q / p.sal).toFixed(2) : '—'}</td>`}<td class="dim small">${esc([p.source, p.why].filter(Boolean).join(' · '))}</td></tr>`; }).join('')}</tbody></table></div>`;
+      return;
+    }
+    if (MSS.tab === 'dk') {
+      const U = MSS.mine && MSS.mine.length ? MSS.mine : ((MSD.builds || {})['FORGE v0'] || []);
+      body.innerHTML = `<h3 class="subh">Fill your DraftKings entries</h3><p class="note">${MSS.mine && MSS.mine.length ? `Uses the ${MSS.mine.length} lineups you built on the Build tab.` : U.length ? 'Uses FORGE\'s lineups for this slate (build your own on the Build tab to use those instead).' : 'Build lineups on the Build tab first.'} Biggest contest gets lineups #1-n, every smaller contest FORGE's top lineups again, single entry and Double Ups / 50-50s #1. Checked against DraftKings' own player IDs in your file.</p>
+        <div class="toolbar"><label class="btn primary filebtn"><input type="file" id="msDkFile">Upload your DKEntries file</label><span class="status" id="msDkStatus"></span></div><div id="msDkOut"></div>`;
+      const f = $('#msDkFile'); f.onchange = async () => { const t = await f.files[0].text(); if (!U.length) $('#msDkOut').innerHTML = '<div class="err">Build lineups first.</div>'; else msFill(t, U); f.value = ''; };
+      return;
+    }
+    const games = [...new Set(uniq.map(p => p.game))].sort();
+    body.innerHTML = `<h3 class="subh">Builder · ${esc(S.sport)} ${esc(S.title || msKind(S))} <small class="dim">(${esc((R.slots || []).join(', '))})</small></h3>
+    <div class="builder"><div class="controls nbaform"><h3>Rules</h3>
+      <label>Lineups <input type="number" id="msN" min="1" max="150" value="20"></label><small class="note">How many different lineups you want, 1 to 150. The Entries tab puts them into your DraftKings contests.</small>
+      <details class="adv"><summary>More settings <small>FORGE's defaults are already set; change them only to experiment</small></summary>
+        <label>Min players different <input type="number" id="msU" min="1" max="${Math.max(1, (R.slots || []).length - 1)}" value="2"></label>
+        <label>Max exposure % <input type="number" id="msX" min="10" max="100" value="100"></label>
+        ${R.max_per_game ? '<p class="note">One fighter per bout (one of them loses).</p>' : ''}${R.min_teams ? `<p class="note">DraftKings rule: players from ${R.min_teams}+ teams.</p>` : ''}
+      </details>
+      <button type="button" class="btn primary" id="msGo">Forge ${esc(S.sport)} lineups</button><span class="status" id="msSt" role="status"></span></div>
+    <div style="min-width:0"><div class="toolbar"><input type="search" id="msSearch" placeholder="Search players" value="${esc(MSS.search)}"><select id="msGame"><option value="">All ${S.sport === 'PGA' ? 'golfers' : S.sport === 'MMA' ? 'bouts' : 'games'}</option>${S.sport === 'PGA' ? '' : games.map(g => `<option ${MSS.game === g ? 'selected' : ''}>${esc(g)}</option>`).join('')}</select><button class="btn small" id="msReset" type="button">Reset</button><span class="note" id="msCount"></span></div>
+      <p class="note" style="margin:-4px 0 10px">Lock = in every lineup. Out = never used. ${cpt ? 'CPT pool = only these can captain (none ticked = anyone). ' : ''}Type over a projection to use your own number. Players with no FORGE projection start Out (DK average shown); untick to use them.</p>
+      <div class="tbl-wrap"><table id="msBTable"><thead><tr><th>Player</th><th class="n">${tiers ? 'Tier' : 'Salary'}</th><th class="n">Proj</th>${cpt ? '<th>CPT pool</th>' : ''}<th>Lock</th><th>Out</th></tr></thead><tbody></tbody></table></div>
+      <div id="msOut"></div></div></div>`;
+    const fill = () => { const q = MSS.search.toLowerCase(), L = uniq.filter(p => (!q || p.name.toLowerCase().includes(q)) && (!MSS.game || p.game === MSS.game)).sort((a, b) => (b.sal || 0) - (a.sal || 0) || (msQ(b) || 0) - (msQ(a) || 0));
+      $('#msCount').textContent = `${uniq.length} players · ${MSS.lock.size} locked · ${uniq.filter(p => MSS.out.has(p.name)).length} out`;
+      $('#msBTable tbody').innerHTML = L.map(p => { const q = msQ(p), k = esc(p.name);
+        return `<tr><td><b>${k}</b>${msTag(p)} <span class="dim small">${esc((S.sport === 'PGA' ? [] : [p.team, p.pos, p.game]).filter(Boolean).join(' · '))}</span></td><td class="n">${tiers ? esc(p.roster) : '$' + (p.sal || 0).toLocaleString('en-US')}</td>
+          <td class="n"><input class="pin" data-q="${k}" type="number" step="0.1" value="${q != null ? (+q).toFixed(1) : ''}" style="width:72px"></td>${cpt ? `<td><input type="checkbox" data-c="${k}" ${MSS.cpt.has(p.name) ? 'checked' : ''}></td>` : ''}
+          <td><input type="checkbox" data-l="${k}" ${MSS.lock.has(p.name) ? 'checked' : ''}></td><td><input type="checkbox" data-o="${k}" ${MSS.out.has(p.name) ? 'checked' : ''}></td></tr>`; }).join('');
+      $$('#msBTable [data-q]').forEach(x => x.onchange = () => { const v = x.value.trim(); if (v === '') delete MSS.q[x.dataset.q]; else MSS.q[x.dataset.q] = +v; });
+      const tog = (attr, set, other) => $$(`#msBTable [data-${attr}]`).forEach(x => x.onchange = () => { const n = x.dataset[attr]; if (x.checked) { set.add(n); if (other) other.delete(n); } else set.delete(n); fill(); });
+      tog('l', MSS.lock, MSS.out); tog('o', MSS.out, MSS.lock); tog('c', MSS.cpt); };
+    fill();
+    $('#msSearch').oninput = e => { MSS.search = e.target.value; fill(); }; $('#msGame').onchange = e => { MSS.game = e.target.value; fill(); };
+    $('#msReset').onclick = () => { const keep = MSS.tab; msLoad(MSS.id).then(() => MSS.tab = keep); };
+    const show = () => { const L = MSS.mine || []; if (!L.length) { $('#msOut').innerHTML = ''; return; }
+      const ex = {}; L.forEach(l => l.forEach(x => ex[x.name] = (ex[x.name] || 0) + 1)); const top = Object.entries(ex).sort((a, b) => b[1] - a[1]).slice(0, 12);
+      $('#msOut').innerHTML = `<div class="toolbar" style="margin-top:16px"><h3>Your lineups</h3><button type="button" class="btn small" id="msCsv">Download for DraftKings</button><button type="button" class="btn small" data-mtgo="dk">Fill my DKEntries file</button></div>
+        <p class="note">Exposure: ${top.map(([n, c]) => `${esc(n)} ${Math.round(100 * c / L.length)}%`).join(' · ')}</p>
+        <div class="tbl-wrap"><table><thead><tr><th>#</th>${(R.slots || []).map(s => `<th>${esc(s)}</th>`).join('')}<th class="n">Proj</th>${tiers ? '' : '<th class="n">Salary</th>'}</tr></thead><tbody>${L.map((l, i) => `<tr><td>${i + 1}</td>${l.map(x => `<td>${esc(x.name)}</td>`).join('')}<td class="n">${l.reduce((t, x) => t + (x.proj || 0) * (x.slot === 'CPT' ? (R.cpt_mult || 1.5) : 1), 0).toFixed(1)}</td>${tiers ? '' : `<td class="n">$${l.reduce((t, x) => t + (x.sal || 0), 0).toLocaleString('en-US')}</td>`}</tr>`).join('')}</tbody></table></div>`;
+      $('#msCsv').onclick = () => { const csv = [(R.slots || []).join(','), ...L.map(l => l.map(x => x.id).join(','))].join('\n') + '\n'; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = `FORGE_${S.id}.csv`; a.click(); };
+      $('#msOut [data-mtgo]').onclick = () => { MSS.tab = 'dk'; $$('#msHead [data-mt]').forEach(x => x.setAttribute('aria-selected', String(x.dataset.mt === 'dk'))); msRender(); }; };
+    show();
     $('#msGo').onclick = async () => { const st = $('#msSt'); st.className = 'status'; st.textContent = 'Loading the optimizer…';
-      try { const g = await glpk(); MINE = await msBuild(g, P, R, { n: +$('#msN').value || 20, uniq: +$('#msU').value || 2, xp: +$('#msX').value || 100, alt: !!($('#msAlt') && $('#msAlt').checked) }, st);
-        $('#msOut').innerHTML = MINE.length ? MINE.map((l, i) => `<p class="note"><b>#${i + 1}</b> ${l.map(x => `<span class="dim">${esc(x.slot)}</span> ${esc(x.name)}`).join(' · ')} <small class="dim">· proj ${l.reduce((t, x) => t + (x.proj || 0) * (x.slot === 'CPT' ? (R.cpt_mult || 1.5) : 1), 0).toFixed(1)}${R.cap ? ' · $' + l.reduce((t, x) => t + (x.sal || 0), 0).toLocaleString('en-US') : ''}</small></p>`).join('') + '<p class="note">Fill your DKEntries file below: it uses these lineups.</p>' : '';
-      } catch (e) { st.className = 'status err'; st.textContent = 'Build failed: ' + e.message; } };
+      try { const g = await glpk(); MSS.mine = await msBuild(g, P, R, { n: +$('#msN').value || 20, uniq: +$('#msU').value || 2, xp: +$('#msX').value || 100, q: msQ, out: MSS.out, lock: MSS.lock, cpt: MSS.cpt }, st); show(); }
+      catch (e) { st.className = 'status err'; st.textContent = 'Build failed: ' + e.message; } };
   }
   async function msBuild(g, P0, R, o, st) {
     const slots = R.slots || [], cap = R.cap || 0, mult = R.cpt_mult || 1.5, isTi = slots.length && slots.every(s => /^T\d+$/.test(s));
-    const P = P0.map((p, i) => ({ ...p, i, q: p.proj != null ? p.proj : (o.alt ? p.alt : null) })).filter(p => p.q != null && !/^(O|OUT|IR|WD)$/i.test(String(p.status || '')));
+    const P = P0.map((p, i) => ({ ...p, i, q: o.q ? o.q(p) : (p.proj != null ? p.proj : (o.alt ? p.alt : null)) })).filter(p => p.q != null && !(o.out && o.out.has(p.name)) && !/^(O|OUT|IR|WD)$/i.test(String(p.status || '')));
     const el = (p, s) => String(p.roster || '').split('/').includes(s);
     // identical slots (6 x G, 3 x W ...) are one group with a count: no symmetric copies for the solver to search through
     const GR = [...new Set(slots)].map(s => ({ s, n: slots.filter(x => x === s).length })), V = [];
-    P.forEach(p => GR.forEach((gr, k) => { if (el(p, gr.s)) V.push({ p, k, s: gr.s, v: `x${p.i}_${k}`, c: p.q * (gr.s === 'CPT' ? mult : 1) }); }));
+    const pool = o.cpt && o.cpt.size ? o.cpt : null;
+    P.forEach(p => GR.forEach((gr, k) => { if (el(p, gr.s) && !(gr.s === 'CPT' && pool && !pool.has(p.name))) V.push({ p, k, s: gr.s, v: `x${p.i}_${k}`, c: p.q * (gr.s === 'CPT' ? mult : 1) }); }));
     const names = [...new Set(P.map(p => p.name))], teams = [...new Set(P.map(p => p.team))], games = [...new Set(P.map(p => p.game))];
     const B = (lo, hi) => lo === hi ? { type: g.GLP_FX, lb: lo, ub: hi } : hi == null ? { type: g.GLP_LO, lb: lo, ub: 0 } : lo == null ? { type: g.GLP_UP, lb: 0, ub: hi } : { type: g.GLP_DB, lb: lo, ub: hi };
     const out = [], cnt = {}, capN = Math.max(1, Math.ceil(o.n * o.xp / 100));
     for (let k = 0; k < Math.min(150, o.n); k++) {
       const sub = [], row = (name, vars, lo, hi) => { if (vars.length) sub.push({ name, vars, bnds: B(lo, hi) }); }, aux = [];
       GR.forEach((gr, j) => row('s' + j, V.filter(x => x.k === j).map(x => ({ name: x.v, coef: 1 })), gr.n, gr.n));
-      names.forEach((nm, j) => row('n' + j, V.filter(x => x.p.name === nm).map(x => ({ name: x.v, coef: 1 })), null, (cnt[nm] || 0) >= capN ? 0 : 1));
+      names.forEach((nm, j) => row('n' + j, V.filter(x => x.p.name === nm).map(x => ({ name: x.v, coef: 1 })), null, ((cnt[nm] || 0) >= capN && !(o.lock && o.lock.has(nm))) ? 0 : 1));
       if (cap) row('sal', V.map(x => ({ name: x.v, coef: x.p.sal })), null, cap);
+      if (o.lock) [...o.lock].forEach((nm, j) => row('lk' + j, V.filter(x => x.p.name === nm).map(x => ({ name: x.v, coef: 1 })), 1, null));
       const atLeast = (key, list, need) => { if (!need || list.length < need) return; list.forEach((t, j) => { row(key + j, [...V.filter(x => x.p[key] === t).map(x => ({ name: x.v, coef: 1 })), { name: `y${key}${j}`, coef: -1 }], 0, null); aux.push(`y${key}${j}`); }); row(key + 'n', list.map((t, j) => ({ name: `y${key}${j}`, coef: 1 })), need, null); };
       atLeast('team', teams, R.min_teams || (R.cpt && teams.length === 2 ? 2 : 0)); atLeast('game', games, R.min_games || 0);
       if (R.max_per_game) games.forEach((gm, j) => row('mg' + j, V.filter(x => x.p.game === gm).map(x => ({ name: x.v, coef: 1 })), null, R.max_per_game));   // MMA: one fighter per bout
