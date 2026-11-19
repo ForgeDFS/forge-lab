@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="49b6370ab76e"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="61b82b5f08ea"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -1198,13 +1198,15 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const slots = R.slots || [], cap = R.cap || 0, mult = R.cpt_mult || 1.5, isTi = slots.length && slots.every(s => /^T\d+$/.test(s));
     const P = P0.map((p, i) => ({ ...p, i, q: p.proj != null ? p.proj : (o.alt ? p.alt : null) })).filter(p => p.q != null && !/^(O|OUT|IR|WD)$/i.test(String(p.status || '')));
     const el = (p, s) => String(p.roster || '').split('/').includes(s);
-    const V = []; P.forEach(p => slots.forEach((s, k) => { if (el(p, s) && !(s === 'CPT' && !el(p, 'CPT'))) V.push({ p, k, s, v: `x${p.i}_${k}`, c: p.q * (s === 'CPT' ? mult : 1) }); }));
+    // identical slots (6 x G, 3 x W ...) are one group with a count: no symmetric copies for the solver to search through
+    const GR = [...new Set(slots)].map(s => ({ s, n: slots.filter(x => x === s).length })), V = [];
+    P.forEach(p => GR.forEach((gr, k) => { if (el(p, gr.s)) V.push({ p, k, s: gr.s, v: `x${p.i}_${k}`, c: p.q * (gr.s === 'CPT' ? mult : 1) }); }));
     const names = [...new Set(P.map(p => p.name))], teams = [...new Set(P.map(p => p.team))], games = [...new Set(P.map(p => p.game))];
     const B = (lo, hi) => lo === hi ? { type: g.GLP_FX, lb: lo, ub: hi } : hi == null ? { type: g.GLP_LO, lb: lo, ub: 0 } : lo == null ? { type: g.GLP_UP, lb: 0, ub: hi } : { type: g.GLP_DB, lb: lo, ub: hi };
     const out = [], cnt = {}, capN = Math.max(1, Math.ceil(o.n * o.xp / 100));
     for (let k = 0; k < Math.min(150, o.n); k++) {
       const sub = [], row = (name, vars, lo, hi) => { if (vars.length) sub.push({ name, vars, bnds: B(lo, hi) }); }, aux = [];
-      slots.forEach((s, j) => row('s' + j, V.filter(x => x.k === j).map(x => ({ name: x.v, coef: 1 })), 1, 1));
+      GR.forEach((gr, j) => row('s' + j, V.filter(x => x.k === j).map(x => ({ name: x.v, coef: 1 })), gr.n, gr.n));
       names.forEach((nm, j) => row('n' + j, V.filter(x => x.p.name === nm).map(x => ({ name: x.v, coef: 1 })), null, (cnt[nm] || 0) >= capN ? 0 : 1));
       if (cap) row('sal', V.map(x => ({ name: x.v, coef: x.p.sal })), null, cap);
       const atLeast = (key, list, need) => { if (!need || list.length < need) return; list.forEach((t, j) => { row(key + j, [...V.filter(x => x.p[key] === t).map(x => ({ name: x.v, coef: 1 })), { name: `y${key}${j}`, coef: -1 }], 0, null); aux.push(`y${key}${j}`); }); row(key + 'n', list.map((t, j) => ({ name: `y${key}${j}`, coef: 1 })), need, null); };
@@ -1213,7 +1215,8 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       const lp = { name: 'ms', objective: { direction: g.GLP_MAX, name: 'o', vars: V.map(x => ({ name: x.v, coef: x.c })) }, subjectTo: sub, binaries: [...V.map(x => x.v), ...aux] };
       const r = await Promise.resolve(g.solve(lp, { msglev: g.GLP_MSG_OFF, presol: true }));
       if (!r || !r.result || (r.result.status !== g.GLP_OPT && r.result.status !== g.GLP_FEAS)) break;
-      const pick = V.filter(x => r.result.vars[x.v] > 0.5).sort((a, b) => a.k - b.k);
+      const chosen = V.filter(x => r.result.vars[x.v] > 0.5), pick = [];   // back to DraftKings' slot order
+      slots.forEach(s => { const j = chosen.findIndex(x => x.s === s && !pick.includes(x)); if (j >= 0) pick.push(chosen[j]); });
       // independent DK legality check: every slot once, a person once, salary cap, eligibility
       const ok = pick.length === slots.length && new Set(pick.map(x => x.p.name)).size === pick.length && (!cap || pick.reduce((t, x) => t + x.p.sal, 0) <= cap) && pick.every(x => el(x.p, x.s));
       if (!ok) break;
