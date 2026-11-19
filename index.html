@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="30ffc14020fe"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="49b6370ab76e"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <title>FORGE</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
@@ -591,7 +591,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
 <div class="top">
   <header class="appbar">
     <button type="button" class="brand" data-go="slate" aria-label="FORGE: slate brief"><svg class="ico" aria-hidden="true"><use href="#i-anvil"/></svg><span class="wordmark">Forge</span></button>
-    <nav class="sports" id="sportPicker" aria-label="Sport"><button type="button" data-sport="NBA" aria-pressed="false">NBA</button><button type="button" data-sport="NFL" aria-pressed="true">NFL</button><button type="button" data-sport="NHL" aria-pressed="false">NHL</button><button type="button" data-sport="CFB" aria-pressed="false">CFB</button><button type="button" data-sport="CBB" aria-pressed="false">CBB</button></nav>
+    <nav class="sports" id="sportPicker" aria-label="Sport"><button type="button" data-sport="NBA" aria-pressed="false">NBA</button><button type="button" data-sport="NFL" aria-pressed="true">NFL</button><button type="button" data-sport="NHL" aria-pressed="false">NHL</button><button type="button" data-sport="CFB" aria-pressed="false">CFB</button><button type="button" data-sport="CBB" aria-pressed="false">CBB</button><button type="button" data-sport="PGA" aria-pressed="false">PGA</button><button type="button" data-sport="MMA" aria-pressed="false">MMA</button></nav>
     <span class="spacer"></span>
     <span class="stamp" id="stamp"></span>
     <span id="statusPill" class="pill"><span class="dot"></span><span id="statusText">Loading</span></span>
@@ -1155,7 +1155,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
 
   // ---------------------------------------------------------------- (2026-11-06, FORGE: "add it all") NHL / college football / college basketball: FORGE v0
   // tools/multisport.py -> site/data/<SPORT>-<date>-<CL|SD|TI>-<dg>.json + site/slates_multi.json (published as data/multi.enc.json; lineups owner-only)
-  const MS_SPORTS = ['NHL', 'CFB', 'CBB']; let MSI = null, MSD = null;
+  const MS_SPORTS = ['NHL', 'CFB', 'CBB', 'PGA', 'MMA']; let MSI = null, MSD = null;
   async function msShow(sp) {
     document.body.classList.add('ms'); $('#msHead').innerHTML = ''; $('#msBody').innerHTML = '<p class="note">Loading…</p>';
     try { if (!MSI) MSI = await getJSON('multi'); } catch (e) { $('#msPick').innerHTML = ''; $('#msBody').innerHTML = '<p class="note">No ' + sp + ' slates published yet.</p>'; return; }
@@ -1172,13 +1172,57 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const S = MSD.slate, P = MSD.players || [], pr = P.filter(p => p.proj != null).sort((a, b) => b.proj - a.proj), L = (MSD.builds || {})['FORGE v0'] || [];
     $('#msHead').innerHTML = `<h2 class="subh">${esc(S.sport)} · ${esc(S.label)}</h2><p class="note"><b>Untested v0.</b> ${esc(S.model)} Data ${esc(S.built_utc)}.</p>`;
     const seen = new Set(), rows = pr.filter(p => { const k = p.name + '|' + p.team; if (seen.has(k)) return false; seen.add(k); return true; });
-    const tbl = `<details open><summary><b>FORGE projections</b> <small class="dim">${rows.length} players with a market line · players without one are not projected</small></summary><div class="tbl-wrap"><table><thead><tr><th>Player</th><th>Team</th><th>Pos</th><th class="n">Salary</th><th class="n">Proj</th><th>From</th></tr></thead><tbody>${rows.slice(0, 120).map(p => `<tr><td>${esc(p.name)}</td><td>${esc(p.team)}</td><td>${esc(p.roster)}</td><td class="n">${p.sal ? '$' + p.sal : ''}</td><td class="n">${p.proj.toFixed(1)}</td><td><small class="dim">${esc(p.source)}${p.why ? ' · ' + esc(p.why) : ''}</small></td></tr>`).join('')}</tbody></table></div></details>`;
+    const tbl = `<details open><summary><b>${/^No FORGE model/.test(S.model || '') ? 'Projections: DraftKings season averages (not a FORGE model)' : 'FORGE projections'}</b> <small class="dim">${rows.length} ${/^No FORGE model/.test(S.model || '') ? 'players' : 'players with a market line · players without one are not projected'}</small></summary><div class="tbl-wrap"><table><thead><tr><th>Player</th><th>Team</th><th>Pos</th><th class="n">Salary</th><th class="n">Proj</th><th>From</th></tr></thead><tbody>${rows.slice(0, 120).map(p => `<tr><td>${esc(p.name)}</td><td>${esc(p.team)}</td><td>${esc(p.roster)}</td><td class="n">${p.sal ? '$' + p.sal : ''}</td><td class="n">${p.proj.toFixed(1)}</td><td><small class="dim">${esc(p.source)}${p.why ? ' · ' + esc(p.why) : ''}</small></td></tr>`).join('')}</tbody></table></div></details>`;
     const lus = !L.length ? '<p class="note">No FORGE lineups for this slate: too few players with market lines yet (lines post closer to the games).</p>'
       : MSD.owner ? `<details open><summary><b>FORGE lineups</b> <small class="dim">${L.length}, best first, each 2+ players different</small></summary>${L.slice(0, 20).map((l, i) => `<p class="note"><b>#${i + 1}</b> ${l.map(x => `<span class="dim">${esc(x.slot)}</span> ${esc(x.name)}`).join(' · ')} <small class="dim">${l.reduce((t, x) => t + (x.proj || 0) * (x.slot === 'CPT' ? 1.5 : 1), 0).toFixed(1)} pts</small></p>`).join('')}</details>`
       : '<p class="note">FORGE built lineups for this slate (owner only).</p>';
     const dk = `<div class="toolbar" style="margin-top:10px"><label class="btn primary filebtn"><input type="file" id="msDkFile">Fill my DKEntries file with FORGE's lineups</label><span class="status" id="msDkStatus"></span></div><div id="msDkOut"></div><p class="note">Biggest contest gets lineups #1-n, every smaller contest FORGE's top lineups again, single entry and Double Ups / 50-50s #1. Checked against DraftKings' own player IDs in your file.</p>`;
-    $('#msBody').innerHTML = tbl + lus + (L.length ? dk : '');
-    const f = $('#msDkFile'); if (f) f.onchange = async () => { const t = await f.files[0].text(); msFill(t, L); f.value = ''; };
+    // (2026-11-18, FORGE: "testers should be able to build lineups for every sport and contest") the same builder for any DraftKings format: slots, cap and
+    // captain rule come from the slate file (tools/multisport.py reads them from DK's own salary file); every lineup checked for DK legality before it is shown
+    const R = S.rules || {}, hasAlt = P.some(p => p.proj == null && p.alt != null);
+    const bld = `<details open id="msBuildBox"><summary><b>Build your lineups</b> <small class="dim">pick how many, hit build${S.tested ? '' : ' · untested for this sport'}</small></summary>
+      <div class="toolbar"><label>Lineups <input type="number" id="msN" value="20" min="1" max="150" style="width:64px"></label>
+      <label>Players different <input type="number" id="msU" value="2" min="1" max="${Math.max(1, (R.slots || []).length - 1)}" style="width:52px"></label>
+      <label>Max exposure % <input type="number" id="msX" value="100" min="10" max="100" style="width:60px"></label>
+      ${hasAlt ? '<label><input type="checkbox" id="msAlt"> also use DraftKings averages for players FORGE has no projection for</label>' : ''}
+      <button class="btn primary" id="msGo" type="button">Build lineups</button><span class="status" id="msSt"></span></div><div id="msOut"></div></details>`;
+    $('#msBody').innerHTML = tbl + bld + lus + dk;
+    let MINE = null; const useL = () => (MINE && MINE.length) ? MINE : L;
+    const f = $('#msDkFile'); if (f) f.onchange = async () => { const t = await f.files[0].text(); const U = useL(); if (!U.length) { $('#msDkOut').innerHTML = '<div class="err">Build lineups first.</div>'; } else msFill(t, U); f.value = ''; };
+    $('#msGo').onclick = async () => { const st = $('#msSt'); st.className = 'status'; st.textContent = 'Loading the optimizer…';
+      try { const g = await glpk(); MINE = await msBuild(g, P, R, { n: +$('#msN').value || 20, uniq: +$('#msU').value || 2, xp: +$('#msX').value || 100, alt: !!($('#msAlt') && $('#msAlt').checked) }, st);
+        $('#msOut').innerHTML = MINE.length ? MINE.map((l, i) => `<p class="note"><b>#${i + 1}</b> ${l.map(x => `<span class="dim">${esc(x.slot)}</span> ${esc(x.name)}`).join(' · ')} <small class="dim">· proj ${l.reduce((t, x) => t + (x.proj || 0) * (x.slot === 'CPT' ? (R.cpt_mult || 1.5) : 1), 0).toFixed(1)}${R.cap ? ' · $' + l.reduce((t, x) => t + (x.sal || 0), 0).toLocaleString('en-US') : ''}</small></p>`).join('') + '<p class="note">Fill your DKEntries file below: it uses these lineups.</p>' : '';
+      } catch (e) { st.className = 'status err'; st.textContent = 'Build failed: ' + e.message; } };
+  }
+  async function msBuild(g, P0, R, o, st) {
+    const slots = R.slots || [], cap = R.cap || 0, mult = R.cpt_mult || 1.5, isTi = slots.length && slots.every(s => /^T\d+$/.test(s));
+    const P = P0.map((p, i) => ({ ...p, i, q: p.proj != null ? p.proj : (o.alt ? p.alt : null) })).filter(p => p.q != null && !/^(O|OUT|IR|WD)$/i.test(String(p.status || '')));
+    const el = (p, s) => String(p.roster || '').split('/').includes(s);
+    const V = []; P.forEach(p => slots.forEach((s, k) => { if (el(p, s) && !(s === 'CPT' && !el(p, 'CPT'))) V.push({ p, k, s, v: `x${p.i}_${k}`, c: p.q * (s === 'CPT' ? mult : 1) }); }));
+    const names = [...new Set(P.map(p => p.name))], teams = [...new Set(P.map(p => p.team))], games = [...new Set(P.map(p => p.game))];
+    const B = (lo, hi) => lo === hi ? { type: g.GLP_FX, lb: lo, ub: hi } : hi == null ? { type: g.GLP_LO, lb: lo, ub: 0 } : lo == null ? { type: g.GLP_UP, lb: 0, ub: hi } : { type: g.GLP_DB, lb: lo, ub: hi };
+    const out = [], cnt = {}, capN = Math.max(1, Math.ceil(o.n * o.xp / 100));
+    for (let k = 0; k < Math.min(150, o.n); k++) {
+      const sub = [], row = (name, vars, lo, hi) => { if (vars.length) sub.push({ name, vars, bnds: B(lo, hi) }); }, aux = [];
+      slots.forEach((s, j) => row('s' + j, V.filter(x => x.k === j).map(x => ({ name: x.v, coef: 1 })), 1, 1));
+      names.forEach((nm, j) => row('n' + j, V.filter(x => x.p.name === nm).map(x => ({ name: x.v, coef: 1 })), null, (cnt[nm] || 0) >= capN ? 0 : 1));
+      if (cap) row('sal', V.map(x => ({ name: x.v, coef: x.p.sal })), null, cap);
+      const atLeast = (key, list, need) => { if (!need || list.length < need) return; list.forEach((t, j) => { row(key + j, [...V.filter(x => x.p[key] === t).map(x => ({ name: x.v, coef: 1 })), { name: `y${key}${j}`, coef: -1 }], 0, null); aux.push(`y${key}${j}`); }); row(key + 'n', list.map((t, j) => ({ name: `y${key}${j}`, coef: 1 })), need, null); };
+      atLeast('team', teams, R.min_teams || (R.cpt && teams.length === 2 ? 2 : 0)); atLeast('game', games, R.min_games || 0);
+      out.forEach((L, j) => row('u' + j, V.filter(x => L.some(y => y.name === x.p.name)).map(x => ({ name: x.v, coef: 1 })), null, slots.length - o.uniq));
+      const lp = { name: 'ms', objective: { direction: g.GLP_MAX, name: 'o', vars: V.map(x => ({ name: x.v, coef: x.c })) }, subjectTo: sub, binaries: [...V.map(x => x.v), ...aux] };
+      const r = await Promise.resolve(g.solve(lp, { msglev: g.GLP_MSG_OFF, presol: true }));
+      if (!r || !r.result || (r.result.status !== g.GLP_OPT && r.result.status !== g.GLP_FEAS)) break;
+      const pick = V.filter(x => r.result.vars[x.v] > 0.5).sort((a, b) => a.k - b.k);
+      // independent DK legality check: every slot once, a person once, salary cap, eligibility
+      const ok = pick.length === slots.length && new Set(pick.map(x => x.p.name)).size === pick.length && (!cap || pick.reduce((t, x) => t + x.p.sal, 0) <= cap) && pick.every(x => el(x.p, x.s));
+      if (!ok) break;
+      const L = pick.map(x => ({ slot: x.s, id: x.p.id, name: x.p.name, proj: x.p.q, sal: x.p.sal })); out.push(L); L.forEach(x => cnt[x.name] = (cnt[x.name] || 0) + 1);
+      if (k % 5 === 4) { st.textContent = `Building… ${k + 1} of ${o.n}`; await new Promise(res => setTimeout(res, 0)); }
+    }
+    st.className = out.length ? 'status' : 'status err';
+    st.textContent = out.length ? `Built ${out.length} of ${o.n} lineups, each checked for DraftKings rules` + (out.length < o.n ? ' · loosen "players different" or exposure for more' : '') : 'No legal lineup fits these rules.';
+    return out;
   }
   function msFill(text, L) {
     const rows = csvParse(text), out = $('#msDkOut'), say = (m, bad) => out.innerHTML = `<div class="${bad ? 'err' : 'ok'}">${m}</div>`;
