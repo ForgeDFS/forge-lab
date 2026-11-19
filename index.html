@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="fd9079b8a719"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="169dbb0e9016"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <meta charset="utf-8">
 <title>FORGE</title>
@@ -825,7 +825,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
       <details class="adv" id="nbaAdv"><summary>More settings <small>FORGE's defaults are already set; change them only to experiment</small></summary>
       <label>Min players different <input type="number" id="nbaUniq" min="1" max="6" value="2"></label>
       <label>Max exposure % <input type="number" id="nbaExp" min="10" max="100" value="100"></label>
-      <label class="check sdonly"><input type="checkbox" id="nbaTop3"> Captains from FORGE's 3 most likely top scorers only (the old default; NBA-SD-2 backtest -28% vs projection order +13%)</label>
+      <label class="check sdonly"><input type="checkbox" id="nbaTop3"> Captains from FORGE's 3 most likely top scorers only (old default; backtest -28.5% vs the default ceiling build +37.8%)</label>
       <label class="check clonly"><input type="checkbox" id="nbaStack"> Game stack: 3+ players from one of the 3 highest-total close games (spread 7 or less)</label>
       <label class="check clonly"><input type="checkbox" id="nbaBlow"> At most 1 player from likely blowouts (spread 9+)</label>
       <label class="check clonly"><input type="checkbox" id="nbaShape" checked> Winning shape on 4+ game slates: 3+ cheap (&le; $4.5K) and 2+ studs (&ge; $9K) per lineup; 2-3 game slates build balanced <small class="note">(NBA-SHAPE 11/18: walk-forward on your contest mix +127% vs +103%, profitable 57% of nights vs 33%; relaxes to 2+1 when a slate cannot fit it)</small></label>
@@ -2041,7 +2041,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     }));
   }
   $('#resetProj').addEventListener('click', () => { D.players.forEach(p => builder.proj[p.name] = baseProj(p)); builder.lock.clear(); builder.out.clear(); builder.cpt.clear(); renderBuilderTable(); applyRecipe(builder.recipe, true); });
-  const METHOD_NOTE = { mix4: "FORGE Pick (what FORGE enters since 10/29): 4 groups of 5 -- the simulator's top 5 picks, the 3-different list's #1-5 and #11-15, and the 1-different list's #1-5. 20 different lineups; a 5-entry contest gets the 3-different #1-5; single entry gets the stack method's #1. A few seconds.",
+  const METHOD_NOTE = { mix4: "FORGE Pick (CHALK10 since 11/19: MIX4's lineups re-ordered toward the more-owned ones; backtest +30.2% vs +25.4%) -- based on MIX4 (since 10/29): 4 groups of 5 -- the simulator's top 5 picks, the 3-different list's #1-5 and #11-15, and the 1-different list's #1-5. 20 different lineups; a 5-entry contest gets the 3-different #1-5; single entry gets the stack method's #1. A few seconds.",
     plain: "2nd best tested method so far: FORGE's highest-projected lineups, any team split, each at least 3 players different from every other; no captain or exposure limits. 20 different lineups. Instant.",
     p51: 'Highest-projected 5-1 stacks under your rules. Instant.', hyb: "3rd: FORGE Pick before 10/29: half top-projected 5-1 stacks, half the best payers in simulated contests, with FORGE's per-player cap (Auto below). A few seconds.",
     ev: "Every lineup is played in 2,000 simulated games against a simulated field; the best average payouts win (FORGE's Showdown rules on). Takes a few seconds.", hyb0: 'FORGE Pick without the two fixes: captain can be anyone and cheap fillers are not marked down (unless you edited them).' };
@@ -2113,7 +2113,19 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     for (const l of U2) { if (out.length >= need - used0.size) break; if (!used.has(sdKey(l))) { used.add(sdKey(l)); out.push(l); } }
     return out;
   }
-  async function finishMix(P20, se, mini, st, msg) {
+  // (2026-11-19, D-2026-11-19-beats-default; NFL-SD-3) FORGE Pick = CHALK10: MIX4's lineups for a contest, then MIX4 / 3-different candidates, first
+  // max(3n, 20), re-ordered by position - 10 x z(log projected lineup ownership); single entry unchanged (stack method #1). Same as run_showdown chalk_build.
+  function chalkOrder(base, pool, n) {
+    const O = Object.fromEntries(D.players.map(p => [p.name, [p.own_flex, p.own_cpt]]));
+    if (!D.players.some(p => p.own_flex != null)) return base.slice(0, n);
+    const lo = l => Math.log(Math.max((O[l.cpt] && O[l.cpt][1]) || 0.1, 0.1)) + [...l.flex].reduce((t, f) => t + Math.log(Math.max((O[f] && O[f][0]) || 0.1, 0.1)), 0);
+    const seq = [], seen = new Set(); for (const l of base.concat(pool)) { const k = sdKey(l); if (!seen.has(k)) { seen.add(k); seq.push(l); } }
+    const S = seq.slice(0, Math.max(3 * n, 20)), v = S.map(lo), m = v.reduce((a, b) => a + b, 0) / v.length, sd = Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / v.length) + 1e-9;
+    return S.map((l, i) => ({ l, k: i - 10 * (v[i] - m) / sd, i })).sort((a, b) => a.k - b.k || a.i - b.i).slice(0, n).map(x => x.l);
+  }
+  async function finishMix(P20, se, mini, st, msg, chalked) {
+    if (!chalked) { const sz = parseSizes($('#bEntries').value), mn = Math.max(5, ...sz.filter(x => x > 1 && x < 20)), pool = P20.concat(mini);
+      const P20c = chalkOrder(P20, mini, Math.min(20, P20.length)), miniC = chalkOrder(mini.slice(0, mn), pool, mn); P20 = P20c; mini = miniC.concat(mini.filter(l => !miniC.some(x => sdKey(x) === sdKey(l)))); }
     const need = Math.max(...parseSizes($('#bEntries').value)); let ext = [];
     if (need > P20.length) { st.textContent = 'Building the extra lineups…'; ext = await mixExt(new Set(P20.map(sdKey)), need); }
     builder.raw = P20.concat(ext); builder.resultMethod = 'mix4'; builder.mix = { se, mini, ext };
@@ -2134,13 +2146,13 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   }
   async function runMix4() {
     const st0 = $('#bStatus'), edited = builder.lock.size || builder.out.size || builder.cpt.size || D.players.some(p => builder.proj[p.name] != null && Math.abs(builder.proj[p.name] - baseProj(p)) > 0.005);
-    const ek = D.owner && !edited ? Object.keys(D.builds || {}).find(k => /^(Entered|FORGE) build \(MIX4\)/.test(k) && (D.builds[k] || []).length) : null;
+    const ek = D.owner && !edited ? Object.keys(D.builds || {}).find(k => /^(Entered|FORGE) build \((MIX4|CHALK10)\)/.test(k) && (D.builds[k] || []).length) : null;
     if (ek) {   // owner, no edits: FORGE's own server set (exact, the bigger simulation), so the Builder = what FORGE enters
       const by = {}; D.builds[ek].forEach(l => (by[l.contest] = by[l.contest] || []).push(l)); const gs = Object.values(by).sort((a, b) => b.length - a.length);
       const g20 = gs[0], se = (gs.find(g => g.length === 1) || g20)[0], uk = Object.keys(D.builds).find(k => /PLAIN-U3/.test(k) && (D.builds[k] || []).length),
         mini = gs.find(g => g.length > 1 && g.length < g20.length) || (uk ? Object.values(groupBy(D.builds[uk])).sort((a, b) => b.length - a.length)[0] : g20);   // smaller contests = 3-different #1-n (SD-EXTEND)
       const sal = Object.fromEntries(D.players.map(p => [p.name, p.sal])), mk = l => ({ cpt: l.cpt, flex: l.flex, proj: l.proj, sal: l.sal || (1.5 * (sal[l.cpt] || 0) + l.flex.reduce((t, x) => t + (sal[x] || 0), 0)), pct: null, own: null });
-      return finishMix(g20.map(mk), mk(se), mini.map(mk), st0, "FORGE Pick from FORGE's own server set for this game (simulator top 5 + 3-different #1-5 & #11-15 + 1-different #1-5), exactly what FORGE enters."); }
+      return finishMix(g20.map(mk), mk(se), mini.map(mk), st0, "FORGE Pick from FORGE's own server set for this game (simulator top 5 + 3-different #1-5 & #11-15 + 1-different #1-5), exactly what FORGE enters.", /CHALK10/.test(ek)); }
     const st = $('#bStatus'), t0 = performance.now(), keep = { n: $('#bN').value, u: $('#bUniq').value, t5: $('#bTop5').checked, t3: $('#bTop3').checked, exp: $('#bExp').value };
     let H = [], U3 = [], U1 = [];
     try {
@@ -3210,7 +3222,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     $$('#nbaBTable [data-pj]').forEach(c => c.onchange = () => { const n = un(c.dataset.pj), v = parseFloat(c.value), p = D.players.find(x => x.name === n); if (!Number.isNaN(v) && p && Math.abs(v - p.proj) > 0.005) NB.proj[n] = v; else delete NB.proj[n]; });
   }
   $('#nbaBSearch').addEventListener('input', renderNBABuild); $('#nbaBGame').addEventListener('change', renderNBABuild);
-  $('#nbaBReset').addEventListener('click', () => { NB.lock.clear(); NB.cpt.clear(); NB.proj = {}; NB.out.clear(); D.players.forEach(p => { if (p.proj == null || p.source === 'dk average' || p.source === 'forge engine' || NBOUT(p)) NB.out.add(p.name); }); renderNBABuild(); renderNBATable(); });
+  $('#nbaBReset').addEventListener('click', () => { NB.lock.clear(); NB.cpt.clear(); NB.proj = {}; NB.out.clear(); D.players.forEach(p => { if (p.proj == null || NBOUT(p) || (!p.new_starter && (p.source === 'dk average' || p.source === 'forge engine'))) NB.out.add(p.name); }); renderNBABuild(); renderNBATable(); });
   const NSLOT = ['PG', 'SG', 'SF', 'PF', 'C', 'G', 'F', 'UTIL'], NEL = { PG: ['PG'], SG: ['SG'], SF: ['SF'], PF: ['PF'], C: ['C'], G: ['PG', 'SG'], F: ['SF', 'PF'], UTIL: ['PG', 'SG', 'SF', 'PF', 'C'] };
   function initNBA(data, meta) {
     const s = data.slate, P = data.players, SD = s.kind === 'nba_showdown'; NB.out.clear(); NB.lock.clear(); NB.cpt.clear(); NB.proj = {}; NBADKONLY = null; NB.result = []; document.body.classList.toggle('nbasd', SD);
@@ -3222,7 +3234,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     $('#mSpread').textContent = Object.keys(data.game_lines || {}).length + '/' + s.games; $('#lSpread').textContent = 'Games with lines';
     $('#mTotal').textContent = P.filter(p => p.proj != null).length; $('#lTotal').textContent = 'Projected players'; $('#mWeek').textContent = '—';
     $('#statusPill').className = 'pill hot'; $('#statusText').textContent = (meta.status === 'live') ? 'Locked' : (TI ? s.sport + ' Tiers · unproven' : 'NBA · unproven'); if (TI) $('#fresh').textContent = s.model || '';
-    P.forEach(p => { p.value = p.proj == null || !p.sal ? null : p.proj / (p.sal / 1000); if (p.proj == null || p.source === 'dk average' || p.source === 'forge engine' || NBOUT(p)) NB.out.add(p.name);   /* (2026-10-22) DK-average stand-ins are shown but start Out */ });
+    P.forEach(p => { p.value = p.proj == null || !p.sal ? null : p.proj / (p.sal / 1000); if (p.proj == null || NBOUT(p) || (!p.new_starter && (p.source === 'dk average' || p.source === 'forge engine'))) NB.out.add(p.name);   /* (2026-10-22) DK-average stand-ins are shown but start Out */ });
     const L = data.leaders || {}, pc = v => (100 * v).toFixed(v < 0.1 ? 1 : 0) + '%';
     const card = (k, lab, team) => L[k] ? `<div class="card"><h4>${lab}</h4><ol>${L[k].slice(0, 5).map(r => `<li><span>${team ? r.team : r.name} <small>${team ? '' : r.team + ' · '}${r.mean}</small></span><b>${pc(r.p_lead)}</b></li>`).join('')}</ol></div>` : '';
     $('#nbaCptPool').innerHTML = SD ? card('dk', 'Captain pool · chance to be the top DraftKings scorer') : '';
@@ -3240,7 +3252,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const q = ($('#nbaSearch').value || '').toLowerCase(), g = $('#nbaGame').value;
     const R = D.players.filter(p => (!q || p.name.toLowerCase().includes(q)) && (!g || p.game === g)).sort((a, b) => { const x = a[NB.sort], y = b[NB.sort]; if (x == null) return 1; if (y == null) return -1; return (x > y ? 1 : x < y ? -1 : 0) * NB.dir; });
     $('#nbaCount').textContent = `${R.length} players`;
-    $('#nbaTable tbody').innerHTML = R.map(p => `<tr><td class="who"><b>${p.name}</b>${p.status ? ` <span class="tag">${esc(p.status)}</span>` : ''}${p.source === 'dk average' ? ' <small class="dim">DK avg stand-in</small>' : p.source === 'forge engine' ? ' <small class="dim">no line · FORGE engine</small>' : (p.proj == null ? ' <small class="dim">no props</small>' : '')}${p.why ? `<br><small class="dim">Why no line: ${esc(p.why)}</small>` : ''}${p.role ? `<br><small class="warn">⚑ ${esc(p.role)}</small>` : ''}</td><td><span class="pos">${p.pos}</span>${p.rpos ? ` <small>${p.rpos}</small>` : ''}</td><td>${p.team}</td><td><small>${p.game}</small></td><td class="n">${p.sal ? money(p.sal) : '—'}</td><td class="n"><b>${fmt(p.proj)}</b></td><td class="n">${fmt(p.value, 2)}</td>
+    $('#nbaTable tbody').innerHTML = R.map(p => `<tr><td class="who"><b>${p.name}</b>${p.status ? ` <span class="tag">${esc(p.status)}</span>` : ''}${p.new_starter ? ` <span class="tag" title="Confirmed new starter: projection +${p.start_bump} (NBA-START1)">New starter +${p.start_bump}</span>` : ''}${p.source === 'dk average' ? ' <small class="dim">DK avg stand-in</small>' : p.source === 'forge engine' ? ' <small class="dim">no line · FORGE engine</small>' : (p.proj == null ? ' <small class="dim">no props</small>' : '')}${p.why ? `<br><small class="dim">Why no line: ${esc(p.why)}</small>` : ''}${p.role ? `<br><small class="warn">⚑ ${esc(p.role)}</small>` : ''}</td><td><span class="pos">${p.pos}</span>${p.rpos ? ` <small>${p.rpos}</small>` : ''}</td><td>${p.team}</td><td><small>${p.game}</small></td><td class="n">${p.sal ? money(p.sal) : '—'}</td><td class="n"><b>${fmt(p.proj)}</b></td><td class="n">${fmt(p.value, 2)}</td>
       ${['pts', 'reb', 'ast', 'tpm', 'stl', 'blk'].map(k => `<td class="n">${p[k] != null ? fmt(p[k]) : (p.eng && p.eng[k] != null ? `<i class="dim" title="No line posted: FORGE engine number (display only)">${fmt(p.eng[k])}</i>` : '—')}</td>`).join('')}<td class="n">${p.eng ? fmt(p.eng.tov) : '—'}</td><td class="n">${p.dd == null ? '—' : fmt(100 * p.dd, 0) + '%'}</td><td class="n" title="${p.eng && p.eng.note ? esc(p.eng.note) : 'FORGE engine'}">${p.eng ? fmt(p.eng.proj) + (p.eng.note ? '*' : '') : '—'}</td><td class="n">${p.eng ? Math.round(100 * p.eng.play) + '%' : '—'}</td><td class="n sdcol">${p.cpt_sal ? money(p.cpt_sal) : '—'}</td><td class="n sdcol">${p.p_top == null ? '—' : fmt(100 * p.p_top, 1) + '%'}</td>
       <td><input type="checkbox" data-n="${p.name}" ${NB.out.has(p.name) ? 'checked' : ''} ${p.proj == null ? 'disabled' : ''} aria-label="Exclude ${p.name}"></td></tr>`).join('');
     $$('#nbaTable tbody input[type=checkbox]').forEach(cb => cb.onchange = () => { cb.checked ? (NB.out.add(cb.dataset.n), NB.lock.delete(cb.dataset.n)) : NB.out.delete(cb.dataset.n); renderNBABuild(); });
@@ -3278,7 +3290,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   async function nbaBuild() {
     const st = $('#nbaStatus'), t0 = performance.now(); st.className = 'status'; st.textContent = 'Building…';
     let g; try { g = await glpk(); } catch (e) { st.className = 'status err'; st.textContent = 'The optimizer could not load: ' + e.message; return; }
-    const N = Math.max(1, Math.min(150, parseInt($('#nbaN').value) || 20)), uniq = (D.slate.kind === 'nba_classic' && !$('#nbaUniq').dataset.touched && new Set(D.players.map(p => p.game)).size >= 5) ? 1 : Math.max(1, Math.min(6, parseInt($('#nbaUniq').value) || 2)) /* (2026-10-29 NBA-SIZE-S1) 5+ game Classic slates: 1 different */, capP = Math.max(1, Math.ceil(N * Math.min(100, Math.max(10, parseFloat($('#nbaExp').value) || 100)) / 100));
+    const N = Math.max(1, Math.min(150, parseInt($('#nbaN').value) || 20)), uniq = (D.slate.kind === 'nba_classic' && !$('#nbaUniq').dataset.touched && new Set(D.players.map(p => p.game)).size >= 5) ? 1 : (D.slate.kind === 'nba_showdown' && !$('#nbaUniq').dataset.touched && !$('#nbaTop3').checked) ? 3 /* NBA-SD-3: CEIL-U3 */ : Math.max(1, Math.min(6, parseInt($('#nbaUniq').value) || 2)) /* (2026-10-29 NBA-SIZE-S1) 5+ game Classic slates: 1 different */, capP = Math.max(1, Math.ceil(N * Math.min(100, Math.max(10, parseFloat($('#nbaExp').value) || 100)) / 100));
     NB.vz = null; if (VARY_S && !D.owner && D.slate.kind === 'nba_classic' && $('#nbaVary').checked && +($('#nbaN').value || 0) > 1) {   /* (2026-11-04 audit A10) owner: no jitter -- the same data always gives the same set, so re-running after an update only changes what the update changes */   // (2026-10-31, FORGE) lineup #1 is always FORGE's exact #1 (built unjittered below); #2-n get the fresh 5% draw
       NB.vz = {}; D.players.forEach(p => NB.vz[p.name] = Math.max(0.2, 1 + VARY_S * gauss())); }   // fresh draw every press
     if (D.slate.kind === 'nba_showdown') return nbaShowdown(g, st, t0, N, uniq, capP);
@@ -3481,7 +3493,10 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   }
 
   async function nbaShowdown(g, st, t0, N, uniq, capP) {     // NBA Showdown: 1 CPT (1.5x points, CPT salary) + 5 UTIL, both teams; default since NBA-SD-2 (2026-11-19) = projection order, 2+ different (captain counts); weighted top-3 captains = option
-    const P = D.players.map((p, i) => ({ ...p, i, q: QJ(p) })).filter(p => p.proj != null && !NB.out.has(p.name) && !NBOUT(p) && p.cpt_sal);
+    // (2026-11-19, D-2026-11-19-beats-default + NBA-SD-3 CEIL) default score = projection + 0.5 x (simulated 85th pct - projection), 3+ different: on FORGE's
+    // plan +37.8% vs projection order +13.2% vs old top-3 captains -28.5% (18 slates). The top-3 captain option keeps plain projections.
+    const SDCW = $('#nbaTop3').checked ? 0 : 0.5;
+    const P = D.players.map((p, i) => ({ ...p, i, q: QJ(p) == null ? null : QJ(p) + ((SDCW && p.ceil != null && p.proj != null) ? SDCW * (p.ceil - p.proj) : 0) })).filter(p => p.proj != null && !NB.out.has(p.name) && !NBOUT(p) && p.cpt_sal);
     const teams = [...new Set(P.map(p => p.team))]; let pool = null, wcap = {};
     const myC = P.filter(p => NB.cpt.has(p.name));
     if (myC.length) { pool = new Set(myC.map(p => p.i)); const base = Math.floor(N / myC.length); let rem = N - base * myC.length; myC.forEach(p => { wcap[p.i] = base + (rem > 0 ? 1 : 0); rem--; }); }      // the user's own captains: everything else default, lineups split evenly across them (2026-10-28, FORGE)
