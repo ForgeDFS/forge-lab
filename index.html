@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="563eb35de7b3"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="7a1bf172ff35"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <meta charset="utf-8">
 <title>FORGE</title>
@@ -3215,7 +3215,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   const NB = { sort: 'proj', dir: -1, out: new Set(), result: [], lock: new Set(), cpt: new Set(), proj: {}, vz: null };
   // (2026-10-28, FORGE) the Build tab lists every player: lock / out / captain pool / own projection. PJ = the projection the builders use.
   const PJ = p => (NB.proj[p.name] != null ? NB.proj[p.name] : p.proj), QJ = p => { const v = PJ(p); return v == null ? null : v * ((NB.vz && NB.vz[p.name]) || 1); };
-  const VARY_S = 0.05;      // built-in variety for the NBA Classic default (NBA-C2 addendum C, passed 2026-10-28: 5 of 5 draws profitable on 7 past nights; 10% failed)
+  const VARY_S = 0;         // (2026-11-21 NBA-VARY-2: 5% variety kept only 28% of the build's ROI over 24 nights -> testers get the exact build, D-2026-11-21-novary) was 0.05: built-in variety for the NBA Classic default (NBA-C2 addendum C, passed 2026-10-28: 5 of 5 draws profitable on 7 past nights; 10% failed)
   function gauss() { const u = new Uint32Array(2); crypto.getRandomValues(u); const a = (u[0] + 1) / 4294967297, b = u[1] / 4294967296; return Math.sqrt(-2 * Math.log(a)) * Math.cos(2 * Math.PI * b); }
   function renderNBABuild() {
     if (!D || !D.players) return; const q = ($('#nbaBSearch').value || '').toLowerCase(), g = $('#nbaBGame').value, ti = String(D.slate.kind).includes('tiers');
