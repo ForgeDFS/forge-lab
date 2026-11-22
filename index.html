@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="3e9c2bc04b89"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="7a1bf172ff35"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <meta charset="utf-8">
 <title>FORGE</title>
@@ -3379,7 +3379,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const by = T.map(t => { const L = D.players.map((p, i) => ({ ...p, i, q: QJ(p) })).filter(p => p.pos === t && p.proj != null && !NB.out.has(p.name) && !NBOUT(p)).sort((a, b) => b.q - a.q), lk = L.filter(p => NB.lock.has(p.name)); return lk.length ? lk : L; });
     const empty = T.filter((t, j) => !by[j].length); if (empty.length) { st.className = 'status err'; st.textContent = `No playable player in ${empty.join(', ')} (all OUT or without a projection).`; return; }
     // (2026-11-15, D-2026-11-15-tiers-team4) NBA Tiers: + 4 points per teammate pair, top 8 per tier (TIERS-STACK-1); NFL Tiers unchanged
-    const NFLT = !String(D.slate.id || '').startsWith('NBA'), SB = NFLT ? 2 : 4;   // NBA 4; NFL 2 (2026-11-22, TIERS-NFL-2, D-2026-11-22-nfl-tiers-team2)
+    const SB = 4;   // NBA + NFL (TIERS-NFL-1)
     const byB = SB ? by.map(L => L.slice(0, 8)) : by;
     const pairs = c => { const g = {}; c.forEach(p => { if (p.team) g[p.team] = (g[p.team] || 0) + 1; });   // teammates only (D-2026-11-15-tiers-team4)
       return Object.values(g).reduce((t, k) => t + k * (k - 1) / 2, 0); };
@@ -3388,8 +3388,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const DL = String(D.slate.id || '').startsWith('NBA') ? 2 : 0, OWN = {};
     if (DL) byB.forEach(L => { const mx = Math.max(...L.map(p => p.q)), z = L.map(p => Math.exp(0.163 * (p.q - mx))), S = z.reduce((a, b) => a + b, 0); L.forEach((p, i) => OWN[p.i] = z[i] / S); });
     const dup = c => DL ? Math.max(0.8066 + 0.07539 * c.reduce((t, p) => t + Math.log(Math.max(OWN[p.i] || 1e-3, 1e-3)), 0) + 0.01382 * Math.log(1426), 0) : 0;
-    combos = combos.map(c => ({ lu: c, s: c.reduce((t, p) => t + p.q, 0) + SB * pairs(c) - DL * dup(c), raw: c.reduce((t, p) => t + p.q, 0) })).sort((a, b) => b.s - a.s);
-    if (NFLT && combos.length) { const b1 = combos.reduce((a, c) => c.raw > a.raw ? c : a, combos[0]); combos = [b1, ...combos.filter(c => c !== b1)]; }   // NFL #1 = best pure projection (TIERS-NFL-2)
+    combos = combos.map(c => ({ lu: c, s: c.reduce((t, p) => t + p.q, 0) + SB * pairs(c) - DL * dup(c) })).sort((a, b) => b.s - a.s);
     const chosen = [], cnt = {}, nT = T.length;
     for (const c of combos) {
       if (chosen.length >= N) break;
