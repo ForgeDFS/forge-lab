@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="ff3c42d5f2e3"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="04c9e8ac72ad"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <meta charset="utf-8">
 <title>FORGE</title>
@@ -970,6 +970,8 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     <p class="note" id="liveNote">Each set graded on the real contest results. ROI counts every prize in full: a win counts as a win.</p>
     <div id="live"></div>
     <div id="entSum"></div>
+    <div class="appbox owner-only" id="flBox"><b>Your entries: FORGE fills them.</b> Upload the entries file DraftKings gives you (Lineups &rarr; Upload/Edit &rarr; Download). FORGE fills it with its production build, exactly what Claude would give you, in about 3-4 minutes, and fills it again after every news update until lock. Upload the downloaded file back to DraftKings. The Build tab is for experiments only.
+      <p><input type="file" id="flFile" accept=".csv"> <span id="flStatus" class="status"></span></p><div id="fills"><p class="note">No filled files yet today.</p></div></div>
     <div class="appbox owner-only" id="swBox"><b>Late swap (automatic).</b> When news makes a player in your NBA Classic entries OUT before his game starts, FORGE writes a swap file here within minutes (only the affected lineups change). Upload it to DraftKings (Upload Lineups &rarr; edit entries).<div id="swaps"><p class="note">No swap needed right now.</p></div></div>
     <div class="appbox owner-only" id="frBox"><b>Weak fields tonight (NBA).</b> Contests ranked by how many proven pros played the same contest on past nights (fewest first), with FORGE's backtest there. A lean, not a rule: 1-16 past nights per contest.<div id="fieldRead"></div></div>
     <div class="appbox owner-only" id="stBox"><b>Send contest standings to FORGE.</b> After a contest ends, download its standings on DraftKings (the contest page, then Export / Download standings), then tap Share and pick FORGE, or choose the file here. FORGE archives it, grades every build and learns from it on its own.
@@ -2889,6 +2891,41 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       return say(`Sent ${sent} file(s)${note ? ` (skipped ${note})` : ''}. FORGE is archiving and grading them now; they tick off the list within a few minutes.`);
     } catch (e) { say('Could not send: ' + e.message, true); }
   }
+  // (2026-11-25, one source of truth) entries upload -> inbox/dkentries (fill.yml fills with the production build) -> data/fills.owner.enc.json
+  async function sendDKEntries(file) {
+    const st = $('#flStatus'); const say = (m, err) => { if (st) { st.className = 'status' + (err ? ' err' : ''); st.textContent = m; } };
+    try {
+      if (!OPW) return say('Sign in as owner first (footer: Owner sign-in).', true);
+      const csv = await file.text(); if (!/Entry ID/.test(csv)) return say('That is not a DraftKings entries file (no Entry ID column).', true);
+      const r = await fetch('data/upload.owner.enc.json', { cache: 'no-cache' }); if (!r.ok) return say('The upload key is not set up yet.', true);
+      const cfg = await odec(await r.json()); const H = { Authorization: 'Bearer ' + cfg.token, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' }, A = 'https://api.github.com/repos/' + cfg.repo;
+      const d = new Date(), day = new Date(d.getTime() - 5 * 36e5).toISOString().slice(0, 10), path = 'inbox/dkentries/' + day + '_' + d.getTime() + '_' + file.name.replace(/[^A-Za-z0-9._-]/g, '_');
+      const j = async (url, opt) => { const x = await fetch(url, Object.assign({ headers: H }, opt)); if (!x.ok) throw new Error(x.status); return x.json(); };
+      say('Sending to FORGE...');
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const ref = await j(A + '/git/ref/heads/main'), com = await j(A + '/git/commits/' + ref.object.sha), blob = await j(A + '/git/blobs', { method: 'POST', body: JSON.stringify({ content: btoa(unescape(encodeURIComponent(csv))), encoding: 'base64' }) });
+          const tree = await j(A + '/git/trees', { method: 'POST', body: JSON.stringify({ base_tree: com.tree.sha, tree: [{ path, mode: '100644', type: 'blob', sha: blob.sha }] }) });
+          const nc = await j(A + '/git/commits', { method: 'POST', body: JSON.stringify({ message: 'entries to fill: ' + path, tree: tree.sha, parents: [ref.object.sha] }) });
+          await j(A + '/git/refs/heads/main', { method: 'PATCH', body: JSON.stringify({ sha: nc.sha }) }); break;
+        } catch (e) { if (attempt === 2) throw e; await new Promise(z => setTimeout(z, 1500)); }
+      }
+      say('Sent. FORGE is filling it (about 3-4 minutes); this box updates by itself.');
+      const t0 = Date.now(); const poll = async () => { await renderFills(); if (Date.now() - t0 < 10 * 6e4) setTimeout(poll, 30000); }; setTimeout(poll, 60000);
+    } catch (e) { say('Could not send: ' + e.message, true); }
+  }
+  if ($('#flFile')) $('#flFile').addEventListener('change', async ev => { const f = ev.target.files[0]; if (f) await sendDKEntries(f); ev.target.value = ''; });
+  async function renderFills() {
+    const el = $('#fills'); if (!el || !OPW || !ENC) return;
+    try { const r = await fetch('data/fills.owner.enc.json', { cache: 'no-cache' }); if (!r.ok) return; const T = await odec(await r.json()); const K = Object.keys(T.fills || {});
+      if (!K.length) { el.innerHTML = '<p class="note">No filled files yet today.</p>'; return; }
+      el.innerHTML = K.map(k => { const w = T.fills[k]; const id = 'fl_' + k.replace(/[^A-Za-z0-9]/g, '');
+        if (!w.ok) return `<p class="note">Could not fill ${esc(w.src || k)}: ${esc(w.why || '')}</p>`;
+        return `<p><b>${esc(k)}</b> (${esc(w.kind)}): ${w.entries} entries filled ${esc(w.made_utc)} UTC <button class="btn" id="${id}">Download FORGE's filled file</button></p>`; }).join('');
+      K.forEach(k => { const w = T.fills[k]; const b = document.getElementById('fl_' + k.replace(/[^A-Za-z0-9]/g, ''));
+        if (b && w.csv) b.onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([w.csv], { type: 'text/csv' })); a.download = k + '_FILLED.csv'; a.click(); }; });
+    } catch (e) { }
+  }
   // (2026-11-25, panel review #1) automatic OUT-only swap files: tools/news_swap.py -> site/swaps -> data/swaps.owner.enc.json (owner only)
   async function renderSwaps() {
     const el = $('#swaps'); if (!el || !OPW || !ENC) return;
@@ -3087,7 +3124,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     if (REC && !force && (OREC || !OPW)) return;
     try { REC = await getJSON('record'); } catch (e) { REC = null; }
     OREC = null; if (OPW && ENC) { try { const r = await fetch('data/record.owner.enc.json', { cache: 'no-cache' }); if (r.ok) OREC = await odec(await r.json()); } catch (e) { OREC = null; } }
-    renderTodo(); renderFieldRead(); renderSwaps();
+    renderTodo(); renderFieldRead(); renderSwaps(); renderFills();
   }
   const usd2 = v => v == null ? '—' : (v < 0 ? '−$' : '$') + Math.abs(v).toFixed(2);
   const sgn = v => v == null ? '—' : (v > 0 ? '+' : '') + v;
