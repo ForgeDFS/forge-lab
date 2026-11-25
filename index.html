@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="04c9e8ac72ad"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="64c4a41db06f"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <meta charset="utf-8">
 <title>FORGE</title>
@@ -3377,7 +3377,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       const V = [], sub = [], row = (name, vars, lo, hi) => { if (vars.length) sub.push({ name, vars, bnds: B(lo, hi) }); };
       P.forEach(p => NSLOT.forEach(s => { if (el(p, s)) V.push({ p, s, name: xv(p, s) }); }));
       NSLOT.forEach(s => row('s' + s, V.filter(v => v.s === s).map(v => ({ name: v.name, coef: 1 })), 1, 1));
-      P.forEach(p => { const vs = V.filter(v => v.p === p).map(v => ({ name: v.name, coef: 1 })); row('p' + p.i, vs, (NB.lock.has(p.name) || p.i === force) ? 1 : null, (NB.lock.has(p.name) || p.i === force) ? 1 : (cnt[p.i] || 0) >= capP ? 0 : 1); });
+      P.forEach(p => { const vs = V.filter(v => v.p === p).map(v => ({ name: v.name, coef: 1 })); row('p' + p.i, vs, (NB.lock.has(p.name) || p.i === force) ? 1 : null, (NB.lock.has(p.name) || p.i === force) ? 1 : (!FL && (cnt[p.i] || 0) >= capP) ? 0 : 1); });
       row('sal', V.map(v => ({ name: v.name, coef: v.p.sal })), null, 50000);
       games.forEach((gm, j) => row('gx' + j, V.filter(v => v.p.game === gm).map(v => ({ name: v.name, coef: 1 })), null, blowG.includes(gm) ? 1 : 7));   // DK: 2+ games
       const yv = stackG.map((gm, j) => 'y' + j);
