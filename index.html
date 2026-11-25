@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="64c4a41db06f"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="e029b80f427b"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <meta charset="utf-8">
 <title>FORGE</title>
@@ -3687,5 +3687,18 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
                     : ['PG,SG,SF,PF,C,G,F,UTIL', ...NB.result.map(c => c.lu.map(p => `"${p.name} (${p.id})"`).join(','))].join('\n');
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([rows], { type: 'text/csv' })); a.download = `FORGE_NBA_${D.slate.id}.csv`; a.click();
   });
+  // (2026-11-25, FORGE: Sun-Tue without Claude) data-freshness flag: the slate on screen locks within 6 h and its newest update is 2+ h old -> red bar
+  (() => { const bar = document.createElement('div'); bar.id = 'staleBar';
+    bar.style.cssText = 'display:none;position:sticky;top:0;z-index:999;background:#b91c1c;color:#fff;padding:8px 12px;font-weight:600;text-align:center';
+    document.body.prepend(bar);
+    const chk = () => { try {
+      const s = D && D.slate; if (!s || s.replay) { bar.style.display = 'none'; return; }
+      const ko = utcD(s.kickoff_utc), up = [utcD(s.built_utc), utcD(s.refreshed_utc), utcD(s.status_checked_utc)].filter(Boolean).sort((a, b) => b - a)[0], t = Date.now();
+      if (!ko || !up || ko - t <= 0 || ko - t > 6 * 3600e3) { bar.style.display = 'none'; return; }
+      const age = (t - up) / 3600e3;
+      if (age >= 2) { bar.textContent = `⚠ This slate's data is ${age.toFixed(1)} h old (updated ${up.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}) and it locks in ${((ko - t) / 3600e3).toFixed(1)} h. FORGE's updater may be down: don't build final entries from this.`; bar.style.display = 'block'; }
+      else bar.style.display = 'none';
+    } catch (e) { bar.style.display = 'none'; } };
+    setInterval(chk, 60000); setTimeout(chk, 4000); })();
 })();
 </script>
