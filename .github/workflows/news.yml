@@ -33,7 +33,9 @@ jobs:
         continue-on-error: true
         working-directory: fos
         env: { SP: "${{ github.event.inputs.sport || 'both' }}" }
-        run: timeout 1200 bash tools/news_run.sh "$SP" > /dev/null 2>&1 || true; echo "fills: $(ls site/fills/*_FILLED.csv 2>/dev/null | wc -l) swaps: $(ls site/swaps/*_SWAP.csv 2>/dev/null | wc -l)"
+        run: |
+          timeout 1200 bash tools/news_run.sh "$SP" > /dev/null 2>&1 || true
+          echo "fills $(ls site/fills/*_FILLED.csv 2>/dev/null | wc -l) swaps $(ls site/swaps/*_SWAP.csv 2>/dev/null | wc -l)"
       - name: publish
         working-directory: fos
         run: |
