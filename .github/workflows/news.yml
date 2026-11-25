@@ -1,0 +1,46 @@
+name: news
+# (2026-11-25) Status-only news check + Drew's entries fill + automatic OUT-only late swap, on this PUBLIC repo's free minutes (the private
+# repo's own jobs are blocked by GitHub billing). Started by the watcher (.github/scripts/ontime.py) when Rotowire's lineup page changes inside
+# a pre-lock window or when Drew uploads an entries file. Private code is read with FORGE_DISPATCH_TOKEN (read access); results are published
+# here, encrypted (owner-only). Every step's output goes to /dev/null: the public log shows nothing but step names.
+on:
+  workflow_dispatch:
+    inputs:
+      sport: { description: "nba, nfl or both", default: "both" }
+  push:
+    branches: [main]
+    paths: [".github/news_now"]
+concurrency: { group: news, cancel-in-progress: false }
+permissions: { contents: write }
+jobs:
+  news:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with: { path: lab }
+      - name: private code + public captures
+        env: { TOKEN: "${{ secrets.FORGE_DISPATCH_TOKEN }}" }
+        run: |
+          git clone -q --depth 1 "https://x-access-token:${TOKEN}@github.com/ForgeDFS/forge-os.git" fos > /dev/null 2>&1 || { echo "private checkout failed"; exit 1; }
+          git clone -q --depth 1 --filter=blob:none --sparse https://github.com/ForgeDFS/forge-hist fh > /dev/null 2>&1 && git -C fh sparse-checkout set data/live > /dev/null 2>&1
+          H=fh/data/live; mkdir -p fos/dk/nba/salaries/2026 fos/dk/salaries/2026
+          cp -r $H/dk/nba/salaries/2026/. fos/dk/nba/salaries/2026/ 2>/dev/null || true; cp -r $H/dk/salaries/2026/. fos/dk/salaries/2026/ 2>/dev/null || true
+          sudo mkdir -p /home/claude && sudo chown "$USER" /home/claude && ln -sfn "$GITHUB_WORKSPACE/fos" /home/claude/forge
+          echo ok
+      - run: pip install -q pandas pyarrow requests numpy scipy statsmodels cryptography ijson tabulate scikit-learn > /dev/null 2>&1
+      - name: news check + fill + late swap
+        continue-on-error: true
+        working-directory: fos
+        env: { SP: "${{ github.event.inputs.sport || 'both' }}" }
+        run: timeout 1200 bash tools/news_run.sh "$SP" > /dev/null 2>&1 || true; echo "fills: $(ls site/fills/*_FILLED.csv 2>/dev/null | wc -l) swaps: $(ls site/swaps/*_SWAP.csv 2>/dev/null | wc -l)"
+      - name: publish
+        working-directory: fos
+        run: |
+          timeout 300 python tools/site_publish.py ../lab > /dev/null 2>&1 || { echo "publish failed"; exit 1; }
+          cd ../lab && git config user.name "Claude" && git config user.email "noreply@anthropic.com"
+          git add -A data index.html version.json sw.js 2>/dev/null || git add -A
+          git diff --cached --quiet && { echo "no change"; exit 0; }
+          git commit -qm "news $(date -u +%Y-%m-%dT%H:%MZ)" > /dev/null
+          for i in 1 2 3; do git pull -q --rebase --autostash -X theirs origin main > /dev/null 2>&1 && git push -q origin HEAD:main > /dev/null 2>&1 && { echo "published"; exit 0; }; sleep 7; done
+          echo "push failed"; exit 1
