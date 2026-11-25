@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="1ad2e7761c0a"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="ff3c42d5f2e3"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <meta charset="utf-8">
 <title>FORGE</title>
@@ -970,6 +970,7 @@ body[data-tab]:not([data-tab="slate"]) #slatePicker, body:not([data-tab]) .chg, 
     <p class="note" id="liveNote">Each set graded on the real contest results. ROI counts every prize in full: a win counts as a win.</p>
     <div id="live"></div>
     <div id="entSum"></div>
+    <div class="appbox owner-only" id="swBox"><b>Late swap (automatic).</b> When news makes a player in your NBA Classic entries OUT before his game starts, FORGE writes a swap file here within minutes (only the affected lineups change). Upload it to DraftKings (Upload Lineups &rarr; edit entries).<div id="swaps"><p class="note">No swap needed right now.</p></div></div>
     <div class="appbox owner-only" id="frBox"><b>Weak fields tonight (NBA).</b> Contests ranked by how many proven pros played the same contest on past nights (fewest first), with FORGE's backtest there. A lean, not a rule: 1-16 past nights per contest.<div id="fieldRead"></div></div>
     <div class="appbox owner-only" id="stBox"><b>Send contest standings to FORGE.</b> After a contest ends, download its standings on DraftKings (the contest page, then Export / Download standings), then tap Share and pick FORGE, or choose the file here. FORGE archives it, grades every build and learns from it on its own.
       <div class="toolbar" style="margin-top:8px"><label class="btn filebtn"><input type="file" id="stFile" accept=".zip,.csv" multiple>Choose standings files (any number, plus the contest-history CSV)</label><span class="status" id="stStatus" role="status"></span></div>
@@ -2888,6 +2889,17 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
       return say(`Sent ${sent} file(s)${note ? ` (skipped ${note})` : ''}. FORGE is archiving and grading them now; they tick off the list within a few minutes.`);
     } catch (e) { say('Could not send: ' + e.message, true); }
   }
+  // (2026-11-25, panel review #1) automatic OUT-only swap files: tools/news_swap.py -> site/swaps -> data/swaps.owner.enc.json (owner only)
+  async function renderSwaps() {
+    const el = $('#swaps'); if (!el || !OPW || !ENC) return;
+    try { const r = await fetch('data/swaps.owner.enc.json', { cache: 'no-cache' }); if (!r.ok) return; const T = await odec(await r.json()); const K = Object.keys(T.swaps || {});
+      if (!K.length) { el.innerHTML = '<p class="note">No swap needed right now' + (T.checked ? ' (last news check ' + esc(T.checked) + ' UTC)' : '') + '.</p>'; return; }
+      el.innerHTML = K.map(k => { const w = T.swaps[k]; const id = 'sw_' + k.replace(/[^A-Za-z0-9]/g, '');
+        return `<p><b>${esc(k)}</b>: ${w.forced.length} lineup(s) changed at ${esc(w.made_utc)} UTC. <button class="btn" id="${id}">Download swap file</button></p><p class="note">${w.forced.slice(0, 6).map(esc).join('<br>')}</p>`; }).join('');
+      K.forEach(k => { const w = T.swaps[k]; const b = document.getElementById('sw_' + k.replace(/[^A-Za-z0-9]/g, ''));
+        if (b) b.onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([w.csv], { type: 'text/csv' })); a.download = k + '_SWAP.csv'; a.click(); }; });
+    } catch (e) { }
+  }
   // (2026-11-06, FORGE) weak-field read: tools/field_read.py lobby -> site/field_read.json -> data/field_read.owner.enc.json (owner only)
   async function renderFieldRead() {
     const el = $('#fieldRead'); if (!el || !OPW || !ENC) return;
@@ -3075,7 +3087,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     if (REC && !force && (OREC || !OPW)) return;
     try { REC = await getJSON('record'); } catch (e) { REC = null; }
     OREC = null; if (OPW && ENC) { try { const r = await fetch('data/record.owner.enc.json', { cache: 'no-cache' }); if (r.ok) OREC = await odec(await r.json()); } catch (e) { OREC = null; } }
-    renderTodo(); renderFieldRead();
+    renderTodo(); renderFieldRead(); renderSwaps();
   }
   const usd2 = v => v == null ? '—' : (v < 0 ? '−$' : '$') + Math.abs(v).toFixed(2);
   const sgn = v => v == null ? '—' : (v > 0 ? '+' : '') + v;
@@ -3403,6 +3415,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     for (const c of combos) {
       if (chosen.length >= N) break;
       if (c.lu.some(p => (cnt[p.i] || 0) >= capP)) continue;
+      if (new Set(c.lu.map(p => p.game)).size < 2) continue;   // (2026-11-25) DraftKings Tiers: players from at least 2 games (a one-game lineup is rejected)
       const ids = new Set(c.lu.map(p => p.i)); if (chosen.some(x => c.lu.filter(p => x.ids.has(p.i)).length > nT - uniq)) continue;
       chosen.push({ lu: c.lu, ids, s: c.lu.reduce((t, p) => t + PJ(p), 0) }); c.lu.forEach(p => cnt[p.i] = (cnt[p.i] || 0) + 1);
     }
