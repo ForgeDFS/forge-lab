@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="6a15ca356dc5"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="12439cd5bb6e"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <meta charset="utf-8">
 <title>FORGE</title>
@@ -2439,7 +2439,13 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     // fills #1..n in its order whenever the rules, projections, locks and Outs are untouched; the browser builder only adds lineups beyond it (different from all).
     const CD = (D.classic_default && D.classic_default.lineups) || [], byN = new Map(P.map(p => [p.name, p]));
     const untouched = !$('#cCustomNote').textContent && !CL.lock.size && D.players.every(p => CL.proj[p.name] == null || p.proj == null || Math.abs(CL.proj[p.name] - p.proj) < 0.005);
-    if (untouched) for (const L of CD) { if (chosen.length >= opt.n) break; const lu = L.map(n => byN.get(n)); if (lu.some(p => !p)) continue; chosen.push({ lu, s: lu.reduce((t, p) => t + p.q, 0), fd: true }); lu.forEach(p => cnt[p.i] = (cnt[p.i] || 0) + 1); }
+    // (2026-11-26, FORGE: testers get FORGE's lineups unless they make severe changes) the published default is ALWAYS the starting point: each default lineup is kept
+    // unless it uses a player the tester removed / marked OUT (byN misses him), misses a locked player, or would break the tester's exposure cap. Rule toggles,
+    // 'Make my lineups mine' and projection edits no longer throw the default away; they only shape the extra lineups the browser builds after it.
+    void untouched;
+    for (const L of CD) { if (chosen.length >= opt.n) break; const lu = L.map(n => byN.get(n)); if (lu.some(p => !p)) continue;
+      if ([...CL.lock].some(n => !L.includes(n))) continue; if (lu.some(p => (cnt[p.i] || 0) >= capP)) continue;
+      chosen.push({ lu, s: lu.reduce((t, p) => t + p.q, 0), fd: true }); lu.forEach(p => cnt[p.i] = (cnt[p.i] || 0) + 1); }
     const k0 = chosen.length;
     const B = (lo, hi) => lo === hi ? { type: g.GLP_FX, lb: lo, ub: hi } : hi == null ? { type: g.GLP_LO, lb: lo, ub: 0 } : lo == null ? { type: g.GLP_UP, lb: 0, ub: hi } : { type: g.GLP_DB, lb: lo, ub: hi };
     for (let k = k0; k < opt.n; k++) {
