@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forge-version" content="12439cd5bb6e"><meta http-equiv="Cache-Control" content="no-cache">
+<meta name="forge-version" content="e029b80f427b"><meta http-equiv="Cache-Control" content="no-cache">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0B0E14"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=3"><link rel="icon" href="icon-192.png?v=3">
 <meta charset="utf-8">
 <title>FORGE</title>
@@ -2416,7 +2416,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
   }
   function markCCustom() { if (capplying) return; $('#cCustomNote').textContent = 'Custom: started from ' + CRECIPES[CL.recipe].label + '. Click it again to reset the rules.'; }
   $$('#crecipes .recipe').forEach(b => b.addEventListener('click', () => applyCRecipe(b.dataset.r)));
-  $$('#cform input').forEach(i => { if (i.id !== 'cN' && i.id !== 'cMine') i.addEventListener('change', markCCustom); });   // (2026-11-26) 'Make my lineups mine' is not a rule change either: FORGE's published default still applies   // (2026-10-31) the number of lineups is not a rule change
+  $$('#cform input').forEach(i => { if (i.id !== 'cN') i.addEventListener('change', markCCustom); });   // (2026-10-31) the number of lineups is not a rule change
   $('#cReset').addEventListener('click', () => { D.players.forEach(p => { CL.proj[p.name] = p.proj; }); CL.lock.clear(); CL.out.clear(); D.players.forEach(p => { if (/^(OUT|IR|D)$/.test(p.status) || p.proj == null) CL.out.add(p.name); }); renderCBuilder(); applyCRecipe(CL.recipe); });
   let GLPK_ = null;
   async function glpk() { if (!GLPK_) { const m = await import('https://cdn.jsdelivr.net/npm/glpk.js@4.0.2/dist/index.js'); GLPK_ = await m.default(); } return GLPK_; }
@@ -2439,13 +2439,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     // fills #1..n in its order whenever the rules, projections, locks and Outs are untouched; the browser builder only adds lineups beyond it (different from all).
     const CD = (D.classic_default && D.classic_default.lineups) || [], byN = new Map(P.map(p => [p.name, p]));
     const untouched = !$('#cCustomNote').textContent && !CL.lock.size && D.players.every(p => CL.proj[p.name] == null || p.proj == null || Math.abs(CL.proj[p.name] - p.proj) < 0.005);
-    // (2026-11-26, FORGE: testers get FORGE's lineups unless they make severe changes) the published default is ALWAYS the starting point: each default lineup is kept
-    // unless it uses a player the tester removed / marked OUT (byN misses him), misses a locked player, or would break the tester's exposure cap. Rule toggles,
-    // 'Make my lineups mine' and projection edits no longer throw the default away; they only shape the extra lineups the browser builds after it.
-    void untouched;
-    for (const L of CD) { if (chosen.length >= opt.n) break; const lu = L.map(n => byN.get(n)); if (lu.some(p => !p)) continue;
-      if ([...CL.lock].some(n => !L.includes(n))) continue; if (lu.some(p => (cnt[p.i] || 0) >= capP)) continue;
-      chosen.push({ lu, s: lu.reduce((t, p) => t + p.q, 0), fd: true }); lu.forEach(p => cnt[p.i] = (cnt[p.i] || 0) + 1); }
+    if (untouched) for (const L of CD) { if (chosen.length >= opt.n) break; const lu = L.map(n => byN.get(n)); if (lu.some(p => !p)) continue; chosen.push({ lu, s: lu.reduce((t, p) => t + p.q, 0), fd: true }); lu.forEach(p => cnt[p.i] = (cnt[p.i] || 0) + 1); }
     const k0 = chosen.length;
     const B = (lo, hi) => lo === hi ? { type: g.GLP_FX, lb: lo, ub: hi } : hi == null ? { type: g.GLP_LO, lb: lo, ub: 0 } : lo == null ? { type: g.GLP_UP, lb: 0, ub: hi } : { type: g.GLP_DB, lb: lo, ub: hi };
     for (let k = k0; k < opt.n; k++) {
@@ -3443,7 +3437,7 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const by = T.map(t => { const L = D.players.map((p, i) => ({ ...p, i, q: QJ(p) })).filter(p => p.pos === t && p.proj != null && !NB.out.has(p.name) && !NBOUT(p)).sort((a, b) => b.q - a.q), lk = L.filter(p => NB.lock.has(p.name)); return lk.length ? lk : L; });
     const empty = T.filter((t, j) => !by[j].length); if (empty.length) { st.className = 'status err'; st.textContent = `No playable player in ${empty.join(', ')} (all OUT or without a projection).`; return; }
     // (2026-11-15, D-2026-11-15-tiers-team4) NBA Tiers: + 4 points per teammate pair, top 8 per tier (TIERS-STACK-1); NFL Tiers unchanged
-    const NFLT = !String(D.slate.id || '').startsWith('NBA'), SB = 4;   // (2026-11-26, FORGE PI decision) NFL Tiers = QBSTACK: TEAM4 + 6 per QB with his own WR/TE (NFL-TIERS-ELITE1 lead; was TEAM2)   // NBA 4; NFL 2 (2026-11-22, TIERS-NFL-2, D-2026-11-22-nfl-tiers-team2)
+    const NFLT = !String(D.slate.id || '').startsWith('NBA'), SB = NFLT ? 2 : 4;   // NBA 4; NFL 2 (2026-11-22, TIERS-NFL-2, D-2026-11-22-nfl-tiers-team2)
     const byB = SB ? by.map(L => L.slice(0, 8)) : by;
     const pairs = c => { const g = {}; c.forEach(p => { if (p.team) g[p.team] = (g[p.team] || 0) + 1; });   // teammates only (D-2026-11-15-tiers-team4)
       return Object.values(g).reduce((t, k) => t + k * (k - 1) / 2, 0); };
@@ -3452,9 +3446,8 @@ function builtET(u) {   // '2026-10-28 23:39 UTC' -> 'Wed 7:39 PM ET' (always Ea
     const DL = String(D.slate.id || '').startsWith('NBA') ? 2 : 0, OWN = {};
     if (DL) byB.forEach(L => { const mx = Math.max(...L.map(p => p.q)), z = L.map(p => Math.exp(0.163 * (p.q - mx))), S = z.reduce((a, b) => a + b, 0); L.forEach((p, i) => OWN[p.i] = z[i] / S); });
     const dup = c => DL ? Math.max(0.8066 + 0.07539 * c.reduce((t, p) => t + Math.log(Math.max(OWN[p.i] || 1e-3, 1e-3)), 0) + 0.01382 * Math.log(1426), 0) : 0;
-    const qbs = c => NFLT ? 6 * c.filter(p => p.rpos === 'QB' && c.some(o => o !== p && o.team === p.team && (o.rpos === 'WR' || o.rpos === 'TE'))).length : 0;
-    combos = combos.map(c => ({ lu: c, s: c.reduce((t, p) => t + p.q, 0) + SB * pairs(c) + qbs(c) - DL * dup(c), raw: c.reduce((t, p) => t + p.q, 0) })).sort((a, b) => b.s - a.s);
-    if (false && NFLT && combos.length) { const b1 = combos.reduce((a, c) => c.raw > a.raw ? c : a, combos[0]); combos = [b1, ...combos.filter(c => c !== b1)]; }   // NFL #1 = best pure projection (TIERS-NFL-2)
+    combos = combos.map(c => ({ lu: c, s: c.reduce((t, p) => t + p.q, 0) + SB * pairs(c) - DL * dup(c), raw: c.reduce((t, p) => t + p.q, 0) })).sort((a, b) => b.s - a.s);
+    if (NFLT && combos.length) { const b1 = combos.reduce((a, c) => c.raw > a.raw ? c : a, combos[0]); combos = [b1, ...combos.filter(c => c !== b1)]; }   // NFL #1 = best pure projection (TIERS-NFL-2)
     const chosen = [], cnt = {}, nT = T.length;
     for (const c of combos) {
       if (chosen.length >= N) break;
